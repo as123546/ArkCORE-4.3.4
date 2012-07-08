@@ -210,14 +210,4 @@ extern DBCStorage<WorldMapOverlayEntry> sWorldMapOverlayStore;
 extern DBCStorage<WorldSafeLocsEntry> sWorldSafeLocsStore;
 
 void LoadDBCStores (const std::string& dataPath);
-
-// script support functions
-DBCStorage<SoundEntriesEntry> const* GetSoundEntriesStore ();
-DBCStorage<SpellEntry> const* GetSpellStore ();
-DBCStorage<SpellRangeEntry> const* GetSpellRangeStore ();
-DBCStorage<FactionEntry> const* GetFactionStore ();
-DBCStorage<CreatureDisplayInfoEntry> const* GetCreatureDisplayStore ();
-DBCStorage<EmotesEntry> const* GetEmotesStore ();
-DBCStorage<EmotesTextEntry> const* GetEmotesTextStore ();
-DBCStorage<AchievementEntry> const* GetAchievementStore ();
 #endif

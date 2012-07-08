@@ -493,7 +493,7 @@ void LoadDBCStores (const std::string& dataPath)
 
         SpellEntry const* spellInfo = sSpellStore.LookupEntry(skillLine->spellId);
 
-        if (spellInfo && IsPassiveSpell(spellInfo->Id))
+        if (spellInfo && spellInfo->Attributes & SPELL_ATTR0_PASSIVE)
         {
             for (uint32 i = 1; i < sCreatureFamilyStore.GetNumRows(); ++i)
             {
@@ -987,38 +987,4 @@ float GetGtSpellScalingValue (int8 class_, uint8 level)
         return spellscaling->coef;
     else
         return -1.0f;
-}
-
-// script support functions
-DBCStorage<SoundEntriesEntry> const* GetSoundEntriesStore ()
-{
-    return &sSoundEntriesStore;
-}
-DBCStorage<SpellEntry> const* GetSpellStore ()
-{
-    return &sSpellStore;
-}
-DBCStorage<SpellRangeEntry> const* GetSpellRangeStore ()
-{
-    return &sSpellRangeStore;
-}
-DBCStorage<FactionEntry> const* GetFactionStore ()
-{
-    return &sFactionStore;
-}
-DBCStorage<CreatureDisplayInfoEntry> const* GetCreatureDisplayStore ()
-{
-    return &sCreatureDisplayInfoStore;
-}
-DBCStorage<EmotesEntry> const* GetEmotesStore ()
-{
-    return &sEmotesStore;
-}
-DBCStorage<EmotesTextEntry> const* GetEmotesTextStore ()
-{
-    return &sEmotesTextStore;
-}
-DBCStorage<AchievementEntry> const* GetAchievementStore ()
-{
-    return &sAchievementStore;
 }

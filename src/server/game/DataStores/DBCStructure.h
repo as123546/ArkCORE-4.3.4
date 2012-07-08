@@ -2091,10 +2091,6 @@ struct SpellEntry
     uint32 GetCasterAuraState () const;
     uint32 GetTargets () const;
     uint32 GetEffectApplyAuraNameByIndex (uint32 index) const;
-
-private:
-    // prevent creating custom entries (copy data from original in fact)
-    SpellEntry (SpellEntry const&);          // DON'T must have implementation
 };
 
 typedef std::set<uint32> SpellCategorySet;
@@ -2125,8 +2121,8 @@ struct SpellFocusObjectEntry
 struct SpellRadiusEntry
 {
     uint32 ID;          // 0
-    float radiusHostile;          // 1
-    float radiusFriend;          // 2
+    float radiusMin;          // 1
+    float radiusMax;          // 2
 };
 
 struct SpellRangeEntry
