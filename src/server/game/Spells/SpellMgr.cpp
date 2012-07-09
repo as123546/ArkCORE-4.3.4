@@ -105,381 +105,185 @@ SpellScaling::SpellScaling(uint8 playerLevel_, const SpellEntry * spellEntry_)
     canScale = true;
 }
 
-bool IsPrimaryProfessionSkill(uint32 spellId)
+bool IsPrimaryProfessionSkill(uint32 skill)
 {
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
-    if (!spellInfo)
+    SkillLineEntry const *pSkill = sSkillLineStore.LookupEntry(skill);
+    if (!pSkill)
         return false;
-    return IsPassiveSpell(spellInfo);
-}
-
-bool IsPassiveSpell (SpellEntry const * spellInfo)
-{
-    if (spellInfo->Attributes & SPELL_ATTR0_PASSIVE)
-        return true;
-    return false;
-}
-
-bool IsAutocastableSpell (uint32 spellId)
-{
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
-    if (!spellInfo)
-        return false;
-    if (spellInfo->Attributes & SPELL_ATTR0_PASSIVE)
-        return false;
-    if (spellInfo->AttributesEx & SPELL_ATTR1_UNAUTOCASTABLE_BY_PET)
+    if (pSkill->categoryId != SKILL_CATEGORY_PROFESSION)
         return false;
     return true;
 }
 
-bool IsHigherHankOfSpell (uint32 spellId_1, uint32 spellId_2)
+bool IsPartOfSkillLine(uint32 skillId, uint32 spellId)
 {
-    return sSpellMgr->GetSpellRank(spellId_1) < sSpellMgr->GetSpellRank(spellId_2);
+    SkillLineAbilityMapBounds skillBounds = sSpellMgr->GetSkillLineAbilityMapBounds(spellId);
+    for (SkillLineAbilityMap::const_iterator itr = skillBounds.first; itr != skillBounds.second; ++itr)
+        if (itr->second->skillId == skillId)
+            return true;
+
+    return false;
 }
 
-uint32 CalculatePowerCost (SpellEntry const * spellInfo, Unit const * caster, SpellSchoolMask schoolMask)
+DiminishingGroup GetDiminishingReturnsGroupForSpell(SpellInfo const* spellproto, bool triggered)
 {
-    // Spell drain all exist power on cast (Only paladin lay of Hands)
-    if (spellInfo->AttributesEx & SPELL_ATTR1_DRAIN_ALL_POWER)
-    {
-        // If power type - health drain all
-        if (spellInfo->powerType == POWER_HEALTH)
-            return caster->GetHealth();
-        // Else drain all power
-        if (spellInfo->powerType < MAX_POWERS)
-            return caster->GetPower(Powers(spellInfo->powerType));
-        sLog->outError("CalculateManaCost: Unknown power type '%d' in spell %d", spellInfo->powerType, spellInfo->Id);
-        return 0;
-    }
+    if (spellproto->IsPositive())
+        return DIMINISHING_NONE;
 
-    // Base powerCost
-    int32 powerCost = spellInfo->manaCost;
-    // PCT cost from total amount
-    if (spellInfo->ManaCostPercentage)
-    {
-        switch (spellInfo->powerType)
-        {
-        // health as power used
-        case POWER_HEALTH:
-            powerCost += spellInfo->ManaCostPercentage * caster->GetCreateHealth() / 100;
-            break;
-        case POWER_MANA:
-            powerCost += spellInfo->ManaCostPercentage * caster->GetCreateMana() / 100;
-            break;
-        case POWER_RAGE:
-        case POWER_FOCUS:
-        case POWER_ENERGY:
-        case POWER_HAPPINESS:
-            powerCost += spellInfo->ManaCostPercentage * caster->GetMaxPower(Powers(spellInfo->powerType)) / 100;
-            break;
-        case POWER_RUNE:
-        case POWER_RUNIC_POWER:
-            sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "CalculateManaCost: Not implemented yet!");
-            break;
-        default:
-            sLog->outError("CalculateManaCost: Unknown power type '%d' in spell %d", spellInfo->powerType, spellInfo->Id);
-            return 0;
-        }
-    }
-
-    if (spellInfo->Id == 85696)          // Zealotry
-        return 0;
-
-    SpellSchools school = GetFirstSchoolInMask(schoolMask);
-    // Flat mod from caster auras by spell school
-    powerCost += caster->GetInt32Value(UNIT_FIELD_POWER_COST_MODIFIER + school);
-    // Shiv - costs 20 + weaponSpeed*10 energy (apply only to non-triggered spell with energy cost)
-    if (spellInfo->AttributesEx4 & SPELL_ATTR4_SPELL_VS_EXTEND_COST)
-        powerCost += caster->GetAttackTime(OFF_ATTACK) / 100;
-    // Apply cost mod by spell
-    if (Player* modOwner = caster->GetSpellModOwner())
-        modOwner->ApplySpellMod(spellInfo->Id, SPELLMOD_COST, powerCost);
-
-    if (spellInfo->Attributes & SPELL_ATTR0_LEVEL_DAMAGE_CALCULATION)
-        powerCost = int32(powerCost / (1.117f * spellInfo->spellLevel / caster->getLevel() - 0.1327f));
-
-    // PCT mod from user auras by school
-    powerCost = int32(powerCost * (1.0f + caster->GetFloatValue(UNIT_FIELD_POWER_COST_MULTIPLIER + school)));
-    if (powerCost < 0)
-        powerCost = 0;
-    return powerCost;
-}
-
-Unit* GetTriggeredSpellCaster (SpellEntry const * spellInfo, Unit * caster, Unit * target)
-{
     for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
     {
-        if (SpellTargetType[spellInfo->EffectImplicitTargetA[i]] == TARGET_TYPE_UNIT_TARGET || SpellTargetType[spellInfo->EffectImplicitTargetB[i]] == TARGET_TYPE_UNIT_TARGET || SpellTargetType[spellInfo->EffectImplicitTargetA[i]] == TARGET_TYPE_CHANNEL || SpellTargetType[spellInfo->EffectImplicitTargetB[i]] == TARGET_TYPE_CHANNEL || SpellTargetType[spellInfo->EffectImplicitTargetA[i]] == TARGET_TYPE_DEST_TARGET || SpellTargetType[spellInfo->EffectImplicitTargetB[i]] == TARGET_TYPE_DEST_TARGET)
-            return caster;
+        if (spellproto->Effects[i].ApplyAuraName == SPELL_AURA_MOD_TAUNT)
+            return DIMINISHING_TAUNT;
     }
-    return target;
-}
 
-AuraState GetSpellAuraState (SpellEntry const * spellInfo)
-{
-    // Seals
-    if (IsSealSpell(spellInfo))
-        return AURA_STATE_JUDGEMENT;
-
-    // Conflagrate aura state on Immolate
-    if (spellInfo->SpellFamilyName == SPELLFAMILY_WARLOCK && (spellInfo->SpellFamilyFlags[0] & 4))
-        return AURA_STATE_CONFLAGRATE;
-
-    // Faerie Fire (druid versions)
-    if (spellInfo->SpellFamilyName == SPELLFAMILY_DRUID && spellInfo->SpellFamilyFlags[0] & 0x400)
-        return AURA_STATE_FAERIE_FIRE;
-
-    // Sting (hunter's pet ability)
-    if (spellInfo->Category == 1133)
-        return AURA_STATE_FAERIE_FIRE;
-
-    // Victorious
-    if (spellInfo->SpellFamilyName == SPELLFAMILY_WARRIOR && spellInfo->SpellFamilyFlags[1] & 0x00040000)
-        return AURA_STATE_WARRIOR_VICTORY_RUSH;
-
-    // Swiftmend state on Regrowth & Rejuvenation
-    if (spellInfo->SpellFamilyName == SPELLFAMILY_DRUID && spellInfo->SpellFamilyFlags[0] & 0x50)
-        return AURA_STATE_SWIFTMEND;
-
-    // Deadly poison aura state
-    if (spellInfo->SpellFamilyName == SPELLFAMILY_ROGUE && spellInfo->SpellFamilyFlags[0] & 0x10000)
-        return AURA_STATE_DEADLY_POISON;
-
-    // Enrage aura state
-    if (spellInfo->Dispel == DISPEL_ENRAGE)
-        return AURA_STATE_ENRAGE;
-
-    // Bleeding aura state
-    if (GetAllSpellMechanicMask(spellInfo) & 1 << MECHANIC_BLEED)
-        return AURA_STATE_BLEEDING;
-
-    if (GetSpellSchoolMask(spellInfo) & SPELL_SCHOOL_MASK_FROST)
+    // Explicit Diminishing Groups
+    switch (spellproto->SpellFamilyName)
     {
-        for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+        case SPELLFAMILY_GENERIC:
         {
-            if (spellInfo->EffectApplyAuraName[i] == SPELL_AURA_MOD_STUN || spellInfo->EffectApplyAuraName[i] == SPELL_AURA_MOD_ROOT)
-                return AURA_STATE_FROZEN;
+            // Pet charge effects (Infernal Awakening, Demon Charge)
+            if (spellproto->SpellVisual[0] == 2816 && spellproto->SpellIconID == 15)
+                return DIMINISHING_CONTROLLED_STUN;
+            // Gnaw
+            else if (spellproto->Id == 47481)
+                return DIMINISHING_CONTROLLED_STUN;
+            break;
         }
-    }
-    return AURA_STATE_NONE;
-}
-
-SpellSpecific GetSpellSpecific (SpellEntry const * spellInfo)
-{
-    switch (spellInfo->SpellFamilyName)
-    {
-    case SPELLFAMILY_GENERIC:
-    {
-        // Food / Drinks (mostly)
-        if (spellInfo->AuraInterruptFlags & AURA_INTERRUPT_FLAG_NOT_SEATED)
+        // Event spells
+        case SPELLFAMILY_UNK1:
+            return DIMINISHING_NONE;
+        case SPELLFAMILY_MAGE:
         {
-            bool food = false;
-            bool drink = false;
-            for (int i = 0; i < MAX_SPELL_EFFECTS; ++i)
-            {
-                switch (spellInfo->EffectApplyAuraName[i])
-                {
-                // Food
-                case SPELL_AURA_MOD_REGEN:
-                case SPELL_AURA_OBS_MOD_HEALTH:
-                    food = true;
-                    break;
-                    // Drink
-                case SPELL_AURA_MOD_POWER_REGEN:
-                case SPELL_AURA_OBS_MOD_POWER:
-                    drink = true;
-                    break;
-                default:
-                    break;
-                }
-            }
-
-            if (food && drink)
-                return SPELL_SPECIFIC_FOOD_AND_DRINK;
-            else if (food)
-                return SPELL_SPECIFIC_FOOD;
-            else if (drink)
-                return SPELL_SPECIFIC_DRINK;
+            // Frostbite
+            if (spellproto->SpellFamilyFlags[1] & 0x80000000)
+                return DIMINISHING_ROOT;
+            // Shattered Barrier
+            else if (spellproto->SpellVisual[0] == 12297)
+                return DIMINISHING_ROOT;
+            // Deep Freeze
+            else if (spellproto->SpellIconID == 2939 && spellproto->SpellVisual[0] == 9963)
+                return DIMINISHING_CONTROLLED_STUN;
+            // Frost Nova / Freeze (Water Elemental)
+            else if (spellproto->SpellIconID == 193)
+                return DIMINISHING_CONTROLLED_ROOT;
+            // Dragon's Breath
+            else if (spellproto->SpellFamilyFlags[0] & 0x800000)
+                return DIMINISHING_DISORIENT;
+            break;
         }
-        // scrolls effects
-        else
+        case SPELLFAMILY_WARRIOR:
         {
-            uint32 firstSpell = sSpellMgr->GetFirstSpellInChain(spellInfo->Id);
-            switch (firstSpell)
-            {
-            case 8118:          // Strength
-            case 8099:          // Stamina
-            case 8112:          // Spirit
-            case 8096:          // Intellect
-            case 8115:          // Agility
-            case 8091:          // Armor
-                return SPELL_SPECIFIC_SCROLL;
-            case 12880:          // Enrage (Enrage)
-            case 57518:          // Enrage (Wrecking Crew)
-                return SPELL_SPECIFIC_WARRIOR_ENRAGE;
-            }
+            // Improved Hamstring
+            if (spellproto->AttributesEx3 & 0x80000 && spellproto->SpellIconID == 23)
+                return DIMINISHING_ROOT;
+            // Charge Stun (own diminishing)
+            else if (spellproto->SpellFamilyFlags[0] & 0x01000000)
+                return DIMINISHING_CHARGE;
+            break;
         }
-        break;
-    }
-    case SPELLFAMILY_MAGE:
-    {
-        // family flags 18(Molten), 25(Frost/Ice), 28(Mage)
-        if (spellInfo->SpellFamilyFlags[0] & 0x12040000)
-            return SPELL_SPECIFIC_MAGE_ARMOR;
-
-        // Arcane brillance and Arcane intelect (normal check fails because of flags difference)
-        if (spellInfo->SpellFamilyFlags[0] & 0x400)
-            return SPELL_SPECIFIC_MAGE_ARCANE_BRILLANCE;
-
-        if ((spellInfo->SpellFamilyFlags[0] & 0x1000000) && spellInfo->EffectApplyAuraName[0] == SPELL_AURA_MOD_CONFUSE)
-            return SPELL_SPECIFIC_MAGE_POLYMORPH;
-
-        break;
-    }
-    case SPELLFAMILY_WARRIOR:
-    {
-        if (spellInfo->Id == 12292)          // Death Wish
-            return SPELL_SPECIFIC_WARRIOR_ENRAGE;
-
-        break;
-    }
-    case SPELLFAMILY_WARLOCK:
-    {
-        // only warlock curses have this
-        if (spellInfo->Dispel == DISPEL_CURSE)
-            return SPELL_SPECIFIC_CURSE;
-
-        // Warlock (Demon Armor | Demon Skin | Fel Armor)
-        if (spellInfo->SpellFamilyFlags[1] & 0x20000020 || spellInfo->SpellFamilyFlags[2] & 0x00000010)
-            return SPELL_SPECIFIC_WARLOCK_ARMOR;
-
-        //seed of corruption and corruption
-        if (spellInfo->SpellFamilyFlags[1] & 0x10 || spellInfo->SpellFamilyFlags[0] & 0x2)
-            return SPELL_SPECIFIC_WARLOCK_CORRUPTION;
-        break;
-    }
-    case SPELLFAMILY_PRIEST:
-    {
-        // Divine Spirit and Prayer of Spirit
-        if (spellInfo->SpellFamilyFlags[0] & 0x20)
-            return SPELL_SPECIFIC_PRIEST_DIVINE_SPIRIT;
-
-        break;
-    }
-    case SPELLFAMILY_HUNTER:
-    {
-        // only hunter stings have this
-        if (spellInfo->Dispel == DISPEL_POISON)
-            return SPELL_SPECIFIC_STING;
-
-        // only hunter aspects have this (but not all aspects in hunter family)
-        if (spellInfo->SpellFamilyFlags.HasFlag(0x00380000, 0x00440000, 0x00001010))
-            return SPELL_SPECIFIC_ASPECT;
-
-        break;
-    }
-    case SPELLFAMILY_PALADIN:
-    {
-        if (IsSealSpell(spellInfo))
-            return SPELL_SPECIFIC_SEAL;
-
-        if (spellInfo->SpellFamilyFlags[0] & 0x00002190)
-            return SPELL_SPECIFIC_HAND;
-
-        // Judgement, Judgement of Truth, Judgement of Righteoussness, Judgement of Light
-        if (spellInfo->Id == 20271 || spellInfo->Id == 31804 || spellInfo->Id == 20187 || spellInfo->Id == 54158)
-            return SPELL_SPECIFIC_JUDGEMENT;
-
-        // only paladin auras have this (for palaldin class family)
-        if (spellInfo->SpellFamilyFlags[2] & 0x00000020)
-            return SPELL_SPECIFIC_AURA;
-
-        break;
-    }
-    case SPELLFAMILY_SHAMAN:
-    {
-        if (IsElementalShield(spellInfo))
-            return SPELL_SPECIFIC_ELEMENTAL_SHIELD;
-
-        break;
-    }
-
-    case SPELLFAMILY_DEATHKNIGHT:
-        if (spellInfo->Id == 48266 || spellInfo->Id == 48263 || spellInfo->Id == 48265)
-            //if (spellInfo->Category == 47)
-            return SPELL_SPECIFIC_PRESENCE;
-        break;
-    }
-
-    for (int i = 0; i < MAX_SPELL_EFFECTS; ++i)
-    {
-        if (spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AURA)
+        case SPELLFAMILY_WARLOCK:
         {
-            switch (spellInfo->EffectApplyAuraName[i])
-            {
-            case SPELL_AURA_MOD_CHARM:
-            case SPELL_AURA_MOD_POSSESS_PET:
-            case SPELL_AURA_MOD_POSSESS:
-            case SPELL_AURA_AOE_CHARM:
-                return SPELL_SPECIFIC_CHARM;
-            case SPELL_AURA_TRACK_CREATURES:
-            case SPELL_AURA_TRACK_RESOURCES:
-            case SPELL_AURA_TRACK_STEALTHED:
-                return SPELL_SPECIFIC_TRACKER;
-            case SPELL_AURA_PHASE:
-                return SPELL_SPECIFIC_PHASE;
-            }
+            // Death Coil
+            if (spellproto->SpellFamilyFlags[0] & 0x80000)
+                return DIMINISHING_HORROR;
+            // Seduction
+            else if (spellproto->SpellFamilyFlags[1] & 0x10000000)
+                return DIMINISHING_FEAR;
+            break;
         }
+        case SPELLFAMILY_PRIEST:
+        {
+            // Psychic Horror
+            if (spellproto->SpellFamilyFlags[2] & 0x2000)
+                return DIMINISHING_HORROR;
+            break;
+        }
+        case SPELLFAMILY_DRUID:
+        {
+            // Pounce
+            if (spellproto->SpellFamilyFlags[0] & 0x20000)
+                return DIMINISHING_OPENING_STUN;
+            // Cyclone
+            else if (spellproto->SpellFamilyFlags[1] & 0x20)
+                return DIMINISHING_CYCLONE;
+            // Entangling Roots
+            // Nature's Grasp
+            else if (spellproto->SpellFamilyFlags[0] & 0x00000200)
+                return DIMINISHING_CONTROLLED_ROOT;
+            break;
+        }
+        case SPELLFAMILY_ROGUE:
+        {
+            // Gouge
+            if (spellproto->SpellFamilyFlags[0] & 0x8)
+                return DIMINISHING_DISORIENT;
+            // Blind
+            else if (spellproto->SpellFamilyFlags[0] & 0x1000000)
+                return DIMINISHING_FEAR;
+            // Cheap Shot
+            else if (spellproto->SpellFamilyFlags[0] & 0x400)
+                return DIMINISHING_OPENING_STUN;
+            break;
+        }
+        case SPELLFAMILY_HUNTER:
+        {
+            // Scatter Shot (own diminishing)
+            if ((spellproto->SpellFamilyFlags[0] & 0x40000) && spellproto->SpellIconID == 132)
+                return DIMINISHING_SCATTER_SHOT;
+            // Entrapment (own diminishing)
+            else if (spellproto->SpellVisual[0] == 7484 && spellproto->SpellIconID == 20)
+                return DIMINISHING_ENTRAPMENT;
+            // Wyvern Sting mechanic is MECHANIC_SLEEP but the diminishing is DIMINISHING_DISORIENT
+            else if ((spellproto->SpellFamilyFlags[1] & 0x1000) && spellproto->SpellIconID == 1721)
+                return DIMINISHING_DISORIENT;
+            // Freezing Arrow
+            else if (spellproto->SpellFamilyFlags[0] & 0x8)
+                return DIMINISHING_DISORIENT;
+            break;
+        }
+        case SPELLFAMILY_PALADIN:
+        {
+            // Turn Evil
+            if ((spellproto->SpellFamilyFlags[1] & 0x804000) && spellproto->SpellIconID == 309)
+                return DIMINISHING_FEAR;
+            break;
+        }
+        case SPELLFAMILY_DEATHKNIGHT:
+        {
+            // Hungering Cold (no flags)
+            if (spellproto->SpellIconID == 2797)
+                return DIMINISHING_DISORIENT;
+            break;
+        }
+        default:
+            break;
     }
 
-    return SPELL_SPECIFIC_NORMAL;
-}
+    // Lastly - Set diminishing depending on mechanic
+    uint32 mechanic = spellproto->GetAllEffectsMechanicMask();
+    if (mechanic & (1 << MECHANIC_CHARM))
+        return DIMINISHING_MIND_CONTROL;
+    if (mechanic & (1 << MECHANIC_SILENCE))
+        return DIMINISHING_SILENCE;
+    if (mechanic & (1 << MECHANIC_SLEEP))
+        return DIMINISHING_SLEEP;
+    if (mechanic & ((1 << MECHANIC_SAPPED) | (1 << MECHANIC_POLYMORPH) | (1 << MECHANIC_SHACKLE)))
+        return DIMINISHING_DISORIENT;
+    // Mechanic Knockout, except Blast Wave
+    if (mechanic & (1 << MECHANIC_KNOCKOUT) && spellproto->SpellIconID != 292)
+        return DIMINISHING_DISORIENT;
+    if (mechanic & (1 << MECHANIC_DISARM))
+        return DIMINISHING_DISARM;
+    if (mechanic & (1 << MECHANIC_FEAR))
+        return DIMINISHING_FEAR;
+    if (mechanic & (1 << MECHANIC_STUN))
+        return triggered ? DIMINISHING_STUN : DIMINISHING_CONTROLLED_STUN;
+    if (mechanic & (1 << MECHANIC_BANISH))
+        return DIMINISHING_BANISH;
+    if (mechanic & (1 << MECHANIC_ROOT))
+        return triggered ? DIMINISHING_ROOT : DIMINISHING_CONTROLLED_ROOT;
 
-// target not allow have more one spell specific from same caster
-bool IsSingleFromSpellSpecificPerCaster (SpellSpecific spellSpec1, SpellSpecific spellSpec2)
-{
-    switch (spellSpec1)
-    {
-    case SPELL_SPECIFIC_SEAL:
-    case SPELL_SPECIFIC_HAND:
-    case SPELL_SPECIFIC_AURA:
-    case SPELL_SPECIFIC_STING:
-    case SPELL_SPECIFIC_CURSE:
-    case SPELL_SPECIFIC_ASPECT:
-    case SPELL_SPECIFIC_JUDGEMENT:
-    case SPELL_SPECIFIC_WARLOCK_CORRUPTION:
-        return spellSpec1 == spellSpec2;
-    default:
-        return false;
-    }
-}
-
-bool IsSingleFromSpellSpecificPerTarget (SpellSpecific spellSpec1, SpellSpecific spellSpec2)
-{
-    switch (spellSpec1)
-    {
-    case SPELL_SPECIFIC_PHASE:
-    case SPELL_SPECIFIC_TRACKER:
-    case SPELL_SPECIFIC_WARLOCK_ARMOR:
-    case SPELL_SPECIFIC_MAGE_ARMOR:
-    case SPELL_SPECIFIC_ELEMENTAL_SHIELD:
-    case SPELL_SPECIFIC_MAGE_POLYMORPH:
-    case SPELL_SPECIFIC_PRESENCE:
-    case SPELL_SPECIFIC_CHARM:
-    case SPELL_SPECIFIC_SCROLL:
-    case SPELL_SPECIFIC_WARRIOR_ENRAGE:
-    case SPELL_SPECIFIC_MAGE_ARCANE_BRILLANCE:
-    case SPELL_SPECIFIC_PRIEST_DIVINE_SPIRIT:
-        return spellSpec1 == spellSpec2;
-    case SPELL_SPECIFIC_FOOD:
-        return spellSpec2 == SPELL_SPECIFIC_FOOD || spellSpec2 == SPELL_SPECIFIC_FOOD_AND_DRINK;
-    case SPELL_SPECIFIC_DRINK:
-        return spellSpec2 == SPELL_SPECIFIC_DRINK || spellSpec2 == SPELL_SPECIFIC_FOOD_AND_DRINK;
-    case SPELL_SPECIFIC_FOOD_AND_DRINK:
-        return spellSpec2 == SPELL_SPECIFIC_FOOD || spellSpec2 == SPELL_SPECIFIC_DRINK || spellSpec2 == SPELL_SPECIFIC_FOOD_AND_DRINK;
-    default:
-        return false;
-    }
+    return DIMINISHING_NONE;
 }
 
 bool IsPositiveTarget (uint32 targetA, uint32 targetB)
