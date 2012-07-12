@@ -127,13 +127,6 @@ public:
         mob_wisp_invisAI(Creature *c) :
                 ScriptedAI(c) {
             Creaturetype = delay = spell = spell2 = 0;
-            //that's hack but there are no info about range of this spells in dbc
-            SpellEntry *wisp = GET_SPELL(SPELL_WISP_BLUE);
-            if (wisp)
-                wisp->rangeIndex = 6; //100 yards
-            SpellEntry *port = GET_SPELL(SPELL_WISP_FLIGHT_PORT);
-            if (port)
-                port->rangeIndex = 6;
         }
 
         uint32 Creaturetype;

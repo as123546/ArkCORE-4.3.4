@@ -1496,7 +1496,7 @@ class spell_taldaram_flame_ball_visual : public SpellScriptLoader
                     return;
 
                 // SPELL_FLAME_SPHERE_SPAWN_EFFECT
-                if (GetSpellProto()->Id == SPELL_FLAME_SPHERE_SPAWN_EFFECT)
+                if (GetSpellInfo()->Id == SPELL_FLAME_SPHERE_SPAWN_EFFECT)
                 {
                     target->CastSpell(target, SPELL_BALL_OF_FLAMES, true);
                     target->AI()->DoAction(ACTION_FLAME_BALL_CHASE);

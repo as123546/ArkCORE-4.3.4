@@ -484,7 +484,7 @@ class spell_mojo_volley_trigger : public SpellScriptLoader
             void PeriodicTick(AuraEffect const* /*aurEff*/)
             {
                 PreventDefaultAction();
-                uint32 triggerSpellId = GetSpellProto()->EffectTriggerSpell[0];
+                uint32 triggerSpellId = GetSpellInfo()->Effects[0].TriggerSpell;
 
                 if (Unit* caster = GetCaster())
                     caster->CastCustomSpell(triggerSpellId, SPELLVALUE_MAX_TARGETS, irand(1, 2), caster, true);

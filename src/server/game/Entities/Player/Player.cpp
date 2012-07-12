@@ -3837,7 +3837,7 @@ bool Player::AddTalent (uint32 spell_id, uint8 spec, bool learning)
 
 bool Player::addSpell (uint32 spell_id, bool active, bool learning, bool dependent, bool disabled)
 {
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spell_id);
+    SpellInfo const *spellInfo = sSpellMgr.LookupEntry(spell_id);
     if (!spellInfo)
     {
         // do character spell book cleanup (all characters)

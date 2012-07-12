@@ -288,7 +288,7 @@ public:
         }
 
         void EnfeebleHealthEffect() {
-            const SpellEntry *info = GetSpellStore()->LookupEntry(
+            const SpellInfo *info = GetSpellStore()->LookupEntry(
                     SPELL_ENFEEBLE_EFFECT);
             if (!info)
                 return;

@@ -205,7 +205,7 @@ public:
         {
             DoScriptText(SAY_DEATH, me);
 
-            AchievementEntry const *achievSnakes = GetAchievementStore()->LookupEntry(ACHIEV_SNAKES);
+            AchievementEntry const *achievSnakes = sAchievementStore.LookupEntry(ACHIEV_SNAKES);
             if (achievSnakes && IsHeroic())
             {
                 for (std::set<uint64>::const_iterator itr = lUnWrappedPlayers.begin(); itr != lUnWrappedPlayers.end(); ++itr)

@@ -77,15 +77,15 @@ public:
 
     int32 GetMiscValueB () const
     {
-        return m_spellProto->EffectMiscValueB[m_effIndex];
+        return m_spellInfo->Effects[m_effIndex].MiscValueB;
     }
     int32 GetMiscValue () const
     {
-        return m_spellProto->EffectMiscValue[m_effIndex];
+        return m_spellInfo->Effects[m_effIndex].MiscValue;
     }
     AuraType GetAuraType () const
     {
-        return (AuraType) m_spellProto->EffectApplyAuraName[m_effIndex];
+        return (AuraType) m_spellInfo->Effects[m_effIndex].ApplyAuraName;
     }
     int32 GetAmount () const
     {
@@ -379,8 +379,8 @@ namespace Trinity
         }
         bool operator() (AuraEffect * aurEffA, AuraEffect * aurEffB) const
         {
-            SpellInfo const * spellProtoA = aurEffA->GetSpellProto();
-            SpellInfo const * spellProtoB = aurEffB->GetSpellProto();
+            SpellInfo const * spellProtoA = aurEffA->GetSpellInfo();
+            SpellInfo const * spellProtoB = aurEffB->GetSpellInfo();
 
             // Wards
             if ((spellProtoA->SpellFamilyName == SPELLFAMILY_MAGE) || (spellProtoA->SpellFamilyName == SPELLFAMILY_WARLOCK))

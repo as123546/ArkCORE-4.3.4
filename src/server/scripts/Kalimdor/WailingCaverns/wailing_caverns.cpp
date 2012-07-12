@@ -312,7 +312,7 @@ public:
                             eventTimer = 3000;
                             if (Creature* naralex = pInstance->instance->GetCreature(pInstance->GetData64(DATA_NARALEX))) {
                                 AchievementEntry const *AchievWC =
-                                        GetAchievementStore()->LookupEntry(
+                                        sAchievementStore.LookupEntry(
                                                 ACHIEVEMENT_WAILING_CAVERNS);
                                 if (AchievWC) {
                                     Map* pMap = me->GetMap();

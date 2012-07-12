@@ -225,7 +225,7 @@ void UnitAI::FillAISpellInfo()
 
     for (uint32 i = 0; i < sSpellMgr->GetSpellInfoStoreSize(); ++i, ++AIInfo)
     {
-        spellInfo = GetSpellStore()->LookupEntry(i);
+        spellInfo = sSpellMgr->GetSpellInfo(i);
         if (!spellInfo)
             continue;
 
@@ -239,24 +239,24 @@ void UnitAI::FillAISpellInfo()
         if (AIInfo->cooldown < spellInfo->RecoveryTime)
             AIInfo->cooldown = spellInfo->RecoveryTime;
 
-        if (!GetSpellMaxRange(spellInfo, false))
+        if (!spellInfo->GetMaxRange(false))
             UPDATE_TARGET(AITARGET_SELF)
         else
         {
             for (uint32 j = 0; j < MAX_SPELL_EFFECTS; ++j)
             {
-                uint32 targetType = spellInfo->EffectImplicitTargetA[j];
+                uint32 targetType = spellInfo->Effects[j].TargetA;
 
                 if (targetType == TARGET_UNIT_TARGET_ENEMY || targetType == TARGET_DST_TARGET_ENEMY)
                     UPDATE_TARGET(AITARGET_VICTIM)
                 else if (targetType == TARGET_UNIT_AREA_ENEMY_DST)
                     UPDATE_TARGET(AITARGET_ENEMY)
 
-                if (spellInfo->Effect[j] == SPELL_EFFECT_APPLY_AURA)
+                if (spellInfo->Effects[j].Effect == SPELL_EFFECT_APPLY_AURA)
                 {
                     if (targetType == TARGET_UNIT_TARGET_ENEMY)
                         UPDATE_TARGET(AITARGET_DEBUFF)
-                    else if (IsPositiveSpell(i))
+                    else if (spellInfo->IsPositive())
                         UPDATE_TARGET(AITARGET_BUFF)
                 }
             }
