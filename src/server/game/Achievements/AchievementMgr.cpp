@@ -169,7 +169,7 @@ bool AchievementCriteriaData::IsValid(AchievementCriteriaEntry const* criteria)
     case ACHIEVEMENT_CRITERIA_DATA_TYPE_S_AURA:
     case ACHIEVEMENT_CRITERIA_DATA_TYPE_T_AURA:
     {
-        SpellEntry const* spellEntry = sSpellStore.LookupEntry(aura.spell_id);
+        SpellInfo const* spellEntry = sSpellMgr->GetSpellInfo(aura.spell_id);
         if (!spellEntry)
         {
             sLog->outErrorDb("Table `achievement_criteria_data` (Entry: %u Type: %u) for data type %s (%u) has wrong spell id in value1 (%u), ignored.", criteria->ID, criteria->requiredType, (

@@ -27,6 +27,7 @@
 #include "SpellAuras.h"
 #include "SpellAuraEffects.h"
 #include "SpellMgr.h"
+#include "SpellInfo.h"
 #include "CreatureAIImpl.h"
 
 void UnitAI::AttackStart(Unit *victim)

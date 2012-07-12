@@ -2205,7 +2205,7 @@ void Creature::_AddCreatureCategoryCooldown (uint32 category, time_t apply_time)
 
 void Creature::AddCreatureSpellCooldown (uint32 spellid)
 {
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellid);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
     if (!spellInfo)
         return;
 

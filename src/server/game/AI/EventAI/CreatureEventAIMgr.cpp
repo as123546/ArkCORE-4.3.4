@@ -31,6 +31,8 @@
 #include "ObjectDefines.h"
 #include "GridDefines.h"
 #include "ConditionMgr.h"
+#include "SpellMgr.h"
+#include "SpellInfo.h"
 
 // -------------------
 void CreatureEventAIMgr::LoadCreatureEventAI_Texts()

@@ -5041,7 +5041,7 @@ void ObjectMgr::LoadSpellScriptNames ()
             spellId = -spellId;
         }
 
-        SpellEntry const* spellEntry = sSpellStore.LookupEntry(spellId);
+        SpellInfo const* spellEntry = sSpellMgr->GetSpellInfo(spellId);
         if (!spellEntry)
         {
             sLog->outErrorDb("Scriptname:`%s` spell (spell_id:%d) does not exist in `Spell.dbc`.", scriptName, fields[0].GetInt32());
@@ -7316,7 +7316,7 @@ void ObjectMgr::LoadNPCSpellClickSpells ()
             const_cast<CreatureInfo*>(cInfo)->npcflag |= UNIT_NPC_FLAG_SPELLCLICK;
 
         uint32 spellid = fields[1].GetUInt32();
-        SpellEntry const *spellinfo = sSpellStore.LookupEntry(spellid);
+        SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
         if (!spellinfo)
         {
             sLog->outErrorDb("Table npc_spellclick_spells references unknown spellid %u. Skipping entry.", spellid);

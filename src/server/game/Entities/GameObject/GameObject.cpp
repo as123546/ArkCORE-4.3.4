@@ -1623,7 +1623,7 @@ void GameObject::Use (Unit* user)
     if (!spellId)
         return;
 
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
     if (!spellInfo)
     {
         if (user->GetTypeId() != TYPEID_PLAYER || !sOutdoorPvPMgr->HandleCustomSpell((Player*) user, spellId, this))

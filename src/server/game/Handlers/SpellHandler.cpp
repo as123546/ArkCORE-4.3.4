@@ -346,7 +346,7 @@ void WorldSession::HandleCastSpellOpcode (WorldPacket& recvPacket)
         return;
     }
 
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
 
     if (!spellInfo)
     {
@@ -431,7 +431,7 @@ void WorldSession::HandleCancelAuraOpcode (WorldPacket& recvPacket)
     uint32 spellId;
     recvPacket >> spellId;
 
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
     if (!spellInfo)
         return;
 
@@ -465,7 +465,7 @@ void WorldSession::HandlePetCancelAuraOpcode (WorldPacket& recvPacket)
     recvPacket >> guid;
     recvPacket >> spellId;
 
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
     if (!spellInfo)
     {
         sLog->outError("WORLD: unknown PET spell id %u", spellId);

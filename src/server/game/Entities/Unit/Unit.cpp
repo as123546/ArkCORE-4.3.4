@@ -930,7 +930,7 @@ void Unit::CastStop (uint32 except_spellid)
 
 void Unit::CastSpell (Unit* Victim, uint32 spellId, bool triggered, Item *castItem, AuraEffect const * triggeredByAura, uint64 originalCaster)
 {
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
 
     if (!spellInfo)
     {
@@ -989,7 +989,7 @@ void Unit::CastCustomSpell (uint32 spellId, SpellValueMod mod, int32 value, Unit
 
 void Unit::CastCustomSpell (uint32 spellId, CustomSpellValues const &value, Unit* Victim, bool triggered, Item *castItem, AuraEffect const * triggeredByAura, uint64 originalCaster)
 {
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
     if (!spellInfo)
     {
         sLog->outError("CastSpell: unknown spell id %i by caster: %s %u)", spellId, (GetTypeId() == TYPEID_PLAYER ? "player (GUID:" : "creature (Entry:"), (GetTypeId() == TYPEID_PLAYER ? GetGUIDLow() : GetEntry()));
@@ -1019,7 +1019,7 @@ void Unit::CastCustomSpell (uint32 spellId, CustomSpellValues const &value, Unit
 // used for scripting
 void Unit::CastSpell (float x, float y, float z, uint32 spellId, bool triggered, Item *castItem, AuraEffect const * triggeredByAura, uint64 originalCaster, Unit* OriginalVictim)
 {
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
 
     if (!spellInfo)
     {
@@ -1049,7 +1049,7 @@ void Unit::CastSpell (GameObject *go, uint32 spellId, bool triggered, Item *cast
     if (!go)
         return;
 
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
 
     if (!spellInfo)
     {
@@ -1080,7 +1080,7 @@ void Unit::CastSpell (GameObject *go, uint32 spellId, bool triggered, Item *cast
 // Obsolete func need remove, here only for comotability vs another patches
 uint32 Unit::SpellNonMeleeDamageLog (Unit *pVictim, uint32 spellID, uint32 damage)
 {
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellID);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
     SpellNonMeleeDamage damageInfo(this, pVictim, spellInfo->Id, spellInfo->SchoolMask);
     damage = SpellDamageBonus(pVictim, spellInfo, 0, damage, SPELL_DIRECT_DAMAGE);
     CalculateSpellDamageTaken(&damageInfo, damage, spellInfo);
@@ -14922,7 +14922,7 @@ void CharmInfo::InitPossessCreateSpells ()
         for (uint32 i = 0; i < CREATURE_MAX_SPELLS; ++i)
         {
             uint32 spellId = m_unit->ToCreature()->m_spells[i];
-            SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
+            SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
             if (spellInfo && spellInfo->Attributes & SPELL_ATTR0_CASTABLE_WHILE_DEAD)
                 spellId = 0;
             if (IsPassiveSpell(spellId))
@@ -14946,7 +14946,7 @@ void CharmInfo::InitCharmCreateSpells ()
     for (uint32 x = 0; x < MAX_SPELL_CHARM; ++x)
     {
         uint32 spellId = m_unit->ToCreature()->m_spells[x];
-        SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
+        SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
         if (spellInfo && spellInfo->Attributes & SPELL_ATTR0_CASTABLE_WHILE_DEAD)
             spellId = 0;
 
@@ -17307,7 +17307,7 @@ Aura * Unit::AddAura (uint32 spellId, Unit *target)
     if (!target)
         return NULL;
 
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
     if (!spellInfo)
         return NULL;
 

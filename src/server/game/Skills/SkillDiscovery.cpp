@@ -31,6 +31,7 @@
 #include "SkillDiscovery.h"
 #include "SpellMgr.h"
 #include "Player.h"
+#include "SpellInfo.h"
 #include <map>
 
 struct SkillDiscoveryEntry
@@ -147,9 +148,9 @@ void LoadSkillDiscoveryTable ()
         sLog->outErrorDb("Some items can't be successfully discovered: have in chance field value < 0.000001 in `skill_discovery_template` DB table . List:\n%s", ssNonDiscoverableEntries.str().c_str());
 
     // report about empty data for explicit discovery spells
-    for (uint32 spell_id = 1; spell_id < sSpellStore.GetNumRows(); ++spell_id)
+    for (uint32 spell_id = 1; spell_id < sSpellMgr->GetSpellInfoStoreSize(); ++spell_id)
     {
-        SpellEntry const* spellEntry = sSpellStore.LookupEntry(spell_id);
+        SpellInfo const* spellEntry = sSpellMgr->GetSpellInfo(spell_id);
         if (!spellEntry)
             continue;
 

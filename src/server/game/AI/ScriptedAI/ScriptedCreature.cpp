@@ -186,7 +186,7 @@ void ScriptedAI::DoPlaySoundToSet(WorldObject* pSource, uint32 uiSoundId)
     if (!pSource)
         return;
 
-    if (!GetSoundEntriesStore()->LookupEntry(uiSoundId))
+    if (!sSoundEntriesStore()->LookupEntry(uiSoundId))
     {
         sLog->outError("TSCR: Invalid soundId %u used in DoPlaySoundToSet (Source: TypeId %u, GUID %u)", uiSoundId, pSource->GetTypeId(), pSource->GetGUIDLow());
         return;

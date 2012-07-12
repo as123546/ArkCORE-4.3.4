@@ -6458,7 +6458,7 @@ bool Player::UpdateCraftSkill (uint32 spellid)
             uint32 SkillValue = GetPureSkillValue(_spell_idx->second->skillId);
 
             // Alchemy Discoveries here
-            SpellEntry const* spellEntry = sSpellStore.LookupEntry(spellid);
+            SpellInfo const* spellEntry = sSpellMgr->GetSpellInfo(spellid);
             if (spellEntry && spellEntry->Mechanic == MECHANIC_DISCOVERY)
             {
                 if (uint32 discoveredSpell = GetSkillDiscoverySpell(_spell_idx->second->skillId, spellid, this))
@@ -20355,7 +20355,7 @@ void Player::VehicleSpellInitialize ()
         if (!spellId)
             continue;
 
-        SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
+        SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
         if (!spellInfo)
             continue;
 
