@@ -639,12 +639,6 @@ void Guild::Member::SaveToDB (SQLTransaction& trans) const
     stmt->setUInt8(2, m_rankId);
     stmt->setString(3, m_publicNote);
     stmt->setString(4, m_officerNote);
-    stmt->setUInt32(5, professions[0].level);
-    stmt->setUInt32(6, professions[0].skillID);
-    stmt->setUInt32(7, professions[0].rank);
-    stmt->setUInt32(8, professions[1].level);
-    stmt->setUInt32(9, professions[1].skillID);
-    stmt->setUInt32(10, professions[1].rank);
     CharacterDatabase.ExecuteOrAppend(trans, stmt);
 }
 
@@ -683,9 +677,6 @@ bool Guild::Member::LoadFromDB(Field* fields)
              fields[26].GetUInt16(),
              fields[27].GetUInt32());
     m_logoutTime    = fields[28].GetUInt32();
-
-    SetProfession(0, fields[29].GetUInt32(), fields[30].GetUInt32(), fields[31].GetUInt32());
-    SetProfession(1, fields[32].GetUInt32(), fields[33].GetUInt32(), fields[34].GetUInt32());
 
     if (!CheckStats())
         return false;
@@ -1352,6 +1343,7 @@ void Guild::OnPlayerStatusChange (Player* plr, uint32 flag, bool state)
         else
             pMember->RemFlag(flag);
     }
+    HandleRoster();
 }
 
 // HANDLE CLIENT COMMANDS
@@ -1452,7 +1444,7 @@ void Guild::HandleRoster (WorldSession* session /*= NULL*/)
    // This is to make client refresh the list
    //SendUpdateRoster(session);
 
-    sLog->outDebug(LOG_FILTER_GUILD, "WORLD: Sent (SMSG_GUILD_ROSTER)");
+   sLog->outDebug(LOG_FILTER_GUILD, "WORLD: Sent (SMSG_GUILD_ROSTER)");
 }
 
 void Guild::SetGuildNews(WorldPacket &data)
@@ -1484,7 +1476,7 @@ void Guild::SetGuildNews(WorldPacket &data)
         data << uint32(0);
 }
 
-void Guild::SendGuildRankInfo (WorldSession* session)
+void Guild::SendGuildRankInfo(WorldSession* session)
 {
     WorldPacket data7(SMSG_GUILD_RANK);
     data7 << uint32(_GetRanksSize());
@@ -1498,6 +1490,8 @@ void Guild::SendGuildRankInfo (WorldSession* session)
         session->SendPacket(&data7);
     else
         BroadcastPacket(&data7);
+    
+    sLog->outDebug(LOG_FILTER_GUILD, "WORLD: Sent (SMSG_GUILD_RANK)");
 }
 
 void Guild::HandleQuery (WorldSession *session)
@@ -2165,13 +2159,6 @@ void Guild::SendLoginInfo (WorldSession* session)
 // Loading methods
 bool Guild::LoadFromDB (Field* fields)
 {
-    /*
-     //          0          1       2             3              4              5              6
-     "SELECT g.guildid, g.name, g.leaderguid, g.EmblemStyle, g.EmblemColor, g.BorderStyle, g.BorderColor, "
-     //   7                  8       9       10            11           12                  13  14
-     "g.BackgroundColor, g.info, g.motd, g.createdate, g.BankMoney, COUNT(gbt.guildid), xp, level "
-     "FROM guild g LEFT JOIN guild_bank_tab gbt ON g.guildid = gbt.guildid GROUP BY g.guildid ORDER BY g.guildid ASC", CONNECTION_SYNCH);
-     */
     m_id = fields[0].GetUInt32();
     m_name = fields[1].GetString();
     m_leaderGuid = MAKE_NEW_GUID(fields[2].GetUInt32(), 0, HIGHGUID_PLAYER);
@@ -2180,19 +2167,18 @@ bool Guild::LoadFromDB (Field* fields)
     m_motd = fields[9].GetString();
     m_createdDate = fields[10].GetUInt32();          //64 bits?
     m_bankMoney = fields[11].GetUInt64();
-
-    uint8 purchasedTabs = uint8(fields[12].GetUInt32());
+    m_xp = fields[12].GetUInt64();
+    m_level = fields[13].GetUInt32();
+    m_today_xp = fields[14].GetUInt64();
+    m_xp_cap = fields[15].GetUInt64();
+	
+    uint8 purchasedTabs = uint8(fields[16].GetUInt32());
     if (purchasedTabs > GUILD_BANK_MAX_TABS)
         purchasedTabs = GUILD_BANK_MAX_TABS;
 
     m_bankTabs.resize(purchasedTabs);
     for (uint8 i = 0; i < purchasedTabs; ++i)
         m_bankTabs[i] = new BankTab(m_id, i);
-
-    m_xp = fields[13].GetUInt64();
-    m_level = fields[14].GetUInt32();
-    m_today_xp = fields[15].GetUInt64();
-    m_xp_cap = fields[16].GetUInt64();
 
     if (m_level == 0)
         m_level = 1;
@@ -2452,7 +2438,7 @@ bool Guild::AddMember (const uint64& guid, uint8 rankId)
         if (player->GetGuildId() != 0)
             return false;
     }
-    else if (Player::GetGuildIdFromDB(guid) != 0)
+    else if (Player::GetGuildIdFromGuid(guid) != 0)
         return false;
 
     // Remove all player signs from another petitions

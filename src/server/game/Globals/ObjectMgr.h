@@ -50,16 +50,39 @@
 extern SQLStorage sCreatureStorage;
 extern SQLStorage sCreatureDataAddonStorage;
 extern SQLStorage sCreatureInfoAddonStorage;
-extern SQLStorage sCreatureModelStorage;
 extern SQLStorage sEquipmentStorage;
 extern SQLStorage sGOStorage;
-extern SQLStorage sPageTextStore;
 extern SQLStorage sItemStorage;
-extern SQLStorage sInstanceTemplate;
 
 class Group;
 class ArenaTeam;
 class Item;
+
+// GCC have alternative #pragma pack(N) syntax and old gcc version not support pack(push,N), also any gcc version not support it at some platform
+#if defined(__GNUC__)
+#pragma pack(1)
+#else
+#pragma pack(push,1)
+#endif
+
+struct PageText
+{
+    std::string Text;
+    uint16 NextPage;
+};
+
+// GCC have alternative #pragma pack() syntax and old gcc version not support pack(pop), also any gcc version not support it at some platform
+#if defined(__GNUC__)
+#pragma pack()
+#else
+#pragma pack(pop)
+#endif
+
+// Benchmarked: Faster than UNORDERED_MAP (insert/find)
+typedef std::map<uint32, PageText> PageTextContainer;
+
+// Benchmarked: Faster than std::map (insert/find)
+typedef UNORDERED_MAP<uint16, InstanceTemplate> InstanceTemplateContainer;
 
 struct GameTele
 {
@@ -667,8 +690,8 @@ public:
 
     static CreatureInfo const *GetCreatureTemplate(uint32 id)
     {   return sCreatureStorage.LookupEntry<CreatureInfo>(id);}
-    CreatureModelInfo const *GetCreatureModelInfo(uint32 modelid);
-    CreatureModelInfo const* GetCreatureModelRandomGender(uint32 display_id);
+    CreatureModelInfo const* GetCreatureModelInfo(uint32 modelId);
+    CreatureModelInfo const* GetCreatureModelRandomGender(uint32 &displayID);
     uint32 ChooseDisplayId(uint32 team, const CreatureInfo *cinfo, const CreatureData *data = NULL);
     static void ChooseCreatureFlags(const CreatureInfo *cinfo, uint32& npcflag, uint32& unit_flags, uint32& dynamicflags, const CreatureData *data = NULL);
     EquipmentInfo const *GetEquipmentInfo(uint32 entry);
@@ -694,10 +717,7 @@ public:
         return NULL;
     }
 
-    static InstanceTemplate const* GetInstanceTemplate(uint32 map)
-    {
-        return sInstanceTemplate.LookupEntry<InstanceTemplate>(map);
-    }
+    InstanceTemplate const* GetInstanceTemplate(uint32 mapID);
 
     PetLevelInfo const* GetPetLevelInfo(uint32 creature_id, uint8 level) const;
 
@@ -982,6 +1002,7 @@ public:
     void LoadGameObjectForQuests();
 
     void LoadPageTexts();
+    PageText const* GetPageText(uint32 pageEntry);
 
     void LoadPlayerInfo();
     void LoadPetLevelInfo();
@@ -1285,11 +1306,11 @@ public:
     // for wintergrasp only
     GraveYardMap mGraveYardMap;
 
-    void AddLocaleString(std::string& s, LocaleConstant locale, StringVector& data);
-    inline void GetLocaleString(const StringVector& data, int loc_idx, std::string& value) const
+    static void AddLocaleString(const std::string& s, LocaleConstant locale, StringVector& data);
+    static inline void GetLocaleString(const StringVector& data, int loc_idx, std::string& value)
     {
         if (data.size() > size_t(loc_idx) && !data[loc_idx].empty())
-        value = data[loc_idx];
+            value = data[loc_idx];
     }
 
     CharacterConversionMap factionchange_achievements;
@@ -1386,6 +1407,9 @@ protected:
 
     LocaleConstant DBCLocaleIndex;
 
+    PageTextContainer PageTextStore;
+    InstanceTemplateContainer InstanceTemplateStore;
+
 private:
     void LoadScripts(ScriptsType type);
     void CheckScripts(ScriptsType type, std::set<int32>& ids);
@@ -1428,6 +1452,7 @@ private:
 
     MapObjectGuids mMapObjectGuids;
     CreatureDataMap mCreatureDataMap;
+    CreatureModelContainer CreatureModelStore;
     LinkedRespawnMap mLinkedRespawnMap;
     CreatureLocaleMap mCreatureLocaleMap;
     GameObjectDataMap mGameObjectDataMap;

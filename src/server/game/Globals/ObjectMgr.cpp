@@ -440,7 +440,7 @@ void ObjectMgr::RemoveArenaTeam (uint32 Id)
     mArenaTeamMap.erase(Id);
 }
 
-void ObjectMgr::AddLocaleString (std::string& s, LocaleConstant locale, StringVector& data)
+void ObjectMgr::AddLocaleString(std::string const& s, LocaleConstant locale, StringVector& data)
 {
     if (!s.empty())
     {
@@ -697,8 +697,8 @@ void ObjectMgr::CheckCreatureTemplate (CreatureInfo const* cInfo)
         else if (!displayScaleEntry)
             displayScaleEntry = displayEntry;
 
-        CreatureModelInfo const* minfo = sCreatureModelStorage.LookupEntry<CreatureModelInfo>(cInfo->Modelid1);
-        if (!minfo)
+        CreatureModelInfo const* modelInfo = GetCreatureModelInfo(cInfo->Modelid1);
+        if (!modelInfo)
             sLog->outErrorDb("No model data exist for `Modelid1` = %u listed by creature (Entry: %u).", cInfo->Modelid1, cInfo->Entry);
     }
 
@@ -713,8 +713,8 @@ void ObjectMgr::CheckCreatureTemplate (CreatureInfo const* cInfo)
         else if (!displayScaleEntry)
             displayScaleEntry = displayEntry;
 
-        CreatureModelInfo const* minfo = sCreatureModelStorage.LookupEntry<CreatureModelInfo>(cInfo->Modelid2);
-        if (!minfo)
+        CreatureModelInfo const* modelInfo = GetCreatureModelInfo(cInfo->Modelid2);;
+        if (!modelInfo)
             sLog->outErrorDb("No model data exist for `Modelid2` = %u listed by creature (Entry: %u).", cInfo->Modelid2, cInfo->Entry);
     }
 
@@ -729,8 +729,8 @@ void ObjectMgr::CheckCreatureTemplate (CreatureInfo const* cInfo)
         else if (!displayScaleEntry)
             displayScaleEntry = displayEntry;
 
-        CreatureModelInfo const* minfo = sCreatureModelStorage.LookupEntry<CreatureModelInfo>(cInfo->Modelid3);
-        if (!minfo)
+        CreatureModelInfo const* modelInfo = GetCreatureModelInfo(cInfo->Modelid3);
+        if (!modelInfo)
             sLog->outErrorDb("No model data exist for `Modelid3` = %u listed by creature (Entry: %u).", cInfo->Modelid3, cInfo->Entry);
     }
 
@@ -745,8 +745,8 @@ void ObjectMgr::CheckCreatureTemplate (CreatureInfo const* cInfo)
         else if (!displayScaleEntry)
             displayScaleEntry = displayEntry;
 
-        CreatureModelInfo const* minfo = sCreatureModelStorage.LookupEntry<CreatureModelInfo>(cInfo->Modelid4);
-        if (!minfo)
+        CreatureModelInfo const* modelInfo = GetCreatureModelInfo(cInfo->Modelid4);;
+        if (!modelInfo)
             sLog->outErrorDb("No model data exist for `Modelid4` = %u listed by creature (Entry: %u).", cInfo->Modelid4, cInfo->Entry);
     }
 
@@ -1072,9 +1072,13 @@ void ObjectMgr::LoadEquipmentTemplates ()
     sLog->outString();
 }
 
-CreatureModelInfo const* ObjectMgr::GetCreatureModelInfo (uint32 modelid)
+CreatureModelInfo const* ObjectMgr::GetCreatureModelInfo (uint32 modelId)
 {
-    return sCreatureModelStorage.LookupEntry<CreatureModelInfo>(modelid);
+    CreatureModelContainer::const_iterator itr = CreatureModelStore.find(modelId);
+    if (itr != CreatureModelStore.end())
+        return &(itr->second);
+
+    return NULL;
 }
 
 uint32 ObjectMgr::ChooseDisplayId (uint32 /*team*/, const CreatureInfo *cinfo, const CreatureData *data /*= NULL*/)
@@ -1111,9 +1115,9 @@ void ObjectMgr::ChooseCreatureFlags (const CreatureInfo *cinfo, uint32& npcflag,
     }
 }
 
-CreatureModelInfo const* ObjectMgr::GetCreatureModelRandomGender (uint32 display_id)
+CreatureModelInfo const* ObjectMgr::GetCreatureModelRandomGender(uint32 &displayID)
 {
-    CreatureModelInfo const *minfo = GetCreatureModelInfo(display_id);
+    CreatureModelInfo const* minfo = GetCreatureModelInfo(displayID);
     if (!minfo)
         return NULL;
 
@@ -1122,60 +1126,74 @@ CreatureModelInfo const* ObjectMgr::GetCreatureModelRandomGender (uint32 display
     {
         CreatureModelInfo const *minfo_tmp = GetCreatureModelInfo(minfo->modelid_other_gender);
         if (!minfo_tmp)
-        {
-            sLog->outErrorDb("Model (Entry: %u) has modelid_other_gender %u not found in table `creature_model_info`. ", minfo->modelid, minfo->modelid_other_gender);
-            return minfo;          // not fatal, just use the previous one
-        }
+            sLog->outErrorDb("Model (Entry: %u) has modelid_other_gender %u not found in table `creature_model_info`. ", displayID, minfo->modelid_other_gender);
         else
+        {
+            // Model ID changed
+            displayID = minfo->modelid_other_gender;
             return minfo_tmp;
+        }
     }
-    else
-        return minfo;
+
+    return minfo;
 }
 
 void ObjectMgr::LoadCreatureModelInfo ()
 {
-    sCreatureModelStorage.Load();
+    uint32 oldMSTime = getMSTime();
 
-    // post processing
-    for (uint32 i = 1; i < sCreatureModelStorage.MaxEntry; ++i)
+    QueryResult result = WorldDatabase.Query("SELECT modelid, bounding_radius, combat_reach, gender, modelid_other_gender FROM creature_model_info");
+
+    if (!result)
     {
-        CreatureModelInfo const *minfo = sCreatureModelStorage.LookupEntry<CreatureModelInfo>(i);
-        if (!minfo)
-            continue;
-
-        if (!sCreatureDisplayInfoStore.LookupEntry(minfo->modelid))
-            sLog->outErrorDb("Table `creature_model_info` has model for not existed display id (%u).", minfo->modelid);
-
-        if (minfo->gender > GENDER_NONE)
-        {
-            sLog->outErrorDb("Table `creature_model_info` has wrong gender (%u) for display id (%u).", uint32(minfo->gender), minfo->modelid);
-            const_cast<CreatureModelInfo*>(minfo)->gender = GENDER_MALE;
-        }
-
-        if (minfo->modelid_other_gender && !sCreatureDisplayInfoStore.LookupEntry(minfo->modelid_other_gender))
-        {
-            sLog->outErrorDb("Table `creature_model_info` has not existed alt.gender model (%u) for existed display id (%u).", minfo->modelid_other_gender, minfo->modelid);
-            const_cast<CreatureModelInfo*>(minfo)->modelid_other_gender = 0;
-        }
+        sLog->outString(">> Loaded 0 creature model definitions. DB table `creature_model_info` is empty.");
+        sLog->outString();
+        return;
     }
 
-    sLog->outString(">> Loaded %u creature model based info", sCreatureModelStorage.RecordCount);
+    uint32 count = 0;
+
+    do
+    {
+        Field *fields = result->Fetch();
+
+        uint32 modelId = fields[0].GetUInt32();
+
+        CreatureModelInfo modelInfo;
+
+        modelInfo.bounding_radius      = fields[1].GetFloat();
+        modelInfo.combat_reach         = fields[2].GetFloat();
+        modelInfo.gender               = fields[3].GetUInt8();
+        modelInfo.modelid_other_gender = fields[4].GetUInt32();
+
+        // Checks
+
+        if (!sCreatureDisplayInfoStore.LookupEntry(modelId))
+            sLog->outErrorDb("Table `creature_model_info` has model for not existed display id (%u).", modelId);
+
+        if (modelInfo.gender > GENDER_NONE)
+        {
+            sLog->outErrorDb("Table `creature_model_info` has wrong gender (%u) for display id (%u).", uint32(modelInfo.gender), modelId);
+            modelInfo.gender = GENDER_MALE;
+        }
+
+        if (modelInfo.modelid_other_gender && !sCreatureDisplayInfoStore.LookupEntry(modelInfo.modelid_other_gender))
+        {
+            sLog->outErrorDb("Table `creature_model_info` has not existed alt.gender model (%u) for existed display id (%u).", modelInfo.modelid_other_gender, modelId);
+            modelInfo.modelid_other_gender = 0;
+        }
+
+        if (modelInfo.combat_reach < 0.1f)
+            modelInfo.combat_reach = DEFAULT_COMBAT_REACH;
+
+        CreatureModelStore[modelId] = modelInfo;
+
+        ++count;
+    }
+    while (result->NextRow());
+
+    sLog->outString(">> Loaded %u creature model based info in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
     sLog->outString();
-
-    // check if combat_reach is valid
-    for (uint32 i = 1; i < sCreatureModelStorage.MaxEntry; ++i)
-    {
-        CreatureModelInfo const* mInfo = sCreatureModelStorage.LookupEntry<CreatureModelInfo>(i);
-        if (!mInfo)
-            continue;
-
-        if (mInfo->combat_reach < 0.1f)
-        {
-            //sLog->outErrorDb("Creature model (Entry: %u) has invalid combat reach (%f), setting it to 0.5", mInfo->modelid, mInfo->combat_reach);
-            const_cast<CreatureModelInfo*>(mInfo)->combat_reach = DEFAULT_COMBAT_REACH;
-        }
-    }
 }
 
 void ObjectMgr::LoadLinkedRespawn ()
@@ -1693,15 +1711,7 @@ bool ObjectMgr::MoveCreData (uint32 guid, uint32 mapId, Position pos)
         // We use spawn coords to spawn
         if (!map->Instanceable() && map->IsLoaded(data.posX, data.posY))
         {
-            CreatureInfo const *ci = ObjectMgr::GetCreatureTemplate(data.id);
-            if (!ci)
-                return 0;
-
-            Creature* creature = NULL;
-            if (ci->ScriptID)
-                creature = sScriptMgr->GetCreatureScriptedClass(ci->ScriptID);
-            if (creature == NULL)
-                creature = new Creature();
+            Creature* creature = new Creature;
 
             if (!creature->LoadFromDB(guid, map))
             {
@@ -1756,15 +1766,7 @@ uint32 ObjectMgr::AddCreData (uint32 entry, uint32 /*team*/, uint32 mapId, float
         // We use spawn coords to spawn
         if (!map->Instanceable() && !map->IsRemovalGrid(x, y))
         {
-            CreatureInfo const *ci = ObjectMgr::GetCreatureTemplate(entry);
-            if (!ci)
-                return 0;
-
-            Creature* creature = NULL;
-            if (ci->ScriptID)
-                creature = sScriptMgr->GetCreatureScriptedClass(ci->ScriptID);
-            if (creature == NULL)
-                creature = new Creature();
+            Creature* creature = new Creature;
 
             if (!creature->LoadFromDB(guid, map))
             {
@@ -2441,7 +2443,7 @@ void ObjectMgr::LoadItemPrototypes ()
         if (proto->Bonding >= MAX_BIND_TYPE)
             sLog->outErrorDb("Item (Entry: %u) has wrong Bonding value (%u)", i, proto->Bonding);
 
-        if (proto->PageText && !sPageTextStore.LookupEntry<PageText>(proto->PageText))
+        if (proto->PageText && !GetPageText(proto->PageText))
             sLog->outErrorDb("Item (Entry: %u) has non existing first page (Id:%u)", i, proto->PageText);
 
         if (proto->LockID && !sLockStore.LookupEntry(proto->LockID))
@@ -5128,45 +5130,56 @@ void ObjectMgr::LoadGossipScripts ()
 
 void ObjectMgr::LoadPageTexts ()
 {
-    sPageTextStore.Free();          // for reload case
+    uint32 oldMSTime = getMSTime();
 
-    sPageTextStore.Load();
-    sLog->outString(">> Loaded %u page texts", sPageTextStore.RecordCount);
-    sLog->outString();
+    QueryResult result = WorldDatabase.Query("SELECT entry, text, next_page FROM page_text");
 
-    for (uint32 i = 1; i < sPageTextStore.MaxEntry; ++i)
+    if (!result)
     {
-        // check data correctness
-        PageText const* page = sPageTextStore.LookupEntry<PageText>(i);
-        if (!page)
-            continue;
+        sLog->outString(">> Loaded 0 page texts. DB table `page_text` is empty!");
+        sLog->outString();
+        return;
+    }
 
-        if (page->Next_Page && !sPageTextStore.LookupEntry<PageText>(page->Next_Page))
-        {
-            sLog->outErrorDb("Page text (Id: %u) has not existing next page (Id:%u)", i, page->Next_Page);
-            continue;
-        }
+    uint32 count = 0;
+    do
+    {
+        Field* fields = result->Fetch();
 
-        // detect circular reference
-        std::set<uint32> checkedPages;
-        for (PageText const* pageItr = page; pageItr; pageItr = sPageTextStore.LookupEntry<PageText>(pageItr->Next_Page))
+        const char* text = fields[1].GetCString();
+
+        PageText pageText;
+
+        pageText.Text     = fields[1].GetString();
+        pageText.NextPage = fields[2].GetInt16();
+
+        PageTextStore[fields[0].GetUInt32()] = pageText;
+
+        ++count;
+    }
+    while (result->NextRow());
+
+    for (PageTextContainer::const_iterator itr = PageTextStore.begin(); itr != PageTextStore.end(); ++itr)
+    {
+        if (itr->second.NextPage)
         {
-            if (!pageItr->Next_Page)
-                break;
-            checkedPages.insert(pageItr->Page_ID);
-            if (checkedPages.find(pageItr->Next_Page) != checkedPages.end())
-            {
-                std::ostringstream ss;
-                ss << "The text page(s) ";
-                for (std::set<uint32>::iterator itr = checkedPages.begin(); itr != checkedPages.end(); ++itr)
-                    ss << *itr << " ";
-                ss << "create(s) a circular reference, which can cause the server to freeze. Changing Next_Page of page " << pageItr->Page_ID << " to 0";
-                sLog->outErrorDb("%s", ss.str().c_str());
-                const_cast<PageText*>(pageItr)->Next_Page = 0;
-                break;
-            }
+            PageTextContainer::const_iterator itr2 = PageTextStore.find(itr->second.NextPage);
+            if (itr2 == PageTextStore.end())
+                sLog->outErrorDb("Page text (Id: %u) has not existing next page (Id: %u)", itr->first, itr->second.NextPage);
         }
     }
+
+    sLog->outString(">> Loaded %u page texts in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
+    sLog->outString();
+}
+
+PageText const* ObjectMgr::GetPageText(uint32 pageEntry)
+{
+    PageTextContainer::const_iterator itr = PageTextStore.find(pageEntry);
+    if (itr != PageTextStore.end())
+        return &(itr->second);
+
+    return NULL;
 }
 
 void ObjectMgr::LoadPageTextLocales ()
@@ -5209,27 +5222,53 @@ struct SQLInstanceLoader: public SQLStorageLoaderBase<SQLInstanceLoader>
 
 void ObjectMgr::LoadInstanceTemplate ()
 {
-    SQLInstanceLoader loader;
-    loader.Load(sInstanceTemplate);
+    uint32 oldMSTime = getMSTime();
 
-    for (uint32 i = 0; i < sInstanceTemplate.MaxEntry; i++)
+    QueryResult result = WorldDatabase.Query("SELECT map, parent, script, allowMount FROM instance_template");
+
+    if (!result)
     {
-        InstanceTemplate* temp = const_cast<InstanceTemplate*>(ObjectMgr::GetInstanceTemplate(i));
-        if (!temp)
-            continue;
-
-        if (!MapManager::IsValidMAP(temp->map, true))
-            sLog->outErrorDb("ObjectMgr::LoadInstanceTemplate: bad mapid %d for template!", temp->map);
-
-        if (!MapManager::IsValidMapCoord(temp->parent, temp->startLocX, temp->startLocY, temp->startLocZ, temp->startLocO))
-        {
-            sLog->outErrorDb("ObjectMgr::LoadInstanceTemplate: bad parent entrance coordinates for map id %d template!", temp->map);
-            temp->parent = 0;          // will have wrong continent 0 parent, at least existed
-        }
+        sLog->outString(">> Loaded 0 instance templates. DB table `page_text` is empty!");
+        sLog->outString();
+        return;
     }
 
-    sLog->outString(">> Loaded %u Instance Template definitions", sInstanceTemplate.RecordCount);
+    uint32 count = 0;
+    do
+    {
+        Field* fields = result->Fetch();
+
+        uint16 mapID = fields[0].GetUInt16();
+
+        if (!MapManager::IsValidMAP(mapID, true))
+        {
+            sLog->outErrorDb("ObjectMgr::LoadInstanceTemplate: bad mapid %d for template!", mapID);
+            continue;
+        }
+
+        InstanceTemplate instanceTemplate;
+
+        instanceTemplate.AllowMount = fields[3].GetBool();
+        instanceTemplate.Parent = fields[1].GetUInt16();
+        instanceTemplate.ScriptId = sObjectMgr->GetScriptId(fields[2].GetCString());
+
+        InstanceTemplateStore[mapID] = instanceTemplate;
+
+        ++count;
+    }
+    while (result->NextRow());
+
+    sLog->outString(">> Loaded %u instance templates in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
     sLog->outString();
+}
+
+InstanceTemplate const* ObjectMgr::GetInstanceTemplate(uint32 mapID)
+{
+    InstanceTemplateContainer::const_iterator itr = InstanceTemplateStore.find(uint16(mapID));
+    if (itr != InstanceTemplateStore.end())
+        return &(itr->second);
+
+    return NULL;
 }
 
 void ObjectMgr::LoadInstanceEncounters ()
@@ -5814,9 +5853,8 @@ uint32 ObjectMgr::GetTaxiMountDisplayId (uint32 id, uint32 team, bool allowed_al
         }
     }
 
+    // minfo is not actually used but the mount_id was updated
     CreatureModelInfo const *minfo = sObjectMgr->GetCreatureModelRandomGender(mount_id);
-    if (minfo)
-        mount_id = minfo->modelid;
 
     return mount_id;
 }
@@ -6239,12 +6277,12 @@ AreaTrigger const* ObjectMgr::GetGoBackTrigger (uint32 Map) const
 
     if (mapEntry->IsDungeon())
     {
-        const InstanceTemplate *iTemplate = ObjectMgr::GetInstanceTemplate(Map);
+        const InstanceTemplate *iTemplate = sObjectMgr->GetInstanceTemplate(Map);
 
         if (!iTemplate)
             return NULL;
 
-        parentId = iTemplate->parent;
+        parentId = iTemplate->Parent;
         useParentDbValue = true;
     }
 
@@ -6635,7 +6673,7 @@ void ObjectMgr::LoadGameobjectInfo ()
 
             if (goInfo->goober.pageId)          // pageId
             {
-                if (!sPageTextStore.LookupEntry<PageText>(goInfo->goober.pageId))
+                if (!GetPageText(goInfo->goober.pageId))
                     sLog->outErrorDb("Gameobject (Entry: %u GoType: %u) have data7=%u but PageText (Entry %u) not exist.", id, goInfo->type, goInfo->goober.pageId, goInfo->goober.pageId);
             }
             CheckGONoDamageImmuneId(goInfo, goInfo->goober.noDamageImmune, 11);
@@ -6819,7 +6857,7 @@ void ObjectMgr::LoadCorpses ()
     PreparedQueryResult result = CharacterDatabase.Query(CharacterDatabase.GetPreparedStatement(CHAR_LOAD_CORPSES));
     if (!result)
     {
-        sLog->outString(">> Loaded 0 corpses. DB table `pet_name_generation` is empty.");
+        sLog->outString(">> Loaded 0 corpses. DB table `corpse` is empty.");
         sLog->outString();
         return;
     }
