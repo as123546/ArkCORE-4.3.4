@@ -87,7 +87,7 @@ public:
     {
     }
 
-    bool IsImmunedToSpellEffect (SpellEntry const* spellInfo, uint32 index) const;
+    bool IsImmunedToSpellEffect (SpellInfo const* spellInfo, uint32 index) const;
 
 protected:
     TotemType m_type;

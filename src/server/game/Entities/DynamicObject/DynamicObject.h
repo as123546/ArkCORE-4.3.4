@@ -29,7 +29,7 @@
 
 class Unit;
 class Aura;
-struct SpellEntry;
+class SpellInfo;
 
 class DynamicObject: public WorldObject, public GridObject<DynamicObject>
 {

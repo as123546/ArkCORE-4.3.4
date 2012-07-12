@@ -54,13 +54,13 @@ public:
     void GetTargetList (std::list<Unit*> & targetList) const;
     void GetApplicationList (std::list<AuraApplication*> & applicationList) const;
 
-    SpellEntry const * GetSpellProto () const
+    SpellInfo const * GetSpellInfo () const
     {
-        return m_spellProto;
+        return m_spellInfo;
     }
     uint32 GetId () const
     {
-        return m_spellProto->Id;
+        return m_spellInfo->Id;
     }
     uint32 GetEffIndex () const
     {
@@ -160,7 +160,7 @@ public:
     {
         m_isPeriodic = isPeriodic;
     }
-    bool IsAffectedOnSpell (SpellEntry const *spell) const;
+    bool IsAffectedOnSpell (SpellInfo const *spell) const;
 
     void SendTickImmune (Unit * target, Unit *caster) const;
 
@@ -177,7 +177,7 @@ public:
 private:
     Aura * const m_base;
 
-    SpellEntry const * const m_spellProto;
+    SpellInfo const * const m_spellInfo;
     uint8 const m_effIndex;
     int32 const m_baseAmount;
 
@@ -379,8 +379,8 @@ namespace Trinity
         }
         bool operator() (AuraEffect * aurEffA, AuraEffect * aurEffB) const
         {
-            SpellEntry const * spellProtoA = aurEffA->GetSpellProto();
-            SpellEntry const * spellProtoB = aurEffB->GetSpellProto();
+            SpellInfo const * spellProtoA = aurEffA->GetSpellProto();
+            SpellInfo const * spellProtoB = aurEffB->GetSpellProto();
 
             // Wards
             if ((spellProtoA->SpellFamilyName == SPELLFAMILY_MAGE) || (spellProtoA->SpellFamilyName == SPELLFAMILY_WARLOCK))

@@ -30,7 +30,7 @@
 #include "SpellAuraDefines.h"
 
 class Unit;
-struct SpellEntry;
+class SpellInfo;
 class SpellScript;
 class Spell;
 class Aura;
@@ -287,7 +287,7 @@ public:
     // methods useable during all spell handling phases
     Unit * GetCaster ();
     Unit * GetOriginalCaster ();
-    SpellEntry const * GetSpellInfo ();
+    SpellInfo const * GetSpellInfo ();
     SpellValue const* GetSpellValue ();
 
     // methods useable after spell targets are set
@@ -577,7 +577,7 @@ public:
     // AuraScript interface - functions which are redirecting to Aura class
 
     // returns proto of the spell
-    SpellEntry const* GetSpellProto () const;
+    SpellInfo const* GetSpellInfo () const;
     // returns spellid of the spell
     uint32 GetId () const;
 

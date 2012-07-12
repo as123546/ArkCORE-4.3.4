@@ -35,8 +35,8 @@ class WorldObject;
 class Aura;
 class SpellScript;
 class ByteBuffer;
-
-struct SpellEntry;
+class SpellInfo;
+class SpellImplicitTargetInfo;
 
 enum SpellCastTargetFlags
 {
@@ -264,13 +264,7 @@ private:
 
 struct SpellValue
 {
-    explicit SpellValue (SpellEntry const *proto)
-    {
-        for (uint32 i = 0; i < MAX_SPELL_EFFECTS; ++i)
-            EffectBasePoints[i] = proto->EffectBasePoints[i];
-        MaxAffectedTargets = proto->MaxAffectedTargets;
-        RadiusMod = 1.0f;
-    }
+    explicit  SpellValue(SpellInfo const* proto);
     int32 EffectBasePoints[3];
     uint32 MaxAffectedTargets;
     float RadiusMod;
@@ -435,7 +429,7 @@ public:
 
     typedef std::set<Aura *> UsedSpellMods;
 
-    Spell (Unit* Caster, SpellEntry const *info, bool triggered, uint64 originalCasterGUID = 0, bool skipCheck = false);
+    Spell (Unit* Caster, SpellInfo const *info, bool triggered, uint64 originalCasterGUID = 0, bool skipCheck = false);
     ~Spell ();
 
     void prepare (SpellCastTargets const* targets, AuraEffect const * triggeredByAura = NULL);
@@ -489,7 +483,7 @@ public:
     void WriteAmmoToPacket (WorldPacket * data);
 
     void SelectSpellTargets ();
-    void SelectEffectTargets (uint32 i, uint32 cur);
+    void SelectEffectTargets (uint32 i, SpellImplicitTargetInfo const& cur);
     void SelectTrajTargets ();
 
     template<typename T> WorldObject* FindCorpseUsing ();
@@ -507,7 +501,7 @@ public:
             m_targets.setDst(*m_caster);
     }
 
-    static void SendCastResult (Player* caster, SpellEntry const* spellInfo, uint8 cast_count, SpellCastResult result, SpellCustomErrors customError = SPELL_CUSTOM_ERROR_NONE);
+    static void SendCastResult (Player* caster, SpellInfo const* spellInfo, uint8 cast_count, SpellCastResult result, SpellCustomErrors customError = SPELL_CUSTOM_ERROR_NONE);
     void SendCastResult (SpellCastResult result);
     void SendSpellStart ();
     void SendSpellGo ();
@@ -530,9 +524,9 @@ public:
     void SendPlaySpellVisual (uint32 SpellID);
 
     void HandleEffects (Unit *pUnitTarget, Item *pItemTarget, GameObject *pGOTarget, uint32 i);
-    void HandleThreatSpells (uint32 spellId);
+    void HandleThreatSpells ();
 
-    const SpellEntry * const m_spellInfo;
+    SpellInfo const* const m_spellInfo;
     Item* m_CastItem;
     uint64 m_castItemGUID;
     uint8 m_cast_count;
@@ -560,10 +554,7 @@ public:
     {
         m_timer = m_casttime > 0 ? m_casttime : 0;
     }
-    bool IsNextMeleeSwingSpell () const
-    {
-        return m_spellInfo->Attributes & SPELL_ATTR0_ON_NEXT_SWING;
-    }
+    bool IsNextMeleeSwingSpell () const;
     bool IsTriggered () const
     {
         return m_IsTriggeredSpell;
@@ -573,10 +564,7 @@ public:
     {
         return m_caster->GetUInt32Value(UNIT_CHANNEL_SPELL) != 0;
     }
-    bool IsAutoActionResetSpell () const
-    {
-        return !m_IsTriggeredSpell && (m_spellInfo->InterruptFlags & SPELL_INTERRUPT_FLAG_AUTOATTACK);
-    }
+    bool IsAutoActionResetSpell () const;
 
     bool IsDeletable () const
     {
@@ -619,7 +607,7 @@ public:
     {
         return m_originalCaster;
     }
-    SpellEntry const * GetSpellInfo () const
+    SpellInfo const * GetSpellInfo () const
     {
         return m_spellInfo;
     }
@@ -804,7 +792,7 @@ protected:
     // -------------------------------------------
 
     //List For Triggered Spells
-    typedef std::vector<std::pair<SpellEntry const*, int32> > ChanceTriggerSpells;
+    typedef std::vector<std::pair<SpellInfo const*, int32> > ChanceTriggerSpells;
     ChanceTriggerSpells m_ChanceTriggerSpells;
 
     uint32 m_spellState;
@@ -817,9 +805,8 @@ protected:
     // if need this can be replaced by Aura copy
     // we can't store original aura link to prevent access to deleted auras
     // and in same time need aura data and after aura deleting.
-    SpellEntry const* m_triggeredByAuraSpell;
+    SpellInfo const* m_triggeredByAuraSpell;
 
-    uint32 m_customAttr;
     bool m_skipCheck;
     uint32 m_effectMask;
     uint8 m_auraScaleMask;

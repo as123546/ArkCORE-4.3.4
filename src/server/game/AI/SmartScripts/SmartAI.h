@@ -124,10 +124,10 @@ public:
     void MoveInLineOfSight(Unit *who);
 
     // Called when hit by a spell
-    void SpellHit(Unit* pUnit, const SpellEntry* pSpell);
+    void SpellHit(Unit* pUnit, const SpellInfo* pSpell);
 
     // Called when spell hits a target
-    void SpellHitTarget(Unit* target, const SpellEntry* pSpell);
+    void SpellHitTarget(Unit* target, const SpellInfo* pSpell);
 
     // Called at any Damage from any attacker (before damage apply)
     void DamageTaken(Unit* done_by, uint32& damage);

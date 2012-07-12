@@ -41,8 +41,6 @@
 #define CAST_AI(a, b)    (SCRIPT_CAST_TYPE<a*>(b))
 #define CAST_INST(a, b)  (SCRIPT_CAST_TYPE<a*>(b))
 
-#define GET_SPELL(a)    (const_cast<SpellEntry*>(GetSpellStore()->LookupEntry(a)))
-
 class InstanceScript;
 
 class SummonList: public std::list<uint64>
@@ -112,12 +110,12 @@ struct ScriptedAI: public CreatureAI
     }
 
     // Called when hit by a spell
-    void SpellHit(Unit* /*caster*/, const SpellEntry * /*spell*/)
+    void SpellHit(Unit* /*caster*/, const SpellInfo* /*spell*/)
     {
     }
 
     // Called when spell hits a target
-    void SpellHitTarget(Unit * /*pTarget*/, const SpellEntry * /*spell*/)
+    void SpellHitTarget(Unit * /*pTarget*/, const SpellInfo* /*spell*/)
     {
     }
 
@@ -169,7 +167,7 @@ struct ScriptedAI: public CreatureAI
     void DoStopAttack();
 
     //Cast spell by spell info
-    void DoCastSpell(Unit* pTarget, SpellEntry const* pSpellInfo, bool bTriggered = false);
+    void DoCastSpell(Unit* pTarget, SpellInfo const* pSpellInfo, bool bTriggered = false);
 
     //Plays a sound to all nearby players
     void DoPlaySoundToSet(WorldObject* pSource, uint32 sound);
@@ -222,7 +220,7 @@ struct ScriptedAI: public CreatureAI
     SpellEntry const* SelectSpell(Unit* Target, uint32 School, uint32 Mechanic, SelectTargetType Targets, uint32 PowerCostMin, uint32 PowerCostMax, float RangeMin, float RangeMax, SelectEffect Effect);
 
     //Checks if you can cast the specified spell
-    bool CanCast(Unit* pTarget, SpellEntry const* pSpell, bool bTriggered = false);
+    bool CanCast(Unit* pTarget, SpellInfo const* pSpell, bool bTriggered = false);
 
     void SetEquipmentSlots(bool bLoadDefault, int32 uiMainHand = EQUIP_NO_CHANGE, int32 uiOffHand = EQUIP_NO_CHANGE, int32 uiRanged = EQUIP_NO_CHANGE);
 
