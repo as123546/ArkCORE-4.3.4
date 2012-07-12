@@ -69,8 +69,7 @@ void TotemAI::UpdateAI(const uint32 /*diff*/)
         return;
 
     // Get spell range
-    SpellRangeEntry const* srange = sSpellRangeStore.LookupEntry(spellInfo->rangeIndex);
-    float max_range = GetSpellMaxRangeForHostile(srange);
+    float max_range = spellInfo->GetMaxRange(false);
 
     // SPELLMOD_RANGE not applied in this place just because not existence range mods for attacking totems
 

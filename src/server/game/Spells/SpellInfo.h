@@ -363,6 +363,3 @@ public:
 };
 
 #endif // _SPELLINFO_H
-=======
- */
->>>>>>> efc6841ec1424f572bb1a47d44a531032844de92

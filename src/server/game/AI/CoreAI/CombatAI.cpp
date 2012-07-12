@@ -25,6 +25,7 @@
 #include "gamePCH.h"
 #include "CombatAI.h"
 #include "SpellMgr.h"
+#include "SpellInfo.h"
 #include "Vehicle.h"
 
 int AggressorAI::Permissible(const Creature *creature)
@@ -73,7 +74,7 @@ int VehicleAI::Permissible(const Creature * /*creature*/)
 void CombatAI::InitializeAI()
 {
     for (uint32 i = 0; i < CREATURE_MAX_SPELLS; ++i)
-        if (me->m_spells[i] && GetSpellStore()->LookupEntry(me->m_spells[i]))
+        if (me->m_spells[i] && sSpellMgr->GetSpellInfo(me->m_spells[i]))
             spells.push_back(me->m_spells[i]);
 
     CreatureAI::InitializeAI();
@@ -183,16 +184,17 @@ void CasterAI::UpdateAI(const uint32 diff)
 //ArchorAI
 //////////////
 
-ArchorAI::ArchorAI(Creature *c) :
-        CreatureAI(c)
+ArchorAI::ArchorAI(Creature *c) : CreatureAI(c)
 {
     if (!me->m_spells[0])
         sLog->outError("ArchorAI set for creature (entry = %u) with spell1=0. AI will do nothing", me->GetEntry());
 
-    m_minRange = GetSpellMinRange(me->m_spells[0], false);
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(me->m_spells[0]);
+    m_minRange = spellInfo ? spellInfo->GetMinRange(false) : 0;
+
     if (!m_minRange)
         m_minRange = MELEE_RANGE;
-    me->m_CombatDistance = GetSpellMaxRange(me->m_spells[0], false);
+    me->m_CombatDistance = spellInfo ? spellInfo->GetMaxRange(false) : 0;
     me->m_SightDistance = me->m_CombatDistance;
 }
 
@@ -237,8 +239,9 @@ TurretAI::TurretAI(Creature *c) :
     if (!me->m_spells[0])
         sLog->outError("TurretAI set for creature (entry = %u) with spell1=0. AI will do nothing", me->GetEntry());
 
-    m_minRange = GetSpellMinRange(me->m_spells[0], false);
-    me->m_CombatDistance = GetSpellMaxRange(me->m_spells[0], false);
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(me->m_spells[0]);
+    m_minRange = spellInfo ? spellInfo->GetMinRange(false) : 0;
+    me->m_CombatDistance = spellInfo ? spellInfo->GetMaxRange(false) : 0;
     me->m_SightDistance = me->m_CombatDistance;
 }
 
