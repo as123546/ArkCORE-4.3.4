@@ -1,7 +1,9 @@
 /*
  * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * Copyright (C) 2008 - 2012 TrinityCore <http://www.trinitycore.org/>
+ *
+ * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
  *
  * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
  *
