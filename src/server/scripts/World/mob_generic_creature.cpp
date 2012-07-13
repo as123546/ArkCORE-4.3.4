@@ -73,7 +73,7 @@ public:
                 if (BuffTimer <= diff)
                 {
                     //Find a spell that targets friendly and applies an aura (these are generally buffs)
-                    SpellEntry const *info = SelectSpell(me, 0, 0, SELECT_TARGET_ANY_FRIEND, 0, 0, 0, 0, SELECT_EFFECT_AURA);
+                    SpellInfo const *info = SelectSpell(me, 0, 0, SELECT_TARGET_ANY_FRIEND, 0, 0, 0, 0, SELECT_EFFECT_AURA);
 
                     if (info && !GlobalCooldown)
                     {
@@ -104,7 +104,7 @@ public:
                 if (me->isAttackReady() && !me->IsNonMeleeSpellCasted(false))
                 {
                     bool Healing = false;
-                    SpellEntry const *info = NULL;
+                    SpellInfo const *info = NULL;
 
                     //Select a healing spell if less than 30% hp
                     if (HealthBelowPct(30))
@@ -140,7 +140,7 @@ public:
                 if (!me->IsNonMeleeSpellCasted(false))
                 {
                     bool Healing = false;
-                    SpellEntry const *info = NULL;
+                    SpellInfo const *info = NULL;
 
                     //Select a healing spell if less than 30% hp ONLY 33% of the time
                     if (HealthBelowPct(30) && rand() % 3 == 0)

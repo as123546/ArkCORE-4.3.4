@@ -392,7 +392,7 @@ public:
         {
             pPlayer->SendEquipError(EQUIP_ERR_NONE, pItem, NULL);
 
-            if (const SpellEntry* pSpellInfo = GetSpellStore()->LookupEntry(SPELL_PETROV_BOMB))
+            if (const SpellInfo* pSpellInfo = sSpellMgr()->GetSpellInfo(SPELL_PETROV_BOMB))
                 Spell::SendCastResult(pPlayer, pSpellInfo, 1, SPELL_FAILED_NOT_HERE);
 
             return true;

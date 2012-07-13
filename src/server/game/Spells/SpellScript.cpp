@@ -745,9 +745,9 @@ void AuraScript::PreventDefaultAction ()
     }
 }
 
-SpellEntry const* AuraScript::GetSpellProto () const
+SpellInfo const* AuraScript::GetSpellInfo () const
 {
-    return m_aura->GetSpellProto();
+    return m_aura->GetSpellInfo();
 }
 
 uint32 AuraScript::GetId () const
