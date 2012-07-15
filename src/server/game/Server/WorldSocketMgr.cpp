@@ -222,7 +222,6 @@ private:
 WorldSocketMgr::WorldSocketMgr () :
         m_NetThreads(0), m_NetThreadsCount(0), m_SockOutKBuff(-1), m_SockOutUBuff(65536), m_UseNoDelay(true), m_Acceptor(0)
 {
-    InitOpcodeTable();
 }
 
 WorldSocketMgr::~WorldSocketMgr ()
