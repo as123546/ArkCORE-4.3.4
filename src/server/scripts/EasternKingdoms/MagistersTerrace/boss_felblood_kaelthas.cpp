@@ -245,7 +245,7 @@ public:
                     // Also needs an exception in spell system.
                     unit->CastSpell(unit, SPELL_GRAVITY_LAPSE_FLY, true, 0, 0, me->GetGUID());
                     // Use packet hack
-                    WorldPacket data(12);
+                    WorldPacket data;
                     data.SetOpcode(SMSG_MOVE_SET_CAN_FLY);
                     data.append(unit->GetPackGUID());
                     data << uint32(0);
@@ -265,7 +265,7 @@ public:
                     unit->RemoveAurasDueToSpell(SPELL_GRAVITY_LAPSE_FLY);
                     unit->RemoveAurasDueToSpell(SPELL_GRAVITY_LAPSE_DOT);
 
-                    WorldPacket data(12);
+                    WorldPacket data;
                     data.SetOpcode(SMSG_MOVE_UNSET_CAN_FLY);
                     data.append(unit->GetPackGUID());
                     data << uint32(0);

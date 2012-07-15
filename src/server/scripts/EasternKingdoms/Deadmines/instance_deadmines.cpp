@@ -338,14 +338,14 @@ public:
         }
 
         void DoPlaySound(GameObject* unit, uint32 sound) {
-            WorldPacket data(4);
+            WorldPacket data;
             data.SetOpcode(SMSG_PLAY_SOUND);
             data << uint32(sound);
             unit->SendMessageToSet(&data, false);
         }
 
         void DoPlaySoundCreature(Unit* unit, uint32 sound) {
-            WorldPacket data(4);
+            WorldPacket data;
             data.SetOpcode(SMSG_PLAY_SOUND);
             data << uint32(sound);
             unit->SendMessageToSet(&data, false);

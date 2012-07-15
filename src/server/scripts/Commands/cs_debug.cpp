@@ -266,7 +266,7 @@ public:
         if (ifs.bad())
             return false;
 
-        uint32 opcode;
+        Opcodes opcode;
         ifs >> opcode;
 
         WorldPacket data(opcode, 0);

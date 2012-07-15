@@ -7985,7 +7985,7 @@ void Player::DuelComplete (DuelCompleteType type)
 
     if (type != DUEL_INTERRUPTED)
     {
-        data.Initialize(SMSG_DUEL_WINNER, (1 + 20), true);          // we guess size
+        data.Initialize(SMSG_DUEL_WINNER, (1 + 20));          // we guess size
         data << uint8(type == DUEL_WON ? 0 : 1);          // 0 = just won; 1 = fled
         data << duel->opponent->GetName();
         data << GetName();
@@ -20463,7 +20463,7 @@ void Player::AddSpellMod (SpellModifier* mod, bool apply)
 {
     sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "Player::AddSpellMod %d", mod->spellId);
     bool isFlat = mod->type == SPELLMOD_FLAT;
-    uint32 Opcode = (isFlat) ? SMSG_SET_FLAT_SPELL_MODIFIER : SMSG_SET_PCT_SPELL_MODIFIER;
+    Opcodes Opcode = (isFlat) ? SMSG_SET_FLAT_SPELL_MODIFIER : SMSG_SET_PCT_SPELL_MODIFIER;
 
     WorldPacket data(Opcode);
     data << uint32(1);          //number of spell mod to add

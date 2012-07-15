@@ -181,7 +181,6 @@ public:
 
     void BuildValuesUpdateBlockForPlayer (UpdateData *data, Player *target) const;
     void BuildOutOfRangeUpdateBlock (UpdateData *data) const;
-    void BuildMovementUpdateBlock (UpdateData * data, uint32 flags = 0) const;
 
     virtual void DestroyForPlayer (Player *target, bool anim = false) const;
 

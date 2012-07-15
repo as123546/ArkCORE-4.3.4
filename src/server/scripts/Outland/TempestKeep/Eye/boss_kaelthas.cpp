@@ -929,7 +929,7 @@ class boss_kaelthas : public CreatureScript
                                                 pUnit->CastSpell(pUnit, SPELL_GRAVITY_LAPSE_AURA, true, 0, 0, me->GetGUID());
 
                                                 //Using packet workaround
-                                                WorldPacket data(12);
+                                                WorldPacket data;
                                                 data.SetOpcode(SMSG_MOVE_SET_CAN_FLY);
                                                 data.append(pUnit->GetPackGUID());
                                                 data << uint32(0);
@@ -956,7 +956,7 @@ class boss_kaelthas : public CreatureScript
                                             if (Unit* pUnit = Unit::GetUnit((*me), (*i)->getUnitGuid()))
                                             {
                                                 //Using packet workaround
-                                                WorldPacket data(12);
+                                                WorldPacket data;
                                                 data.SetOpcode(SMSG_MOVE_UNSET_CAN_FLY);
                                                 data.append(pUnit->GetPackGUID());
                                                 data << uint32(0);

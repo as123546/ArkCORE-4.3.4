@@ -178,18 +178,6 @@ std::string Object::_ConcatFields (uint16 startIndex, uint16 size) const
     return ss.str();
 }
 
-void Object::BuildMovementUpdateBlock (UpdateData * data, uint32 flags) const
-{
-    /*ByteBuffer buf(500);
-
-     buf << uint8(UPDATETYPE_MOVEMENT);
-     buf.append(GetPackGUID());
-
-     _BuildMovementUpdate(&buf, flags);
-
-     data->AddUpdateBlock(buf);*/
-}
-
 void Object::BuildCreateUpdateBlockForPlayer (UpdateData *data, Player *target) const
 {
     if (!target)
@@ -202,7 +190,7 @@ void Object::BuildCreateUpdateBlockForPlayer (UpdateData *data, Player *target) 
     if (target == this)          // building packet for yourself
         flags |= UPDATEFLAG_SELF;
 
-    if (flags & UPDATEFLAG_HAS_POSITION)
+    if (flags & UPDATEFLAG_STATIONARY_POSITION)
     {
         // UPDATETYPE_CREATE_OBJECT2 dynamic objects, corpses...
         if (isType(TYPEMASK_DYNAMICOBJECT) || isType(TYPEMASK_CORPSE) || isType(TYPEMASK_PLAYER))

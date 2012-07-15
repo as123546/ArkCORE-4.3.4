@@ -26,6 +26,7 @@
     \ingroup u2w
 */
 
+#include "gamePCH.h"
 #include "Opcodes.h"
 
 OpcodeHandler* opcodeTable[NUM_OPCODE_HANDLERS] = { };
