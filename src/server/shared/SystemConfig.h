@@ -38,7 +38,7 @@
 # define _ENDIAN_STRING "little-endian"
 #endif
 
-#define _CLIENT_BUILD_REVISION "Client Support: 4.0.6a - 13623"
+#define _CLIENT_BUILD_REVISION "Client Support: 4.3.4 - 15595"
 
 #if PLATFORM == PLATFORM_WINDOWS
 # ifdef _WIN64
