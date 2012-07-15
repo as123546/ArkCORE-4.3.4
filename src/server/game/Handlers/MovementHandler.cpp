@@ -34,6 +34,7 @@
 #include "Transport.h"
 #include "Battleground.h"
 #include "WaypointMovementGenerator.h"
+#include "MovementStructures.h"
 #include "InstanceSaveMgr.h"
 #include "ObjectMgr.h"
 
