@@ -857,7 +857,7 @@ int WorldSocket::HandleAuthSession (WorldPacket& recvPacket)
     sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLDSocket::HandleAuthSession: Clientbuild %u, accountname %s, clientseed %u", clientBuild, accountName.c_str(), clientSeed);
 
     // Get the account information from the realmd database
-    std::string safe_account = accountName;          // Duplicate, else will screw the SHA hash verification below
+    std::string safe_account = account;          // Duplicate, else will screw the SHA hash verification below
     LoginDatabase.EscapeString(safe_account);
     // No SQL injection, username escaped.
 

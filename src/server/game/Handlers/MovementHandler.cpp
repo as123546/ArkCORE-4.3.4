@@ -265,19 +265,15 @@ void WorldSession::HandleMovementOpcodes (WorldPacket & recv_data)
     }
 
     /* extract packet */
-    uint64 guid;
-
-    recv_data.readPackGUID(guid);
-
     MovementInfo movementInfo;
-    movementInfo.guid = guid;
     ReadMovementInfo(recv_data, &movementInfo);
 
-    recv_data.rpos(recv_data.wpos());          // prevent warnings spam
-
     // prevent tampered movement data
-    if (guid != mover->GetGUID())
+    if (movementInfo.guid != mover->GetGUID())
+    {
+        sLog->outError("HandleMovementOpcodes: guid error");
         return;
+    }
 
     if (!movementInfo.pos.IsPositionValid())
     {
@@ -346,10 +342,10 @@ void WorldSession::HandleMovementOpcodes (WorldPacket & recv_data)
     /*----------------------*/
 
     /* process position-change */
-    WorldPacket data(opcode, recv_data.size());
+    WorldPacket data(SMSG_PLAYER_MOVE, recv_data.size());
     movementInfo.time = getMSTime();
     movementInfo.guid = mover->GetGUID();
-    WriteMovementInfo(&data, &movementInfo);
+    WriteMovementInfo(data, &movementInfo);
     mover->SendMessageToSet(&data, _player);
 
     mover->m_movementInfo = movementInfo;
@@ -820,4 +816,96 @@ void WorldSession::HandleSummonResponseOpcode (WorldPacket& recv_data)
     recv_data >> agree;
 
     _player->SummonIfPossible(agree);
+}
+
+void WorldSession::ReadMovementInfo (WorldPacket &data, MovementInfo *mi)
+{
+    data >> mi->flags;
+    data >> mi->flags2;
+    data >> mi->time;
+    data >> mi->pos.PositionXYZOStream();
+
+    if (mi->HasMovementFlag(MOVEMENTFLAG_ONTRANSPORT))
+    {
+        data.readPackGUID(mi->t_guid);
+
+        data >> mi->t_pos.PositionXYZOStream();
+        data >> mi->t_time;
+        data >> mi->t_seat;
+
+        if (mi->HasExtraMovementFlag(MOVEMENTFLAG2_INTERPOLATED_MOVEMENT))
+            data >> mi->t_time2;
+
+        if (mi->pos.m_positionX != mi->t_pos.m_positionX)
+            if (GetPlayer()->GetTransport())
+                GetPlayer()->GetTransport()->UpdatePosition(mi);
+    }
+
+    if (mi->HasMovementFlag(MovementFlags(MOVEMENTFLAG_SWIMMING | MOVEMENTFLAG_FLYING)) || (mi->HasExtraMovementFlag(MOVEMENTFLAG2_ALWAYS_ALLOW_PITCHING)))
+    {
+        data >> mi->pitch;
+    }
+
+    if (mi->HasExtraMovementFlag(MOVEMENTFLAG2_INTERPOLATED_TURNING))          // 4.0.6
+    {
+        data >> mi->fallTime;
+        data >> mi->j_zspeed;
+
+        if (mi->HasMovementFlag(MOVEMENTFLAG_JUMPING))
+        {
+            data >> mi->j_sinAngle;
+            data >> mi->j_cosAngle;
+            data >> mi->j_xyspeed;
+        }
+    }
+
+    if (mi->HasMovementFlag(MOVEMENTFLAG_SPLINE_ELEVATION))
+    {
+        data >> mi->splineElevation;
+    }
+}
+
+void WorldSession::WriteMovementInfo (WorldPacket &data, MovementInfo *mi)
+{
+    data->appendPackGUID(mi->guid);
+
+    *data << mi->flags;
+    *data << mi->flags2;
+    *data << mi->time;
+    *data << mi->pos.PositionXYZOStream();
+
+    if (mi->HasMovementFlag(MOVEMENTFLAG_ONTRANSPORT))
+    {
+        data->appendPackGUID(mi->t_guid);
+
+        *data << mi->t_pos.PositionXYZOStream();
+        *data << mi->t_time;
+        *data << mi->t_seat;
+
+        if (mi->flags2 & MOVEMENTFLAG2_INTERPOLATED_MOVEMENT)
+            *data << mi->t_time2;
+    }
+
+    if ((mi->HasMovementFlag(MovementFlags(MOVEMENTFLAG_SWIMMING | MOVEMENTFLAG_FLYING))) || (mi->flags2 & MOVEMENTFLAG2_ALWAYS_ALLOW_PITCHING))
+    {
+        *data << mi->pitch;
+    }
+
+    if (mi->HasExtraMovementFlag(MOVEMENTFLAG2_INTERPOLATED_TURNING))          // 4.0.6
+    {
+        *data << mi->fallTime;
+        *data << mi->j_zspeed;
+
+        if (mi->HasMovementFlag(MOVEMENTFLAG_JUMPING))
+        {
+            *data << mi->j_sinAngle;
+            *data << mi->j_cosAngle;
+            *data << mi->j_xyspeed;
+        }
+    }
+
+    if (mi->HasMovementFlag(MOVEMENTFLAG_SPLINE_ELEVATION))
+    {
+        *data << mi->splineElevation;
+    }
 }

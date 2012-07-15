@@ -267,8 +267,6 @@ public:
             return false;
 
         Opcodes opcode;
-        ifs >> opcode;
-
         WorldPacket data(opcode, 0);
 
         while (!ifs.eof())

@@ -95,33 +95,33 @@ void WorldSession::HandleMessagechatOpcode (WorldPacket & recv_data)
     case CMSG_MESSAGECHAT_AFK:
         type = CHAT_MSG_AFK;
         break;
-    case CMSG_MESSAGECHAT_DND:
-        type = CHAT_MSG_DND;
-        break;
-    case CMSG_MESSAGECHAT_EMOTE:
-        type = CHAT_MSG_EMOTE;
-        break;
-    case CMSG_MESSAGECHAT_PARTY:
-        type = CHAT_MSG_PARTY;
-        break;
-    case CMSG_MESSAGECHAT_PARTY_LEADER:
-        type = CHAT_MSG_PARTY_LEADER;
-        break;
-    case CMSG_MESSAGECHAT_RAID:
-        type = CHAT_MSG_RAID;
-        break;
-    case CMSG_MESSAGECHAT_RAID_LEADER:
-        type = CHAT_MSG_RAID_LEADER;
-        break;
-    case CMSG_MESSAGECHAT_BATTLEGROUND:
-        type = CHAT_MSG_BATTLEGROUND;
-        break;
-    case CMSG_MESSAGECHAT_BATTLEGROUND_LEADER:
-        type = CHAT_MSG_BATTLEGROUND_LEADER;
-        break;
-    case CMSG_MESSAGECHAT_RAID_WARNING:
-        type = CHAT_MSG_RAID_WARNING;
-        break;
+    //case CMSG_MESSAGECHAT_DND:
+    //    type = CHAT_MSG_DND;
+    //    break;
+    //case CMSG_MESSAGECHAT_EMOTE:
+    //    type = CHAT_MSG_EMOTE;
+    //    break;
+    //case CMSG_MESSAGECHAT_PARTY:
+    //    type = CHAT_MSG_PARTY;
+    //    break;
+    //case CMSG_MESSAGECHAT_PARTY_LEADER:
+    //    type = CHAT_MSG_PARTY_LEADER;
+    //    break;
+    //case CMSG_MESSAGECHAT_RAID:
+    //    type = CHAT_MSG_RAID;
+    //    break;
+    //case CMSG_MESSAGECHAT_RAID_LEADER:
+    //    type = CHAT_MSG_RAID_LEADER;
+    //    break;
+    //case CMSG_MESSAGECHAT_BATTLEGROUND:
+    //    type = CHAT_MSG_BATTLEGROUND;
+    //    break;
+    //case CMSG_MESSAGECHAT_BATTLEGROUND_LEADER:
+    //    type = CHAT_MSG_BATTLEGROUND_LEADER;
+    //    break;
+    //case CMSG_MESSAGECHAT_RAID_WARNING:
+    //    type = CHAT_MSG_RAID_WARNING;
+    //    break;
     default:
         sLog->outDetail("HandleMessagechatOpcode : Unknown chat opcode (%u)", recv_data.GetOpcode());
         recv_data.hexlike();
