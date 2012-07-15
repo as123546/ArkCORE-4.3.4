@@ -268,19 +268,10 @@ int WorldSocket::open (void *a)
 
     m_Address = remote_addr.get_host_addr();
 
-    // Send startup packet.
-    WorldPacket packet(SMSG_AUTH_CHALLENGE, 37);
-
-    BigNumber seed1;
-    seed1.SetRand(16 * 8);
-    packet.append(seed1.AsByteArray(16), 16);          // new encryption seeds
-
-    packet << uint8(1);
-    packet << uint32(m_Seed);
-
-    BigNumber seed2;
-    seed2.SetRand(16 * 8);
-    packet.append(seed2.AsByteArray(16), 16);          // new encryption seeds
+    // not an opcode. this packet sends raw string WORLD OF WARCRAFT CONNECTION - SERVER TO CLIENT"
+    // because of our implementation, bytes "WO" become the opcode
+    WorldPacket packet(MSG_VERIFY_CONNECTIVITY);
+    packet << "RLD OF WARCRAFT CONNECTION - SERVER TO CLIENT";
 
     if (SendPacket(packet) == -1)
         return -1;
@@ -512,7 +503,7 @@ int WorldSocket::handle_input_header (void)
 
     header.size -= 4;
 
-    ACE_NEW_RETURN(m_RecvWPct, WorldPacket ((uint16) header.cmd, header.size), -1);
+    ACE_NEW_RETURN (m_RecvWPct, WorldPacket (PacketFilter::DropHighBytes(Opcodes(header.cmd)), header.size), -1);
 
     if (header.size > 0)
     {
@@ -674,7 +665,7 @@ int WorldSocket::ProcessIncoming (WorldPacket* new_pct)
     // manage memory ;)
     ACE_Auto_Ptr<WorldPacket> aptr(new_pct);
 
-    const ACE_UINT32 opcode = new_pct->GetOpcode();
+    const ACE_UINT32 opcode = PacketFilter::DropHighBytes(new_pct->GetOpcode());
 
     if (closing_)
         return -1;
@@ -699,49 +690,76 @@ int WorldSocket::ProcessIncoming (WorldPacket* new_pct)
     {
         switch (opcode)
         {
-        case CMSG_PING:
-            return HandlePing(*new_pct);
-        case CMSG_AUTH_SESSION:
-            if (m_Session)
-            {
-                sLog->outError("WorldSocket::ProcessIncoming: Player send CMSG_AUTH_SESSION again");
-                return -1;
-            }
+            case CMSG_PING:
+                return HandlePing(*new_pct);
+            case CMSG_AUTH_SESSION:
+                if (m_Session)
+                {
+                    sLog->outError("WorldSocket::ProcessIncoming: Player send CMSG_AUTH_SESSION again");
+                    return -1;
+                }
 
-            sScriptMgr->OnPacketReceive(this, WorldPacket(*new_pct));
-            return HandleAuthSession(*new_pct);
-        case CMSG_KEEP_ALIVE:
-            sLog->outStaticDebug("CMSG_KEEP_ALIVE , size: " UI64FMTD, uint64(new_pct->size()));
-            sScriptMgr->OnPacketReceive(this, WorldPacket(*new_pct));
-            return 0;
-        default:
-        {
-            ACE_GUARD_RETURN(LockType, Guard, m_SessionLock, -1);
-
-            if (m_Session != NULL)
-            {
-                // Our Idle timer will reset on any non PING opcodes.
-                // Catches people idling on the login screen and any lingering ingame connections.
-                m_Session->ResetTimeOutTime();
-
-                // OK , give the packet to WorldSession
-                aptr.release();
-                // WARNINIG here we call it with locks held.
-                // Its possible to cause deadlock if QueuePacket calls back
-                m_Session->QueuePacket(new_pct);
+                sScriptMgr->OnPacketReceive(this, WorldPacket(*new_pct));
+                return HandleAuthSession(*new_pct);
+            case CMSG_KEEP_ALIVE:
+                sLog->outStaticDebug("CMSG_KEEP_ALIVE, size: " UI64FMTD, uint64(new_pct->size()));
+                sScriptMgr->OnPacketReceive(this, WorldPacket(*new_pct));
                 return 0;
-            }
-            else
+            case CMSG_LOG_DISCONNECT:
+                new_pct->rfinish(); // contains uint32 disconnectReason;
+                sLog->outStaticDebug("CMSG_LOG_DISCONNECT , size: " UI64FMTD, uint64(new_pct->size()));
+                sScriptMgr->OnPacketReceive(this, WorldPacket(*new_pct));
+                return 0;
+            // not an opcode, client sends string "WORLD OF WARCRAFT CONNECTION - CLIENT TO SERVER" without opcode
+            // first 4 bytes become the opcode (2 dropped)
+            case MSG_VERIFY_CONNECTIVITY:
             {
-                sLog->outError("WorldSocket::ProcessIncoming: Client not authed opcode = %u", uint32(opcode));
-                return -1;
+                sLog->outStaticDebug("MSG_VERIFY_CONNECTIVITY , size: " UI64FMTD, uint64(new_pct->size()));
+                sScriptMgr->OnPacketReceive(this, WorldPacket(*new_pct));
+                std::string str;
+                *new_pct >> str;
+                if (str != "D OF WARCRAFT CONNECTION - CLIENT TO SERVER")
+                    return -1;
+                return HandleSendAuthSession();
             }
-        }
+            case CMSG_ENABLE_NAGLE:
+            {
+                sScriptMgr->OnPacketReceive(this, WorldPacket(*new_pct));
+                return m_Session ? m_Session->HandleEnableNagleAlgorithm() : -1;
+            }
+            default:
+            {
+                ACE_GUARD_RETURN(LockType, Guard, m_SessionLock, -1);
+                if (!opcodeTable[Opcodes(opcode)])
+                {
+                    sLog->outError("Opcode with no defined handler received from client: %u", new_pct->GetOpcode());
+                    return 0;
+                }
+                if (m_Session != NULL)
+                {
+                    // Our Idle timer will reset on any non PING opcodes.
+                    // Catches people idling on the login screen and any lingering ingame connections.
+                    m_Session->ResetTimeOutTime();
+
+                    // OK, give the packet to WorldSession
+                    aptr.release();
+                    // WARNINIG here we call it with locks held.
+                    // Its possible to cause deadlock if QueuePacket calls back
+                    m_Session->QueuePacket(new_pct);
+                    return 0;
+                }
+                else
+                {
+                    sLog->outError("WorldSocket::ProcessIncoming: Client not authed opcode = %u", uint32(opcode));
+                    return -1;
+                }
+            }
         }
     }
     catch (ByteBufferException &)
     {
-        sLog->outError("WorldSocket::ProcessIncoming ByteBufferException occured while parsing an instant handled packet (opcode: %u) from client %s, accountid=%i. Disconnected client.", opcode, GetRemoteAddress().c_str(), m_Session ? m_Session->GetAccountId() : -1);
+        sLog->outError("WorldSocket::ProcessIncoming ByteBufferException occured while parsing an instant handled packet (opcode: %u) from client %s, accountid=%i. Disconnected client.",
+                opcode, GetRemoteAddress().c_str(), m_Session?m_Session->GetAccountId():-1);
         if (sLog->IsOutDebug())
         {
             sLog->outDebug(LOG_FILTER_NETWORKIO, "Dumping error causing packet:");
