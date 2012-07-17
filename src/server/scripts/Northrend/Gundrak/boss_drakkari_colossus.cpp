@@ -79,7 +79,7 @@ class boss_drakkari_colossus : public CreatureScript
                 _instance = creature->GetInstanceScript();
 
                 // 100% too much?
-                SpellEntry* spell = (SpellEntry*)sSpellStore.LookupEntry(SPELL_MORTAL_STRIKE);
+                SpellEntry* spell = (SpellEntry*)sSpellMgr->GetSpellInfo(SPELL_MORTAL_STRIKE);
               //TODO: Fix spell proc
               // if (spell)
               //      spell->ProcChance = 50;

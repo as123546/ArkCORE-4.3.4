@@ -860,7 +860,7 @@ public:
     {
     public:
         PrepareSpellScript(spell_powering_up_SpellScript)
-        bool Validate(SpellEntry const * /*spellEntry*/)
+        bool Validate(SpellInfo const * /*spellEntry*/)
         {
             return true;
         }

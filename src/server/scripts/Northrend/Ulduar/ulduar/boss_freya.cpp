@@ -140,7 +140,7 @@ public:
 
         void HandleScript(SpellEffIndex /*effIndex*/) {
             Unit * target = GetHitUnit();
-            SpellEntry const * m_spellInfo = GetSpellInfo();
+            SpellInfo const * m_spellInfo = GetSpellInfo();
             switch (m_spellInfo->Id) {
             case SPELL_ATTUNED_TO_NATURE_2_DOSE_REDUCTION:
                 if (target->HasAura(GetEffectValue()))

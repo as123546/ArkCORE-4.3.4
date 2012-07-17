@@ -172,7 +172,7 @@ void ScriptedAI::DoStopAttack()
         me->AttackStop();
 }
 
-void ScriptedAI::DoCastSpell(Unit* pTarget, SpellEntry const* pSpellInfo, bool bTriggered)
+void ScriptedAI::DoCastSpell(Unit* pTarget, SpellInfo const* pSpellInfo, bool bTriggered)
 {
     if (!pTarget || me->IsNonMeleeSpellCasted(false))
         return;
@@ -186,7 +186,7 @@ void ScriptedAI::DoPlaySoundToSet(WorldObject* pSource, uint32 uiSoundId)
     if (!pSource)
         return;
 
-    if (!sSoundEntriesStore()->LookupEntry(uiSoundId))
+    if (!sSoundEntriesStore.LookupEntry(uiSoundId))
     {
         sLog->outError("TSCR: Invalid soundId %u used in DoPlaySoundToSet (Source: TypeId %u, GUID %u)", uiSoundId, pSource->GetTypeId(), pSource->GetGUIDLow());
         return;
@@ -232,7 +232,7 @@ Unit* ScriptedAI::SelectUnit(SelectAggroTarget pTarget, uint32 uiPosition)
     }
 }
 
-SpellEntry const* ScriptedAI::SelectSpell(Unit* pTarget, uint32 uiSchool, uint32 uiMechanic, SelectTargetType selectTargets, uint32 uiPowerCostMin, uint32 uiPowerCostMax, float fRangeMin, float fRangeMax, SelectEffect selectEffects)
+SpellInfo const* ScriptedAI::SelectSpell(Unit* pTarget, uint32 uiSchool, uint32 uiMechanic, SelectTargetType selectTargets, uint32 uiPowerCostMin, uint32 uiPowerCostMax, float fRangeMin, float fRangeMax, SelectEffect selectEffects)
 {
     //No target so we can't cast
     if (!pTarget)
@@ -243,18 +243,18 @@ SpellEntry const* ScriptedAI::SelectSpell(Unit* pTarget, uint32 uiSchool, uint32
         return false;
 
     //Using the extended script system we first create a list of viable spells
-    SpellEntry const* apSpell[CREATURE_MAX_SPELLS];
-    memset(apSpell, 0, sizeof(SpellEntry*) * CREATURE_MAX_SPELLS);
+    SpellInfo const* apSpell[CREATURE_MAX_SPELLS];
+    memset(apSpell, 0, CREATURE_MAX_SPELLS * sizeof(SpellInfo*));
 
     uint32 uiSpellCount = 0;
 
-    SpellEntry const* pTempSpell;
+    SpellInfo const* pTempSpell = NULL;
     SpellRangeEntry const* pTempRange;
 
     //Check if each spell is viable(set it to null if not)
     for (uint32 i = 0; i < CREATURE_MAX_SPELLS; i++)
     {
-        pTempSpell = GetSpellStore()->LookupEntry(me->m_spells[i]);
+        pTempSpell = sSpellMgr->GetSpellInfo(me->m_spells[i]);
 
         //This spell doesn't exist
         if (!pTempSpell)
@@ -278,21 +278,14 @@ SpellEntry const* ScriptedAI::SelectSpell(Unit* pTarget, uint32 uiSchool, uint32
             continue;
 
         //Make sure that the spell uses the requested amount of power
-        if (uiPowerCostMin && pTempSpell->manaCost < uiPowerCostMin)
+        if (uiPowerCostMin && pTempSpell->ManaCost < uiPowerCostMin)
             continue;
 
-        if (uiPowerCostMax && pTempSpell->manaCost > uiPowerCostMax)
+        if (uiPowerCostMax && pTempSpell->ManaCost > uiPowerCostMax)
             continue;
 
         //Continue if we don't have the mana to actually cast this spell
-        if (pTempSpell->manaCost > me->GetPower((Powers) pTempSpell->powerType))
-            continue;
-
-        //Get the Range
-        pTempRange = GetSpellRangeStore()->LookupEntry(pTempSpell->rangeIndex);
-
-        //Spell has invalid range store so we can't use it
-        if (!pTempRange)
+        if (pTempRange->ManaCost > me->GetPower(Powers(pTempRange->PowerType)))
             continue;
 
         //Check if the spell meets our range requirements
@@ -317,7 +310,7 @@ SpellEntry const* ScriptedAI::SelectSpell(Unit* pTarget, uint32 uiSchool, uint32
     return apSpell[rand() % uiSpellCount];
 }
 
-bool ScriptedAI::CanCast(Unit* pTarget, SpellEntry const* pSpell, bool bTriggered)
+bool ScriptedAI::CanCast(Unit* pTarget, SpellInfo const* pSpell, bool bTriggered)
 {
     //No target so we can't cast
     if (!pTarget || !pSpell)
@@ -328,17 +321,11 @@ bool ScriptedAI::CanCast(Unit* pTarget, SpellEntry const* pSpell, bool bTriggere
         return false;
 
     //Check for power
-    if (!bTriggered && me->GetPower((Powers) pSpell->powerType) < pSpell->manaCost)
-        return false;
-
-    SpellRangeEntry const* pTempRange = GetSpellRangeStore()->LookupEntry(pSpell->rangeIndex);
-
-    //Spell has invalid range store so we can't use it
-    if (!pTempRange)
+    if (!bTriggered && me->GetPower(Powers(pSpell->PowerType)) < pSpell->ManaCost)
         return false;
 
     //Unit is out of range of this spell
-    if (me->IsInRange(pTarget, (float) me->GetSpellMinRangeForTarget(pTarget, pTempRange), (float) me->GetSpellMaxRangeForTarget(pTarget, pTempRange)))
+    if (me->IsInRange(pTarget, float(me->GetSpellMinRangeForTarget(pTarget, pSpell)), float(me->GetSpellMaxRangeForTarget(pTarget, pSpell))))
         return false;
 
     return true;

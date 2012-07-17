@@ -92,7 +92,7 @@ public:
             me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
 
             //below may need another adjustment
-            SpellEntry* spell = (SpellEntry*)sSpellStore.LookupEntry(DUNGEON_MODE(SPELL_FLAME_SPHERE_PERIODIC, H_SPELL_FLAME_SPHERE_PERIODIC));
+            SpellEntry* spell = (SpellEntry*)sSpellMgr->GetSpellInfo(DUNGEON_MODE(SPELL_FLAME_SPHERE_PERIODIC, H_SPELL_FLAME_SPHERE_PERIODIC));
             if (spell)
                 spell->EffectAmplitude[0] = 500;
         }

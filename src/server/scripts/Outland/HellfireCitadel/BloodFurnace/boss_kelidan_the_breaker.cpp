@@ -255,12 +255,6 @@ class boss_kelidan_the_breaker : public CreatureScript
 
                     DoScriptText(SAY_NOVA, me);
 
-                    if (SpellEntry *nova = GET_SPELL(SPELL_BURNING_NOVA))
-                    {
-                        if (Aura * aura = Aura::TryCreate(nova, me, me))
-                            aura->ApplyForTargets();
-                    }
-
                     if (IsHeroic())
                         DoTeleportAll(me->GetPositionX(), me->GetPositionY(), me->GetPositionZ(), me->GetOrientation());
 

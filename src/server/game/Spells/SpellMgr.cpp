@@ -2572,7 +2572,7 @@ void SpellMgr::LoadSpellInfoStore()
 
     for (uint32 i = 0; i < sSpellStore.GetNumRows(); ++i)
     {
-        if (SpellEntry const* spellEntry = sSpellStore.LookupEntry(i))
+        if (SpellEntry const* spellEntry = sSpellMgr->GetSpellInfo(i))
             mSpellInfoMap[i] = new SpellInfo(spellEntry);
     }
 
@@ -2848,7 +2848,7 @@ void SpellMgr::LoadDbcDataCorrections()
     SpellEntry* spellInfo = NULL;
     for (uint32 i = 0; i < sSpellStore.GetNumRows(); ++i)
     {
-        spellInfo = (SpellEntry*)sSpellStore.LookupEntry(i);
+        spellInfo = (SpellEntry*)sSpellMgr->GetSpellInfo(i);
         if (!spellInfo)
             continue;
 

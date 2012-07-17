@@ -347,10 +347,14 @@ Aura * Aura::Create (SpellEntry const* spellproto, uint8 effMask, WorldObject * 
     return aura;
 }
 
-Aura::Aura (SpellEntry const* spellproto, uint8 effMask, WorldObject * owner, Unit * caster, int32 *baseAmount, Item * castItem, uint64 casterGUID) :
-        m_spellProto(spellproto), m_casterGuid(casterGUID ? casterGUID : caster->GetGUID()), m_castItemGuid(castItem ? castItem->GetGUID() : 0), m_applyTime(time(NULL)), m_owner(owner), m_timeCla(0), m_updateTargetMapInterval(0), m_casterLevel(caster ? caster->getLevel() : m_spellProto->spellLevel), m_procCharges(0), m_stackAmount(1), m_isRemoved(false), m_isSingleTarget(false)
+Aura::Aura(SpellInfo const* spellproto, WorldObject * owner, Unit* caster, Item* castItem, uint64 casterGUID) :
+m_spellInfo(spellproto), m_casterGuid(casterGUID ? casterGUID : caster->GetGUID()),
+m_castItemGuid(castItem ? castItem->GetGUID() : 0), m_applyTime(time(NULL)),
+m_owner(owner), m_timeCla(0), m_updateTargetMapInterval(0),
+m_casterLevel(caster ? caster->getLevel() : m_spellInfo->SpellLevel), m_procCharges(0), m_stackAmount(1),
+m_isRemoved(false), m_isSingleTarget(false), m_isUsingCharges(false)
 {
-    if (m_spellProto->manaPerSecond)
+    if (m_spellInfo->ManaPerSecond)
         m_timeCla = 1 * IN_MILLISECONDS;
 
     Player* modOwner = NULL;
@@ -358,12 +362,12 @@ Aura::Aura (SpellEntry const* spellproto, uint8 effMask, WorldObject * owner, Un
     if (caster)
     {
         modOwner = caster->GetSpellModOwner();
-        m_maxDuration = caster->CalcSpellDuration(m_spellProto);
+        m_maxDuration = caster->CalcSpellDuration(m_spellInfo);
     }
     else
-        m_maxDuration = GetSpellDuration(m_spellProto);
+        m_maxDuration = GetSpellDuration(m_spellInfo);
 
-    if (IsPassive() && m_spellProto->DurationIndex == 0)
+    if (IsPassive() && m_spellInfo->DurationIndex == 0)
         m_maxDuration = -1;
 
     if (!IsPermanent() && modOwner)
@@ -371,7 +375,7 @@ Aura::Aura (SpellEntry const* spellproto, uint8 effMask, WorldObject * owner, Un
 
     m_duration = m_maxDuration;
 
-    m_procCharges = m_spellProto->procCharges;
+    m_procCharges = m_spellInfo->procCharges;
     if (modOwner)
         modOwner->ApplySpellMod(GetId(), SPELLMOD_CHARGES, m_procCharges);
 }

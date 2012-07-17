@@ -198,13 +198,13 @@ public:
         trigger_periodicAI (Creature* c) :
                 NullCreatureAI(c)
         {
-            spell = me->m_spells[0] ? GetSpellStore()->LookupEntry(me->m_spells[0]) : NULL;
+            spell = me->m_spells[0] ? sSpellMgr->GetSpellInfo(me->m_spells[0]) : NULL;
             interval = me->GetAttackTime(BASE_ATTACK);
             timer = interval;
         }
 
         uint32 timer, interval;
-        const SpellEntry * spell;
+        const SpellInfo * spell;
 
         void UpdateAI (const uint32 diff)
         {

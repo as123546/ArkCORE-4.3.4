@@ -133,15 +133,15 @@ public:
     class spell_pal_blessing_of_faith_SpellScript: public SpellScript
     {
         PrepareSpellScript(spell_pal_blessing_of_faith_SpellScript)
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(SPELL_BLESSING_OF_LOWER_CITY_DRUID))
+            if (!sSpellMgr->GetSpellInfo(SPELL_BLESSING_OF_LOWER_CITY_DRUID))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_BLESSING_OF_LOWER_CITY_PALADIN))
+            if (!sSpellMgr->GetSpellInfo(SPELL_BLESSING_OF_LOWER_CITY_PALADIN))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_BLESSING_OF_LOWER_CITY_PRIEST))
+            if (!sSpellMgr->GetSpellInfo(SPELL_BLESSING_OF_LOWER_CITY_PRIEST))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_BLESSING_OF_LOWER_CITY_SHAMAN))
+            if (!sSpellMgr->GetSpellInfo(SPELL_BLESSING_OF_LOWER_CITY_SHAMAN))
                 return false;
             return true;
         }
@@ -198,9 +198,9 @@ public:
     class spell_pal_holy_shock_SpellScript: public SpellScript
     {
         PrepareSpellScript(spell_pal_holy_shock_SpellScript)
-        bool Validate (SpellEntry const *spellEntry)
+        bool Validate (SpellInfo const *spellEntry)
         {
-            if (!sSpellStore.LookupEntry(PALADIN_SPELL_HOLY_SHOCK_R1))
+            if (!sSpellMgr->GetSpellInfo(PALADIN_SPELL_HOLY_SHOCK_R1))
                 return false;
 
             // can't use other spell than holy shock due to spell_ranks dependency

@@ -99,7 +99,7 @@ void WorldSession::HandlePetAction (WorldPacket & recv_data)
 
     if (!pet->isAlive())
     {
-        SpellEntry const* spell = (flag == ACT_ENABLED || flag == ACT_PASSIVE) ? sSpellStore.LookupEntry(spellid) : NULL;
+        SpellEntry const* spell = (flag == ACT_ENABLED || flag == ACT_PASSIVE) ? sSpellMgr->GetSpellInfo(spellid) : NULL;
         if (!spell)
             return;
         if (!(spell->Attributes & SPELL_ATTR0_CASTABLE_WHILE_DEAD))

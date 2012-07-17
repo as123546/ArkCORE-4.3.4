@@ -2114,7 +2114,7 @@ class spell_the_lich_king_necrotic_plague : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_NECROTIC_PLAGUE_JUMP))
+                if (!sSpellMgr->GetSpellInfo(SPELL_NECROTIC_PLAGUE_JUMP))
                     return false;
                 return true;
             }
@@ -2380,7 +2380,7 @@ class spell_the_lich_king_ice_burst_target_search : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_ICE_BURST))
+                if (!sSpellMgr->GetSpellInfo(SPELL_ICE_BURST))
                     return false;
                 return true;
             }
@@ -2419,7 +2419,7 @@ class spell_the_lich_king_raging_spirit : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_LIFE_SIPHON_HEAL))
+                if (!sSpellMgr->GetSpellInfo(SPELL_LIFE_SIPHON_HEAL))
                     return false;
                 return true;
             }
@@ -2536,7 +2536,7 @@ class spell_the_lich_king_soul_reaper : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_SOUL_REAPER_BUFF))
+                if (!sSpellMgr->GetSpellInfo(SPELL_SOUL_REAPER_BUFF))
                     return false;
                 return true;
             }
@@ -2570,7 +2570,7 @@ class spell_the_lich_king_valkyr_target_search : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_ICE_BURST))
+                if (!sSpellMgr->GetSpellInfo(SPELL_ICE_BURST))
                     return false;
                 return true;
             }
@@ -2694,7 +2694,7 @@ class spell_the_lich_king_life_siphon : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_LIFE_SIPHON_HEAL))
+                if (!sSpellMgr->GetSpellInfo(SPELL_LIFE_SIPHON_HEAL))
                     return false;
                 return true;
             }
@@ -2734,7 +2734,7 @@ class spell_the_lich_king_vile_spirits : public SpellScriptLoader
             void OnPeriodic(AuraEffect const* aurEff)
             {
                 if (_is25Man || ((aurEff->GetTickNumber() - 1) % 5))
-                    GetTarget()->CastSpell((Unit*)NULL, GetSpellProto()->EffectTriggerSpell[aurEff->GetEffIndex()], true, NULL, aurEff, GetCasterGUID());
+                    GetTarget()->CastSpell((Unit*)NULL, GetSpellInfo()->EffectTriggerSpell[aurEff->GetEffIndex()], true, NULL, aurEff, GetCasterGUID());
             }
 
             void Register()

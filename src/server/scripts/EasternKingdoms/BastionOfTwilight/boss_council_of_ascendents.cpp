@@ -106,7 +106,7 @@ public:
  {
  PrepareSpellScript(spell_waterbombSpellScript);
 
- bool Validate(SpellEntry const * spellEntry *)
+ bool Validate(SpellInfo const * spellEntry *)
  {
  return true;
  }

@@ -532,7 +532,7 @@ public:
     {
     public:
         PrepareSpellScript(spell_spinning_pain_strike_SpellScript)
-        bool Validate(SpellEntry const * /*spellEntry*/)
+        bool Validate(SpellInfo const * /*spellEntry*/)
         {
             return true;
         }
@@ -566,7 +566,7 @@ public:
     {
     public:
         PrepareSpellScript(spell_eject_all_passengers_SpellScript)
-        bool Validate(SpellEntry const * /*spellEntry*/)
+        bool Validate(SpellInfo const * /*spellEntry*/)
         {
             return true;
         }

@@ -94,7 +94,7 @@ void LoadSkillDiscoveryTable ()
 
         if (reqSkillOrSpell > 0)          // spell case
         {
-            SpellEntry const* reqSpellEntry = sSpellStore.LookupEntry(reqSkillOrSpell);
+            SpellEntry const* reqSpellEntry = sSpellMgr->GetSpellInfo(reqSkillOrSpell);
             if (!reqSpellEntry)
             {
                 if (reportedReqSpells.find(reqSkillOrSpell) == reportedReqSpells.end())

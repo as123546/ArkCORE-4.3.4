@@ -69,7 +69,7 @@ extern pEffect SpellEffects[TOTAL_SPELL_EFFECTS];
 
 bool IsQuestTameSpell (uint32 spellId)
 {
-    SpellEntry const *spellproto = sSpellStore.LookupEntry(spellId);
+    SpellInfo const *spellproto = sSpellMgr->GetSpellInfo(spellId);
     if (!spellproto)
         return false;
 
@@ -436,7 +436,7 @@ void SpellCastTargets::write (ByteBuffer & data)
         data << m_strTarget;
 }
 
-Spell::Spell (Unit* Caster, SpellEntry const *info, bool triggered, uint64 originalCasterGUID, bool skipCheck) :
+Spell::Spell (Unit* Caster, SpellInfo const *info, bool triggered, uint64 originalCasterGUID, bool skipCheck) :
         m_spellInfo(sSpellMgr->GetSpellForDifficultyFromSpell(info, Caster)), m_caster(Caster), m_spellValue(new SpellValue(m_spellInfo))
 {
     m_customAttr = sSpellMgr->GetSpellCustomAttr(m_spellInfo->Id);
@@ -963,7 +963,7 @@ void Spell::AddUnitTarget (Unit* pVictim, uint32 effIndex)
             ihit->scaleAura = false;
             if (m_auraScaleMask && ihit->effectMask == m_auraScaleMask && m_caster != pVictim)
             {
-                SpellEntry const * auraSpell = sSpellStore.LookupEntry(sSpellMgr->GetFirstSpellInChain(m_spellInfo->Id));
+                SpellInfo const * auraSpell = sSpellMgr->GetSpellInfo(sSpellMgr->GetFirstSpellInChain(m_spellInfo->Id));
                 if (uint32(pVictim->getLevel() + 10) >= auraSpell->spellLevel)
                     ihit->scaleAura = true;
             }
@@ -984,7 +984,7 @@ void Spell::AddUnitTarget (Unit* pVictim, uint32 effIndex)
     target.scaleAura = false;
     if (m_auraScaleMask && target.effectMask == m_auraScaleMask && m_caster != pVictim)
     {
-        SpellEntry const * auraSpell = sSpellStore.LookupEntry(sSpellMgr->GetFirstSpellInChain(m_spellInfo->Id));
+        SpellInfo const * auraSpell = sSpellMgr->GetSpellInfo(sSpellMgr->GetFirstSpellInChain(m_spellInfo->Id));
         if (uint32(pVictim->getLevel() + 10) >= auraSpell->spellLevel)
             target.scaleAura = true;
     }
@@ -1484,7 +1484,7 @@ SpellMissInfo Spell::DoSpellHitOnUnit (Unit *unit, const uint32 effectMask, bool
     {
         // Select rank for aura with level requirements only in specific cases
         // Unit has to be target only of aura effect, both caster and target have to be players, target has to be other than unit target
-        SpellEntry const * aurSpellInfo = m_spellInfo;
+        SpellInfo const * aurSpellInfo = m_spellInfo;
         int32 basePoints[3];
         if (scaleAura)
         {
@@ -1577,7 +1577,7 @@ void Spell::DoTriggersOnSpellHit (Unit *unit)
             // Cast the serverside immunity shield marker
             m_caster->CastSpell(unit, 61988, true);
 
-        if (sSpellStore.LookupEntry(m_preCastSpell))
+        if (sSpellMgr->GetSpellInfo(m_preCastSpell))
             // Blizz seems to just apply aura without bothering to cast
             m_caster->AddAura(m_preCastSpell, unit);
     }
@@ -3484,9 +3484,9 @@ void Spell::cast (bool skipCheck)
     {
         if (!(*i)->IsAffectedOnSpell(m_spellInfo))
             continue;
-        SpellEntry const *auraSpellInfo = (*i)->GetSpellProto();
+        SpellInfo const *auraSpellInfo = (*i)->GetSpellProto();
         uint32 auraSpellIdx = (*i)->GetEffIndex();
-        if (SpellEntry const *spellInfo = sSpellStore.LookupEntry(auraSpellInfo->EffectTriggerSpell[auraSpellIdx]))
+        if (SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(auraSpellInfo->EffectTriggerSpell[auraSpellIdx]))
         {
             int32 auraBaseAmount = (*i)->GetBaseAmount();
             int32 chance = m_caster->CalculateSpellDamage(NULL, auraSpellInfo, auraSpellIdx, &auraBaseAmount);
@@ -3939,7 +3939,7 @@ void Spell::finish (bool ok)
     {
         // Unsummon statue
         uint32 spell = m_caster->GetUInt32Value(UNIT_CREATED_BY_SPELL);
-        SpellEntry const *spellInfo = sSpellStore.LookupEntry(spell);
+        SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spell);
         if (spellInfo && spellInfo->SpellIconID == 2056)
         {
             sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "Statue %d is unsummoned in spell %d finish", m_caster->GetGUIDLow(), m_spellInfo->Id);
@@ -5526,7 +5526,7 @@ SpellCastResult Spell::CheckCast (bool strict)
             if (!pet)
                 return SPELL_FAILED_NO_PET;
 
-            SpellEntry const *learn_spellproto = sSpellStore.LookupEntry(m_spellInfo->EffectTriggerSpell[i]);
+            SpellInfo const *learn_spellproto = sSpellMgr->GetSpellInfo(m_spellInfo->EffectTriggerSpell[i]);
 
             if (!learn_spellproto)
                 return SPELL_FAILED_NOT_KNOWN;
@@ -5545,7 +5545,7 @@ SpellCastResult Spell::CheckCast (bool strict)
             if (!pet)
                 return SPELL_FAILED_NO_PET;
 
-            SpellEntry const *learn_spellproto = sSpellStore.LookupEntry(m_spellInfo->EffectTriggerSpell[i]);
+            SpellInfo const *learn_spellproto = sSpellMgr->GetSpellInfo(m_spellInfo->EffectTriggerSpell[i]);
 
             if (!learn_spellproto)
                 return SPELL_FAILED_NOT_KNOWN;

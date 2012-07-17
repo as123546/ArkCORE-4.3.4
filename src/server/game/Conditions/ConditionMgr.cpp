@@ -74,7 +74,7 @@ bool Condition::Meets (Player * player, Unit* invoker)
     }
     case CONDITION_ACHIEVEMENT:
     {
-        AchievementEntry const* achievement = GetAchievementStore()->LookupEntry(mConditionValue1);
+        AchievementEntry const* achievement = sAchievementStore.LookupEntry(mConditionValue1);
         condMeets = player->GetAchievementMgr().HasAchieved(achievement);
         break;
     }
@@ -887,7 +887,7 @@ bool ConditionMgr::isSourceTypeValid (Condition* cond)
             return false;
         }
 
-        SpellEntry const* spellProto = sSpellStore.LookupEntry(cond->mSourceEntry);
+        SpellEntry const* spellProto = sSpellMgr->GetSpellInfo(cond->mSourceEntry);
         if (!spellProto)
         {
             sLog->outErrorDb("SourceEntry %u in `condition` table, does not exist in `spell.dbc`, ignoring.", cond->mSourceEntry);
@@ -935,7 +935,7 @@ bool ConditionMgr::isSourceTypeValid (Condition* cond)
     }
     case CONDITION_SOURCE_TYPE_SPELL:
     {
-        SpellEntry const* spellProto = sSpellStore.LookupEntry(cond->mSourceEntry);
+        SpellEntry const* spellProto = sSpellMgr->GetSpellInfo(cond->mSourceEntry);
         if (!spellProto)
         {
             sLog->outErrorDb("SourceEntry %u in `condition` table, does not exist in `spell.dbc`, ignoring.", cond->mSourceEntry);
@@ -961,7 +961,7 @@ bool ConditionMgr::isSourceTypeValid (Condition* cond)
         bool bIsItemSpellValid = false;
         for (uint8 i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
         {
-            if (SpellEntry const* pSpellInfo = sSpellStore.LookupEntry(pItemProto->Spells[i].SpellId))
+            if (SpellEntry const* pSpellInfo = sSpellMgr->GetSpellInfo(pItemProto->Spells[i].SpellId))
             {
                 if (pItemProto->Spells[i].SpellTrigger == ITEM_SPELLTRIGGER_ON_USE || pItemProto->Spells[i].SpellTrigger == ITEM_SPELLTRIGGER_ON_NO_DELAY_USE)
                 {
@@ -1019,7 +1019,7 @@ bool ConditionMgr::isSourceTypeValid (Condition* cond)
             sLog->outErrorDb("SourceEntry %u in `condition` table, does not exist in `creature_template`, ignoring.", cond->mSourceGroup);
             return false;
         }
-        SpellEntry const* spellProto = sSpellStore.LookupEntry(cond->mSourceEntry);
+        SpellEntry const* spellProto = sSpellMgr->GetSpellInfo(cond->mSourceEntry);
         if (!spellProto)
         {
             sLog->outErrorDb("SourceEntry %u in `condition` table, does not exist in `spell.dbc`, ignoring.", cond->mSourceEntry);
@@ -1049,7 +1049,7 @@ bool ConditionMgr::isConditionTypeValid (Condition* cond)
     {
     case CONDITION_AURA:
     {
-        if (!sSpellStore.LookupEntry(cond->mConditionValue1))
+        if (!sSpellMgr->GetSpellInfo(cond->mConditionValue1))
         {
             sLog->outErrorDb("Aura condition has non existing spell (Id: %d), skipped", cond->mConditionValue1);
             return false;
@@ -1166,7 +1166,7 @@ bool ConditionMgr::isConditionTypeValid (Condition* cond)
     }
     case CONDITION_NO_AURA:
     {
-        if (!sSpellStore.LookupEntry(cond->mConditionValue1))
+        if (!sSpellMgr->GetSpellInfo(cond->mConditionValue1))
         {
             sLog->outErrorDb("Aura condition has non existing spell (Id: %d), skipped", cond->mConditionValue1);
             return false;
@@ -1194,7 +1194,7 @@ bool ConditionMgr::isConditionTypeValid (Condition* cond)
     }
     case CONDITION_ACHIEVEMENT:
     {
-        AchievementEntry const* achievement = GetAchievementStore()->LookupEntry(cond->mConditionValue1);
+        AchievementEntry const* achievement = sAchievementStore.LookupEntry(cond->mConditionValue1);
         if (!achievement)
         {
             sLog->outErrorDb("Achivemen condition has non existing achivement id (%u), skipped", cond->mConditionValue1);
@@ -1335,7 +1335,7 @@ bool ConditionMgr::isConditionTypeValid (Condition* cond)
     }
     case CONDITION_SPELL:
     {
-        if (!sSpellStore.LookupEntry(cond->mConditionValue1))
+        if (!sSpellMgr->GetSpellInfo(cond->mConditionValue1))
         {
             sLog->outErrorDb("Spell condition has non existing spell (Id: %d), skipped", cond->mConditionValue1);
             return false;

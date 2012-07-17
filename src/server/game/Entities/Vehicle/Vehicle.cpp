@@ -108,7 +108,7 @@ void Vehicle::Install ()
                 if (!pCreature->m_spells[i])
                     continue;
 
-                SpellEntry const *spellInfo = sSpellStore.LookupEntry(pCreature->m_spells[i]);
+                SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(pCreature->m_spells[i]);
                 if (!spellInfo)
                     continue;
 

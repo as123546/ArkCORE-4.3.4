@@ -70,7 +70,7 @@ public:
 
         bool Validate (SpellEntry const* /*spellInfo*/)
         {
-            if (!sSpellStore.LookupEntry(SHAMAN_SPELL_SEARING_FLAMES))
+            if (!sSpellMgr->GetSpellInfo(SHAMAN_SPELL_SEARING_FLAMES))
                 return false;
             return true;
         }
@@ -118,7 +118,7 @@ public:
 
         bool Validate (SpellEntry const* /*spellInfo*/)
         {
-            if (!sSpellStore.LookupEntry(SHAMAN_SPELL_EARTHQUAKE_KNOCKDOWN))
+            if (!sSpellMgr->GetSpellInfo(SHAMAN_SPELL_EARTHQUAKE_KNOCKDOWN))
                 return false;
             return true;
         }
@@ -198,7 +198,7 @@ public:
     class spell_sha_fire_nova_SpellScript: public SpellScript
     {
         PrepareSpellScript(spell_sha_fire_nova_SpellScript)
-        bool Validate (SpellEntry const * spellEntry)
+        bool Validate (SpellInfo const * spellEntry)
         {
             if (sSpellMgr->GetFirstSpellInChain(SHAMAN_SPELL_FIRE_NOVA) != sSpellMgr->GetFirstSpellInChain(spellEntry->Id))
                 return false;
@@ -249,15 +249,15 @@ public:
         PrepareAuraScript(spell_sha_earthbind_totem_AuraScript)
         ;
 
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(SHAMAN_TOTEM_SPELL_EARTHBIND_TOTEM))
+            if (!sSpellMgr->GetSpellInfo(SHAMAN_TOTEM_SPELL_EARTHBIND_TOTEM))
                 return false;
-            if (!sSpellStore.LookupEntry(SHAMAN_TOTEM_SPELL_EARTHEN_POWER))
+            if (!sSpellMgr->GetSpellInfo(SHAMAN_TOTEM_SPELL_EARTHEN_POWER))
                 return false;
-            if (!sSpellStore.LookupEntry(SHAMAN_TOTEM_SPELL_EARTHS_GRASP))
+            if (!sSpellMgr->GetSpellInfo(SHAMAN_TOTEM_SPELL_EARTHS_GRASP))
                 return false;
-            if (!sSpellStore.LookupEntry(SHAMAN_TOTEM_SPELL_EARTHGRAB))
+            if (!sSpellMgr->GetSpellInfo(SHAMAN_TOTEM_SPELL_EARTHGRAB))
                 return false;
             return true;
         }
@@ -305,9 +305,9 @@ public:
     class spell_sha_unleash_elements_SpellScript: public SpellScript
     {
         PrepareSpellScript(spell_sha_unleash_elements_SpellScript)
-        bool Validate (SpellEntry const * spellEntry)
+        bool Validate (SpellInfo const * spellEntry)
         {
-            if (!sSpellStore.LookupEntry(SHAMAN_SPELL_UNLEASH_ELEMENTS))
+            if (!sSpellMgr->GetSpellInfo(SHAMAN_SPELL_UNLEASH_ELEMENTS))
                 return false;
 
             return true;
@@ -397,12 +397,12 @@ public:
         PrepareAuraScript(spell_sha_totemic_wrath_AuraScript)
         ;
 
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(SHAMAN_TOTEM_SPELL_TOTEMIC_WRATH))
+            if (!sSpellMgr->GetSpellInfo(SHAMAN_TOTEM_SPELL_TOTEMIC_WRATH))
                 return false;
 
-            if (!sSpellStore.LookupEntry(SHAMAN_TOTEM_SPELL_TOTEMIC_WRATH_AURA))
+            if (!sSpellMgr->GetSpellInfo(SHAMAN_TOTEM_SPELL_TOTEMIC_WRATH_AURA))
                 return false;
 
             return true;
@@ -446,15 +446,15 @@ public:
     {
         PrepareSpellScript(spell_sha_fulminationSpellScript)
 
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(SHAMAN_SPELL_FULMINATION))
+            if (!sSpellMgr->GetSpellInfo(SHAMAN_SPELL_FULMINATION))
                 return false;
 
-            if (!sSpellStore.LookupEntry(SHAMAN_SPELL_FULMINATION_TRIGGERED))
+            if (!sSpellMgr->GetSpellInfo(SHAMAN_SPELL_FULMINATION_TRIGGERED))
                 return false;
 
-            if (!sSpellStore.LookupEntry(SHAMAN_SPELL_FULMINATION_INFO))
+            if (!sSpellMgr->GetSpellInfo(SHAMAN_SPELL_FULMINATION_INFO))
                 return false;
 
             return true;
@@ -487,7 +487,7 @@ public:
                 return;
             uint8 usedCharges = lsCharges - 3;
 
-            SpellEntry const* spellInfo = sSpellStore.LookupEntry(SHAMAN_SPELL_LIGHTNING_SHIELD_PROC);
+            SpellEntry const* spellInfo = sSpellMgr->GetSpellInfo(SHAMAN_SPELL_LIGHTNING_SHIELD_PROC);
             int32 basePoints = caster->CalculateSpellDamage(target, spellInfo, 0);
             uint32 damage = usedCharges * caster->SpellDamageBonus(target, spellInfo, effIndex, basePoints, SPELL_DIRECT_DAMAGE);
             caster->CastCustomSpell(SHAMAN_SPELL_FULMINATION_TRIGGERED, SPELLVALUE_BASE_POINT0, damage, target, true, NULL, fulminationAura);
@@ -568,7 +568,7 @@ class spell_sha_mana_tide : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spellEntry*/)
             {
-                if (!sSpellStore.LookupEntry(SHAMAN_SPELL_MANA_TIDE_TOTEM))
+                if (!sSpellMgr->GetSpellInfo(SHAMAN_SPELL_MANA_TIDE_TOTEM))
                     return false;
                 return true;
             }

@@ -3192,11 +3192,11 @@ class spell_gb_burning_pitch : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spellInfo*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_BURNING_PITCH_SIEGE_DMG_A))
+                if (!sSpellMgr->GetSpellInfo(SPELL_BURNING_PITCH_SIEGE_DMG_A))
                     return false;
-                if (!sSpellStore.LookupEntry(SPELL_BURNING_PITCH_SIEGE_DMG_H))
+                if (!sSpellMgr->GetSpellInfo(SPELL_BURNING_PITCH_SIEGE_DMG_H))
                     return false;
-                if (!sSpellStore.LookupEntry(SPELL_BURNING_PITCH_AOE_DAMAGE))
+                if (!sSpellMgr->GetSpellInfo(SPELL_BURNING_PITCH_AOE_DAMAGE))
                     return false;
                 return true;
             }

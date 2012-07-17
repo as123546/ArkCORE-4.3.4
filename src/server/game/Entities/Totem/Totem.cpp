@@ -103,7 +103,7 @@ void Totem::InitStats (uint32 duration)
     }
 
     // Get spell casted by totem
-    SpellEntry const * totemSpell = sSpellStore.LookupEntry(GetSpell());
+    SpellInfo const * totemSpell = sSpellMgr->GetSpellInfo(GetSpell());
     if (totemSpell)
     {
         // If spell have cast time -> so its active totem

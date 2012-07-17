@@ -496,9 +496,9 @@ public:
         ;
 
         bool Validate(SpellEntry const* /*spellInfo*/) {
-            if (!sSpellStore.LookupEntry(SPELL_ARGENT_CANNON_SHOOT_TRIGGER))
+            if (!sSpellMgr->GetSpellInfo(SPELL_ARGENT_CANNON_SHOOT_TRIGGER))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_RECONING_BOMB_TRIGGER)) //sSpellStore.LookupEntry = GetSpellInfo
+            if (!sSpellMgr->GetSpellInfo(SPELL_RECONING_BOMB_TRIGGER)) //sSpellMgr->GetSpellInfo = GetSpellInfo
                 return false;
             return true;
         }

@@ -516,11 +516,11 @@ class spell_blood_queen_vampiric_bite : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_ESSENCE_OF_THE_BLOOD_QUEEN_PLR))
+                if (!sSpellMgr->GetSpellInfo(SPELL_ESSENCE_OF_THE_BLOOD_QUEEN_PLR))
                     return false;
-                if (!sSpellStore.LookupEntry(SPELL_FRENZIED_BLOODTHIRST))
+                if (!sSpellMgr->GetSpellInfo(SPELL_FRENZIED_BLOODTHIRST))
                     return false;
-                if (!sSpellStore.LookupEntry(SPELL_PRESENCE_OF_THE_DARKFALLEN))
+                if (!sSpellMgr->GetSpellInfo(SPELL_PRESENCE_OF_THE_DARKFALLEN))
                     return false;
                 return true;
             }
@@ -649,7 +649,7 @@ class spell_blood_queen_bloodbolt : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_TWILIGHT_BLOODBOLT))
+                if (!sSpellMgr->GetSpellInfo(SPELL_TWILIGHT_BLOODBOLT))
                     return false;
                 return true;
             }
@@ -747,7 +747,7 @@ class spell_blood_queen_pact_of_the_darkfallen_dmg : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_PACT_OF_THE_DARKFALLEN_DAMAGE))
+                if (!sSpellMgr->GetSpellInfo(SPELL_PACT_OF_THE_DARKFALLEN_DAMAGE))
                     return false;
                 return true;
             }

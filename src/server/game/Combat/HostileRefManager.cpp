@@ -39,7 +39,7 @@ HostileRefManager::~HostileRefManager ()
 // The pVictim is hated than by them as well
 // use for buffs and healing threat functionality
 
-void HostileRefManager::threatAssist (Unit *pVictim, float fThreat, SpellEntry const *pThreatSpell, bool pSingleTarget)
+void HostileRefManager::threatAssist (Unit *pVictim, float fThreat, SpellInfo const *pThreatSpell, bool pSingleTarget)
 {
     HostileReference* ref;
 

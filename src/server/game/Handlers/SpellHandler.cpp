@@ -138,7 +138,7 @@ void WorldSession::HandleUseItemOpcode (WorldPacket& recvPacket)
     {
         for (int i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
         {
-            if (SpellEntry const *spellInfo = sSpellStore.LookupEntry(proto->Spells[i].SpellId))
+            if (SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(proto->Spells[i].SpellId))
             {
                 if (IsNonCombatSpell(spellInfo))
                 {
@@ -169,7 +169,7 @@ void WorldSession::HandleUseItemOpcode (WorldPacket& recvPacket)
         pUser->SendEquipError(EQUIP_ERR_NONE, pItem, NULL);
 
         // send spell error
-        if (SpellEntry const* spellInfo = sSpellStore.LookupEntry(spellId))
+        if (SpellEntry const* spellInfo = sSpellMgr->GetSpellInfo(spellId))
         {
             // for implicit area/coord target spells
             if (!targets.getUnitTarget())
@@ -402,7 +402,7 @@ void WorldSession::HandleCastSpellOpcode (WorldPacket& recvPacket)
     // auto-selection buff level base at target level (in spellInfo)
     if (targets.getUnitTarget())
     {
-        SpellEntry const *actualSpellInfo = sSpellMgr->SelectAuraRankForPlayerLevel(spellInfo, targets.getUnitTarget()->getLevel());
+        SpellInfo const *actualSpellInfo = sSpellMgr->SelectAuraRankForPlayerLevel(spellInfo, targets.getUnitTarget()->getLevel());
 
         // if rank not found then function return NULL but in explicit cast case original spell can be casted and later failed with appropriate error message
         if (actualSpellInfo)
@@ -550,7 +550,7 @@ void WorldSession::HandleSelfResOpcode (WorldPacket & /*recv_data*/)
 
     if (_player->GetUInt32Value(PLAYER_SELF_RES_SPELL))
     {
-        SpellEntry const *spellInfo = sSpellStore.LookupEntry(_player->GetUInt32Value(PLAYER_SELF_RES_SPELL));
+        SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(_player->GetUInt32Value(PLAYER_SELF_RES_SPELL));
         if (spellInfo)
             _player->CastSpell(_player, spellInfo, false, 0);
 

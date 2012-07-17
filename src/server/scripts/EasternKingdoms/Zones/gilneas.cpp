@@ -1424,7 +1424,7 @@ public:
  {
  PrepareSpellScript(spell_rescue_krennan_SpellScript)*/
 
-//bool Validate(SpellEntry const * /*spellEntry*/)
+//bool Validate(SpellInfo const * /*spellEntry*/)
 //{
 //    return true;
 //}

@@ -700,7 +700,7 @@ class spell_rotface_unstable_ooze_explosion_init : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_UNSTABLE_OOZE_EXPLOSION_TRIGGER))
+                if (!sSpellMgr->GetSpellInfo(SPELL_UNSTABLE_OOZE_EXPLOSION_TRIGGER))
                     return false;
                 return true;
             }
@@ -744,7 +744,7 @@ class spell_rotface_unstable_ooze_explosion : public SpellScriptLoader
                 if (!GetTargetDest())
                     return;
 
-                uint32 triggered_spell_id = GetSpellInfo()->EffectTriggerSpell[effIndex];
+                uint32 triggered_spell_id = GetSpellInfo()->Effects[effIndex].TriggerSpell;
 
                 float x, y, z;
                 GetTargetDest()->GetPosition(x, y, z);

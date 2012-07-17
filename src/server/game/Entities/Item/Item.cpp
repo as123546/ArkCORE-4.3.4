@@ -102,7 +102,7 @@ void AddItemsSetItem (Player*player, Item *item)
         {
             if (!eff->spells[y])          // free slot
             {
-                SpellEntry const *spellInfo = sSpellStore.LookupEntry(set->spells[x]);
+                SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(set->spells[x]);
                 if (!spellInfo)
                 {
                     sLog->outError("WORLD: unknown spell id %u in items set %u effects", set->spells[x], setid);

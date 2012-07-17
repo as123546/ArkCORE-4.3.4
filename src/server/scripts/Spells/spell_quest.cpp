@@ -104,9 +104,9 @@ public:
         PrepareSpellScript(spell_q5206_test_fetid_skull_SpellScript)
         bool Validate (SpellEntry const* /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(SPELL_CREATE_RESONATING_SKULL))
+            if (!sSpellMgr->GetSpellInfo(SPELL_CREATE_RESONATING_SKULL))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_CREATE_BONE_DUST))
+            if (!sSpellMgr->GetSpellInfo(SPELL_CREATE_BONE_DUST))
                 return false;
             return true;
         }
@@ -270,9 +270,9 @@ public:
         ;
         bool Validate (SpellEntry const* /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(SPELL_FORCE_SHIELD_ARCANE_PURPLE_X3))
+            if (!sSpellMgr->GetSpellInfo(SPELL_FORCE_SHIELD_ARCANE_PURPLE_X3))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_SCOURGING_CRYSTAL_CONTROLLER))
+            if (!sSpellMgr->GetSpellInfo(SPELL_SCOURGING_CRYSTAL_CONTROLLER))
                 return false;
             return true;
         }
@@ -314,7 +314,7 @@ public:
         ;
         bool Validate (SpellEntry const* /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(SPELL_FORCE_SHIELD_ARCANE_PURPLE_X3))
+            if (!sSpellMgr->GetSpellInfo(SPELL_FORCE_SHIELD_ARCANE_PURPLE_X3))
                 return false;
             return true;
         }
@@ -382,11 +382,11 @@ public:
         PrepareSpellScript(spell_q11587_arcane_prisoner_rescue_SpellScript)
         bool Validate (SpellEntry const* /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(SPELL_SUMMON_ARCANE_PRISONER_MALE))
+            if (!sSpellMgr->GetSpellInfo(SPELL_SUMMON_ARCANE_PRISONER_MALE))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_SUMMON_ARCANE_PRISONER_FEMALE))
+            if (!sSpellMgr->GetSpellInfo(SPELL_SUMMON_ARCANE_PRISONER_FEMALE))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_ARCANE_PRISONER_KILL_CREDIT))
+            if (!sSpellMgr->GetSpellInfo(SPELL_ARCANE_PRISONER_KILL_CREDIT))
                 return false;
             return true;
         }
@@ -436,17 +436,17 @@ public:
         PrepareSpellScript(spell_q11730_ultrasonic_screwdriver_SpellScript)
         bool Validate (SpellEntry const* /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(SPELL_SUMMON_SCAVENGEBOT_004A8))
+            if (!sSpellMgr->GetSpellInfo(SPELL_SUMMON_SCAVENGEBOT_004A8))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_SUMMON_SENTRYBOT_57K))
+            if (!sSpellMgr->GetSpellInfo(SPELL_SUMMON_SENTRYBOT_57K))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_SUMMON_DEFENDOTANK_66D))
+            if (!sSpellMgr->GetSpellInfo(SPELL_SUMMON_DEFENDOTANK_66D))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_SUMMON_SCAVENGEBOT_005B6))
+            if (!sSpellMgr->GetSpellInfo(SPELL_SUMMON_SCAVENGEBOT_005B6))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_SUMMON_55D_COLLECTATRON))
+            if (!sSpellMgr->GetSpellInfo(SPELL_SUMMON_55D_COLLECTATRON))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_ROBOT_KILL_CREDIT))
+            if (!sSpellMgr->GetSpellInfo(SPELL_ROBOT_KILL_CREDIT))
                 return false;
             return true;
         }
@@ -581,13 +581,13 @@ public:
         PrepareSpellScript(spell_q12634_despawn_fruit_tosser_SpellScript)
         bool Validate (SpellEntry const* /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(SPELL_BANANAS_FALL_TO_GROUND))
+            if (!sSpellMgr->GetSpellInfo(SPELL_BANANAS_FALL_TO_GROUND))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_ORANGE_FALLS_TO_GROUND))
+            if (!sSpellMgr->GetSpellInfo(SPELL_ORANGE_FALLS_TO_GROUND))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_PAPAYA_FALLS_TO_GROUND))
+            if (!sSpellMgr->GetSpellInfo(SPELL_PAPAYA_FALLS_TO_GROUND))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_SUMMON_ADVENTUROUS_DWARF))
+            if (!sSpellMgr->GetSpellInfo(SPELL_SUMMON_ADVENTUROUS_DWARF))
                 return false;
             return true;
         }
@@ -736,7 +736,7 @@ public:
         PrepareSpellScript(spell_q12937_relief_for_the_fallen_SpellScript)
         bool Validate (SpellEntry const* /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(SPELL_TRIGGER_AID_OF_THE_EARTHEN))
+            if (!sSpellMgr->GetSpellInfo(SPELL_TRIGGER_AID_OF_THE_EARTHEN))
                 return false;
             return true;
         }
@@ -789,7 +789,7 @@ public:
 
         bool Validate (SpellEntry const* /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(SPELL_QUESTGIVER))
+            if (!sSpellMgr->GetSpellInfo(SPELL_QUESTGIVER))
                 return false;
             return true;
         }
@@ -1056,13 +1056,13 @@ public:
 
         bool Validate (SpellEntry const* /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(SUMMON_ANGRY_KVALDIR))
+            if (!sSpellMgr->GetSpellInfo(SUMMON_ANGRY_KVALDIR))
                 return false;
-            if (!sSpellStore.LookupEntry(SUMMON_NORTH_SEA_MAKO))
+            if (!sSpellMgr->GetSpellInfo(SUMMON_NORTH_SEA_MAKO))
                 return false;
-            if (!sSpellStore.LookupEntry(SUMMON_NORTH_SEA_THRESHER))
+            if (!sSpellMgr->GetSpellInfo(SUMMON_NORTH_SEA_THRESHER))
                 return false;
-            if (!sSpellStore.LookupEntry(SUMMON_NORTH_SEA_BLUE_SHARK))
+            if (!sSpellMgr->GetSpellInfo(SUMMON_NORTH_SEA_BLUE_SHARK))
                 return false;
             return true;
         }

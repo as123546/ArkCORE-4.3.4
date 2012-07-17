@@ -470,7 +470,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
 
         if (canCast)
         {
-            const SpellEntry* tSpell = GetSpellStore()->LookupEntry(action.cast.spellId);
+            const SpellInfo* tSpell = sSpellMgr->GetSpellInfo(action.cast.spellId);
 
             //Verify that spell exists
             if (tSpell)
@@ -1048,7 +1048,7 @@ void CreatureEventAI::MoveInLineOfSight(Unit *who)
     CreatureAI::MoveInLineOfSight(who);
 }
 
-void CreatureEventAI::SpellHit(Unit* pUnit, const SpellEntry* pSpell)
+void CreatureEventAI::SpellHit(Unit* pUnit, const SpellInfo* pSpell)
 {
     if (m_bEmptyList)
         return;
@@ -1263,7 +1263,7 @@ void CreatureEventAI::DoScriptText(int32 textEntry, WorldObject* pSource, Unit* 
 
     if ((*i).second.SoundId)
     {
-        if (sSoundEntriesStore()->LookupEntry((*i).second.SoundId))
+        if (sSoundEntriesStore.LookupEntry((*i).second.SoundId))
             pSource->PlayDirectSound((*i).second.SoundId);
         else
             sLog->outErrorDb("CreatureEventAI: DoScriptText entry %i tried to process invalid sound id %u.", textEntry, (*i).second.SoundId);
@@ -1315,7 +1315,7 @@ void CreatureEventAI::DoScriptText(int32 textEntry, WorldObject* pSource, Unit* 
     }
 }
 
-bool CreatureEventAI::CanCast(Unit* Target, SpellEntry const *Spell, bool Triggered)
+bool CreatureEventAI::CanCast(Unit* Target, SpellInfo const *Spell, bool Triggered)
 {
     //No target so we can't cast
     if (!Target || !Spell)

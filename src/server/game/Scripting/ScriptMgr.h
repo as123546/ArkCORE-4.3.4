@@ -1308,8 +1308,8 @@ public:
     void OnPlayerCreate (Player* player);
     void OnPlayerDelete (uint64 guid);
     void OnPlayerBindToInstance (Player* player, Difficulty difficulty, uint32 mapid, bool permanent);
-    void OnPlayerDamageDealt (Player* player, Unit* victim, uint32& damage, DamageEffectType damageType, SpellEntry const *spellProto);
-    void OnPlayerSpellCastWithProto (Player* player, SpellEntry const *spellProto);
+    void OnPlayerDamageDealt (Player* player, Unit* victim, uint32& damage, DamageEffectType damageType, SpellInfo const *spellProto);
+    void OnPlayerSpellCastWithProto (Player* player, SpellInfo const *spellProto);
     void OnPlayerAura (Player* player, SpellEntry const* spellProto);
 
 public:

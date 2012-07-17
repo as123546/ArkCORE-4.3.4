@@ -1264,19 +1264,19 @@ void ScriptMgr::OnPlayerBindToInstance (Player* player, Difficulty difficulty, u
     ->OnBindToInstance(player, difficulty, mapid, permanent);
 }
 
-void ScriptMgr::OnPlayerDamageDealt (Player* player, Unit* victim, uint32& damage, DamageEffectType damageType, SpellEntry const *spellProto)
+void ScriptMgr::OnPlayerDamageDealt (Player* player, Unit* victim, uint32& damage, DamageEffectType damageType, SpellInfo const *spellProto)
 {
     FOREACH_SCRIPT(PlayerScript)
     ->OnDamageDealt(player, victim, damage, damageType, spellProto);
 }
 
-void ScriptMgr::OnPlayerSpellCastWithProto (Player *player, SpellEntry const *spellProto)
+void ScriptMgr::OnPlayerSpellCastWithProto (Player *player, SpellInfo const *spellProto)
 {
     FOREACH_SCRIPT(PlayerScript)
     ->OnSpellCastWithProto(player, spellProto);
 }
 
-void ScriptMgr::OnPlayerAura (Player* player, SpellEntry const *spellProto)
+void ScriptMgr::OnPlayerAura (Player* player, SpellInfo const *spellProto)
 {
     FOREACH_SCRIPT(PlayerScript)
     ->OnAura(player, spellProto);

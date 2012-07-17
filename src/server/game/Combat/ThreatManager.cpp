@@ -37,7 +37,7 @@
 //==============================================================
 
 // The pHatingUnit is not used yet
-float ThreatCalcHelper::calcThreat (Unit* pHatedUnit, Unit* /*pHatingUnit*/, float fThreat, SpellSchoolMask schoolMask, SpellEntry const *pThreatSpell)
+float ThreatCalcHelper::calcThreat (Unit* pHatedUnit, Unit* /*pHatingUnit*/, float fThreat, SpellSchoolMask schoolMask, SpellInfo const *pThreatSpell)
 {
     if (pThreatSpell)
     {
@@ -356,7 +356,7 @@ void ThreatManager::clearReferences ()
 
 //============================================================
 
-void ThreatManager::addThreat (Unit* pVictim, float fThreat, SpellSchoolMask schoolMask, SpellEntry const *pThreatSpell)
+void ThreatManager::addThreat (Unit* pVictim, float fThreat, SpellSchoolMask schoolMask, SpellInfo const *pThreatSpell)
 {
     //function deals with adding threat and adding players and pets into ThreatList
     //mobs, NPCs, guards have ThreatList and HateOfflineList

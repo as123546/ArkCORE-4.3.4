@@ -76,7 +76,7 @@ public:
                 disabled = true;
             break;
         case 34475:
-            if (const SpellEntry* pSpellInfo = GetSpellStore()->LookupEntry(SPELL_ARCANE_CHARGES))
+                if (const SpellInfo* pSpellInfo = sSpellMgr->GetSpellInfo(SPELL_ARCANE_CHARGES))
                 Spell::SendCastResult(pPlayer, pSpellInfo, 1, SPELL_FAILED_NOT_ON_GROUND);
             break;
         }

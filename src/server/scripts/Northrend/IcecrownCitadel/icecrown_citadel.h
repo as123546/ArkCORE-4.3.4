@@ -528,7 +528,7 @@ class spell_trigger_spell_from_caster : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(_triggerId))
+                if (!sSpellMgr->GetSpellInfo(_triggerId))
                     return false;
                 return true;
             }

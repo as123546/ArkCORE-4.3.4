@@ -1286,7 +1286,7 @@ bool BattlegroundMgr::IsBGWeekend (BattlegroundTypeId bgTypeId)
 
 void BattlegroundMgr::DoCompleteAchievement (uint32 achievement, Player * player)
 {
-    AchievementEntry const* AE = GetAchievementStore()->LookupEntry(achievement);
+    AchievementEntry const* AE = sAchievementStore.LookupEntry(achievement);
 
     if (!player)
     {

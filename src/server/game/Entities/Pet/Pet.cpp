@@ -166,7 +166,7 @@ bool Pet::LoadPetFromDB (Player* owner, uint32 petentry, uint32 petnumber, bool 
     }
 
     uint32 summon_spell_id = fields[17].GetUInt32();
-    SpellEntry const* spellInfo = sSpellStore.LookupEntry(summon_spell_id);
+    SpellEntry const* spellInfo = sSpellMgr->GetSpellInfo(summon_spell_id);
 
     bool is_temporary_summoned = spellInfo && GetSpellDuration(spellInfo) > 0;
 
@@ -1075,7 +1075,7 @@ bool Guardian::InitStatsForLevel (uint8 petlevel)
                     case 49636:
                     case 49638:
                     {
-                        if (const SpellEntry *proto = sSpellStore.LookupEntry(itr->first))
+                        if (const SpellEntry *proto = sSpellMgr->GetSpellInfo(itr->first))
                             AddPctN(impurityMod, SpellMgr::CalculateSpellEffectAmount(proto, 0));
                     }
                         break;
@@ -1161,7 +1161,7 @@ void Pet::_LoadSpellCooldowns ()
             uint32 spell_id = fields[0].GetUInt32();
             time_t db_time = time_t(fields[1].GetUInt32());
 
-            if (!sSpellStore.LookupEntry(spell_id))
+            if (!sSpellMgr->GetSpellInfo(spell_id))
             {
                 sLog->outError("Pet %u have unknown spell %u in `pet_spell_cooldown`, skipping.", m_charmInfo->GetPetNumber(), spell_id);
                 continue;
@@ -1278,7 +1278,7 @@ void Pet::_LoadAuras (uint32 timediff)
             int32 remaintime = fields[12].GetInt32();
             uint8 remaincharges = fields[13].GetUInt8();
 
-            SpellEntry const* spellproto = sSpellStore.LookupEntry(spellid);
+            SpellEntry const* spellproto = sSpellMgr->GetSpellInfo(spellid);
             if (!spellproto)
             {
                 sLog->outError("Unknown aura (spellid %u), ignore.", spellid);
@@ -1359,7 +1359,7 @@ void Pet::_SaveAuras (SQLTransaction& trans)
 
 bool Pet::addSpell (uint32 spell_id, ActiveStates active /*= ACT_DECIDE*/, PetSpellState state /*= PETSPELL_NEW*/, PetSpellType type /*= PETSPELL_NORMAL*/)
 {
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spell_id);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spell_id);
     if (!spellInfo)
     {
         // do pet spell book cleanup

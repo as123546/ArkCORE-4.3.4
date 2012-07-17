@@ -969,7 +969,7 @@ void GameObject::TriggeringLinkedGameObject (uint32 trapEntry, Unit* target)
     if (!trapInfo || trapInfo->type != GAMEOBJECT_TYPE_TRAP)
         return;
 
-    SpellEntry const* trapSpell = sSpellStore.LookupEntry(trapInfo->trap.spellId);
+    SpellEntry const* trapSpell = sSpellMgr->GetSpellInfo(trapInfo->trap.spellId);
     if (!trapSpell)          // checked at load already
         return;
 
@@ -1641,7 +1641,7 @@ void GameObject::Use (Unit* user)
 
 void GameObject::CastSpell (Unit* target, uint32 spellId)
 {
-    SpellEntry const* spellInfo = sSpellStore.LookupEntry(spellId);
+    SpellEntry const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
     if (!spellInfo)
         return;
 

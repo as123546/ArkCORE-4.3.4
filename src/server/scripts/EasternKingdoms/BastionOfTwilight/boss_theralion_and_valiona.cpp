@@ -337,16 +337,16 @@ public:
     {
         int32 spell_trigger;PrepareSpellScript(spell_dazzling_destructionSpellScript)
         ;
-        bool Validate (SpellEntry const * spellEntry)
+        bool Validate (SpellInfo const * spellEntry)
         {
-            if (!sSpellStore.LookupEntry(spellEntry->Id))
+            if (!sSpellMgr->GetSpellInfo(spellEntry->Id))
                 return false;
             return true;
         }
 
         bool Load ()
         {
-            spell_trigger = GetSpellInfo()->EffectBasePoints[0];
+            spell_trigger = GetSpellInfo()->Effects[0].BasePoints;
             return true;
         }
 

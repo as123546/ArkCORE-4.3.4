@@ -217,7 +217,7 @@ struct ScriptedAI: public CreatureAI
     }
 
     //Returns spells that meet the specified criteria from the creatures spell list
-    SpellEntry const* SelectSpell(Unit* Target, uint32 School, uint32 Mechanic, SelectTargetType Targets, uint32 PowerCostMin, uint32 PowerCostMax, float RangeMin, float RangeMax, SelectEffect Effect);
+    SpellInfo const* SelectSpell(Unit* Target, uint32 School, uint32 Mechanic, SelectTargetType Targets, uint32 PowerCostMin, uint32 PowerCostMax, float RangeMin, float RangeMax, SelectEffect Effect);
 
     //Checks if you can cast the specified spell
     bool CanCast(Unit* pTarget, SpellInfo const* pSpell, bool bTriggered = false);

@@ -400,7 +400,7 @@ class spell_festergut_gastric_bloat : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_GASTRIC_EXPLOSION))
+                if (!sSpellMgr->GetSpellInfo(SPELL_GASTRIC_EXPLOSION))
                     return false;
                 return true;
             }
@@ -438,7 +438,7 @@ class spell_festergut_blighted_spores : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_INOCULATED))
+                if (!sSpellMgr->GetSpellInfo(SPELL_INOCULATED))
                     return false;
                 return true;
             }

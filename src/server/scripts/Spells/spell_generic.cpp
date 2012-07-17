@@ -147,11 +147,11 @@ public:
     class spell_gen_parachute_AuraScript: public AuraScript
     {
         PrepareAuraScript(spell_gen_parachute_AuraScript)
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(SPELL_PARACHUTE))
+            if (!sSpellMgr->GetSpellInfo(SPELL_PARACHUTE))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_PARACHUTE_BUFF))
+            if (!sSpellMgr->GetSpellInfo(SPELL_PARACHUTE_BUFF))
                 return false;
             return true;
         }
@@ -293,11 +293,11 @@ public:
     class spell_gen_leeching_swarm_AuraScript: public AuraScript
     {
         PrepareAuraScript(spell_gen_leeching_swarm_AuraScript)
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(SPELL_LEECHING_SWARM_DMG))
+            if (!sSpellMgr->GetSpellInfo(SPELL_LEECHING_SWARM_DMG))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_LEECHING_SWARM_HEAL))
+            if (!sSpellMgr->GetSpellInfo(SPELL_LEECHING_SWARM_HEAL))
                 return false;
             return true;
         }
@@ -346,27 +346,27 @@ public:
     class spell_gen_trick_SpellScript: public SpellScript
     {
         PrepareSpellScript(spell_gen_trick_SpellScript)
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(SPELL_PIRATE_COSTUME_MALE))
+            if (!sSpellMgr->GetSpellInfo(SPELL_PIRATE_COSTUME_MALE))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_PIRATE_COSTUME_FEMALE))
+            if (!sSpellMgr->GetSpellInfo(SPELL_PIRATE_COSTUME_FEMALE))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_NINJA_COSTUME_MALE))
+            if (!sSpellMgr->GetSpellInfo(SPELL_NINJA_COSTUME_MALE))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_NINJA_COSTUME_FEMALE))
+            if (!sSpellMgr->GetSpellInfo(SPELL_NINJA_COSTUME_FEMALE))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_LEPER_GNOME_COSTUME_MALE))
+            if (!sSpellMgr->GetSpellInfo(SPELL_LEPER_GNOME_COSTUME_MALE))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_LEPER_GNOME_COSTUME_FEMALE))
+            if (!sSpellMgr->GetSpellInfo(SPELL_LEPER_GNOME_COSTUME_FEMALE))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_SKELETON_COSTUME))
+            if (!sSpellMgr->GetSpellInfo(SPELL_SKELETON_COSTUME))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_GHOST_COSTUME_MALE))
+            if (!sSpellMgr->GetSpellInfo(SPELL_GHOST_COSTUME_MALE))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_GHOST_COSTUME_FEMALE))
+            if (!sSpellMgr->GetSpellInfo(SPELL_GHOST_COSTUME_FEMALE))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_TRICK_BUFF))
+            if (!sSpellMgr->GetSpellInfo(SPELL_TRICK_BUFF))
                 return false;
             return true;
         }
@@ -428,13 +428,13 @@ public:
     class spell_gen_trick_or_treat_SpellScript: public SpellScript
     {
         PrepareSpellScript(spell_gen_trick_or_treat_SpellScript)
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(SPELL_TRICK))
+            if (!sSpellMgr->GetSpellInfo(SPELL_TRICK))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_TREAT))
+            if (!sSpellMgr->GetSpellInfo(SPELL_TREAT))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_TRICKED_OR_TREATED))
+            if (!sSpellMgr->GetSpellInfo(SPELL_TRICKED_OR_TREATED))
                 return false;
             return true;
         }
@@ -507,11 +507,11 @@ public:
     class spell_pvp_trinket_wotf_shared_cd_SpellScript: public SpellScript
     {
         PrepareSpellScript(spell_pvp_trinket_wotf_shared_cd_SpellScript)
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(SPELL_WILL_OF_THE_FORSAKEN_COOLDOWN_TRIGGER))
+            if (!sSpellMgr->GetSpellInfo(SPELL_WILL_OF_THE_FORSAKEN_COOLDOWN_TRIGGER))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_WILL_OF_THE_FORSAKEN_COOLDOWN_TRIGGER_WOTF))
+            if (!sSpellMgr->GetSpellInfo(SPELL_WILL_OF_THE_FORSAKEN_COOLDOWN_TRIGGER_WOTF))
                 return false;
             return true;
         }
@@ -523,7 +523,7 @@ public:
                 return;
             const SpellEntry* m_spellInfo = GetSpellInfo();
 
-            pCaster->AddSpellCooldown(m_spellInfo->Id, NULL, time(NULL) + GetSpellRecoveryTime(sSpellStore.LookupEntry(SPELL_WILL_OF_THE_FORSAKEN_COOLDOWN_TRIGGER)) / IN_MILLISECONDS);
+            pCaster->AddSpellCooldown(m_spellInfo->Id, NULL, time(NULL) + GetSpellRecoveryTime(sSpellMgr->GetSpellInfo(SPELL_WILL_OF_THE_FORSAKEN_COOLDOWN_TRIGGER)) / IN_MILLISECONDS);
             WorldPacket data(SMSG_SPELL_COOLDOWN, 8 + 1 + 4);
             data << uint64(pCaster->GetGUID());
             data << uint8(0);
@@ -564,7 +564,7 @@ public:
 
         bool Validate (SpellEntry const* /*spell*/)
         {
-            if (!sSpellStore.LookupEntry(SPELL_SPAWN_BLOOD_POOL))
+            if (!sSpellMgr->GetSpellInfo(SPELL_SPAWN_BLOOD_POOL))
                 return false;
             return true;
         }
@@ -612,9 +612,9 @@ public:
     class spell_gen_divine_storm_cd_reset_SpellScript: public SpellScript
     {
         PrepareSpellScript(spell_gen_divine_storm_cd_reset_SpellScript)
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(SPELL_DIVINE_STORM))
+            if (!sSpellMgr->GetSpellInfo(SPELL_DIVINE_STORM))
                 return false;
             return true;
         }

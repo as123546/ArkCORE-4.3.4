@@ -41,7 +41,7 @@ class spell_warr_last_stand : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spellEntry*/)
             {
-                if (!sSpellStore.LookupEntry(WARRIOR_SPELL_LAST_STAND_TRIGGERED))
+                if (!sSpellMgr->GetSpellInfo(WARRIOR_SPELL_LAST_STAND_TRIGGERED))
                     return false;
                 return true;
             }
@@ -429,7 +429,7 @@ class spell_warr_thunderclap : public SpellScriptLoader
                         break;
                 }
 
-                SpellEntry const* spellInfo = sSpellStore.LookupEntry(12721);
+                SpellEntry const* spellInfo = sSpellMgr->GetSpellInfo(12721);
                 uint32 ticks = spellInfo->GetDuration() / spellInfo->Effects[EFFECT_0].Amplitude;
 
                 // Add remaining ticks to damage done
@@ -471,7 +471,7 @@ public:
 
        bool Validate(SpellEntry const* /*SpellEntry*/)
        {
-           if (!sSpellStore.LookupEntry(SPELL_DAMAGE_REDUCTION_AURA))
+           if (!sSpellMgr->GetSpellInfo(SPELL_DAMAGE_REDUCTION_AURA))
                return false;
            return true;
        }

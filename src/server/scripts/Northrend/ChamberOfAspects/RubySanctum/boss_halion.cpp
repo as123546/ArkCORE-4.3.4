@@ -1247,7 +1247,7 @@ class spell_halion_fiery_combustion : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_MARK_OF_COMBUSTION))
+                if (!sSpellMgr->GetSpellInfo(SPELL_MARK_OF_COMBUSTION))
                     return false;
                 return true;
             }
@@ -1303,7 +1303,7 @@ class spell_halion_soul_consumption : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_MARK_OF_CONSUMPTION))
+                if (!sSpellMgr->GetSpellInfo(SPELL_MARK_OF_CONSUMPTION))
                     return false;
                 return true;
             }
@@ -1359,9 +1359,9 @@ class spell_halion_mark_of_combustion : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_FIERY_COMBUSTION_SUMMON))
+                if (!sSpellMgr->GetSpellInfo(SPELL_FIERY_COMBUSTION_SUMMON))
                     return false;
-                if (!sSpellStore.LookupEntry(SPELL_FIERY_COMBUSTION_EXPLOSION))
+                if (!sSpellMgr->GetSpellInfo(SPELL_FIERY_COMBUSTION_EXPLOSION))
                     return false;
                 return true;
             }
@@ -1408,9 +1408,9 @@ class spell_halion_mark_of_consumption : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_SOUL_CONSUMPTION_SUMMON))
+                if (!sSpellMgr->GetSpellInfo(SPELL_SOUL_CONSUMPTION_SUMMON))
                     return false;
-                if (!sSpellStore.LookupEntry(SPELL_SOUL_CONSUMPTION_EXPLOSION))
+                if (!sSpellMgr->GetSpellInfo(SPELL_SOUL_CONSUMPTION_EXPLOSION))
                     return false;
                 return true;
             }
