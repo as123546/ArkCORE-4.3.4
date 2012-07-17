@@ -28,6 +28,7 @@
 #include "Unit.h"
 #include "DBCStructure.h"
 #include "SpellMgr.h"
+#include "SpellInfo.h"
 
 HostileRefManager::~HostileRefManager ()
 {

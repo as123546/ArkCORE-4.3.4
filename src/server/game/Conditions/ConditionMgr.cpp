@@ -897,7 +897,22 @@ bool ConditionMgr::isSourceTypeValid (Condition* cond)
         bool targetfound = false;
         for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
         {
-            if (spellProto->EffectImplicitTargetA[i] == TARGET_UNIT_AREA_ENTRY_SRC || spellProto->EffectImplicitTargetB[i] == TARGET_UNIT_AREA_ENTRY_SRC || spellProto->EffectImplicitTargetA[i] == TARGET_UNIT_AREA_ENTRY_DST || spellProto->EffectImplicitTargetB[i] == TARGET_UNIT_AREA_ENTRY_DST || spellProto->EffectImplicitTargetA[i] == TARGET_UNIT_NEARBY_ENTRY || spellProto->EffectImplicitTargetB[i] == TARGET_UNIT_NEARBY_ENTRY || spellProto->EffectImplicitTargetA[i] == TARGET_GAMEOBJECT_NEARBY_ENTRY || spellProto->EffectImplicitTargetB[i] == TARGET_GAMEOBJECT_NEARBY_ENTRY || spellProto->EffectImplicitTargetA[i] == TARGET_GAMEOBJECT_AREA_SRC || spellProto->EffectImplicitTargetB[i] == TARGET_GAMEOBJECT_AREA_SRC || spellProto->EffectImplicitTargetA[i] == TARGET_GAMEOBJECT_AREA_DST || spellProto->EffectImplicitTargetB[i] == TARGET_GAMEOBJECT_AREA_DST || spellProto->EffectImplicitTargetA[i] == TARGET_DST_NEARBY_ENTRY || spellProto->EffectImplicitTargetB[i] == TARGET_DST_NEARBY_ENTRY || spellProto->EffectImplicitTargetA[i] == TARGET_UNIT_CONE_ENTRY || spellProto->EffectImplicitTargetB[i] == TARGET_UNIT_CONE_ENTRY)
+            if (spellProto->Effects[i].TargetA == TARGET_UNIT_AREA_ENTRY_SRC ||
+                spellProto->Effects[i].TargetB == TARGET_UNIT_AREA_ENTRY_SRC ||
+                spellProto->Effects[i].TargetA == TARGET_UNIT_AREA_ENTRY_DST ||
+                spellProto->Effects[i].TargetB == TARGET_UNIT_AREA_ENTRY_DST ||
+                spellProto->Effects[i].TargetA == TARGET_UNIT_NEARBY_ENTRY ||
+                spellProto->Effects[i].TargetB == TARGET_UNIT_NEARBY_ENTRY ||
+                spellProto->Effects[i].TargetA == TARGET_GAMEOBJECT_NEARBY_ENTRY ||
+                spellProto->Effects[i].TargetB == TARGET_GAMEOBJECT_NEARBY_ENTRY ||
+                spellProto->Effects[i].TargetA == TARGET_GAMEOBJECT_AREA_SRC ||
+                spellProto->Effects[i].TargetB == TARGET_GAMEOBJECT_AREA_SRC ||
+                spellProto->Effects[i].TargetA == TARGET_GAMEOBJECT_AREA_DST ||
+                spellProto->Effects[i].TargetB == TARGET_GAMEOBJECT_AREA_DST ||
+                spellProto->Effects[i].TargetA == TARGET_DST_NEARBY_ENTRY ||
+                spellProto->Effects[i].TargetB == TARGET_DST_NEARBY_ENTRY ||
+                spellProto->Effects[i].TargetA == TARGET_UNIT_CONE_ENTRY ||
+                spellProto->Effects[i].TargetB == TARGET_UNIT_CONE_ENTRY)
             {
                 targetfound = true;
                 //break;
@@ -935,7 +950,7 @@ bool ConditionMgr::isSourceTypeValid (Condition* cond)
     }
     case CONDITION_SOURCE_TYPE_SPELL:
     {
-        SpellEntry const* spellProto = sSpellMgr->GetSpellInfo(cond->mSourceEntry);
+        SpellInfo const* spellProto = sSpellMgr->GetSpellInfo(cond->mSourceEntry);
         if (!spellProto)
         {
             sLog->outErrorDb("SourceEntry %u in `condition` table, does not exist in `spell.dbc`, ignoring.", cond->mSourceEntry);
@@ -961,7 +976,7 @@ bool ConditionMgr::isSourceTypeValid (Condition* cond)
         bool bIsItemSpellValid = false;
         for (uint8 i = 0; i < MAX_ITEM_PROTO_SPELLS; ++i)
         {
-            if (SpellEntry const* pSpellInfo = sSpellMgr->GetSpellInfo(pItemProto->Spells[i].SpellId))
+            if (SpellInfo const* pSpellInfo = sSpellMgr->GetSpellInfo(pItemProto->Spells[i].SpellId))
             {
                 if (pItemProto->Spells[i].SpellTrigger == ITEM_SPELLTRIGGER_ON_USE || pItemProto->Spells[i].SpellTrigger == ITEM_SPELLTRIGGER_ON_NO_DELAY_USE)
                 {
@@ -1019,7 +1034,7 @@ bool ConditionMgr::isSourceTypeValid (Condition* cond)
             sLog->outErrorDb("SourceEntry %u in `condition` table, does not exist in `creature_template`, ignoring.", cond->mSourceGroup);
             return false;
         }
-        SpellEntry const* spellProto = sSpellMgr->GetSpellInfo(cond->mSourceEntry);
+        SpellInfo const* spellProto = sSpellMgr->GetSpellInfo(cond->mSourceEntry);
         if (!spellProto)
         {
             sLog->outErrorDb("SourceEntry %u in `condition` table, does not exist in `spell.dbc`, ignoring.", cond->mSourceEntry);

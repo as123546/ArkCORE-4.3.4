@@ -3333,7 +3333,7 @@ AuraApplication * Unit::_CreateAuraApplication (Aura * aura, uint8 effMask)
     // aura musn't be removed
     ASSERT(!aura->IsRemoved());
 
-    SpellEntry const* aurSpellInfo = aura->GetSpellProto();
+    SpellInfo const* aurSpellInfo = aura->GetSpellProto();
     uint32 aurId = aurSpellInfo->Id;
 
     // ghost spell check, allow apply any auras at player loading in ghost mode (will be cleanup after load)
@@ -3563,52 +3563,6 @@ void Unit::_RemoveNoStackAurasDueToAura (Aura * aura)
             break;
         remove = true;
     }
-}
-
-bool Unit::_IsNoStackAuraDueToAura (Aura * appliedAura, Aura * existingAura) const
-{
-    SpellEntry const* spellProto = appliedAura->GetSpellProto();
-    // Do not check already applied aura
-    if (existingAura == appliedAura)
-        return false;
-
-    // Do not check dynobj auras for stacking
-    if (existingAura->GetType() != UNIT_AURA_TYPE)
-        return false;
-
-    SpellEntry const* i_spellProto = existingAura->GetSpellProto();
-    uint32 i_spellId = i_spellProto->Id;
-    bool sameCaster = appliedAura->GetCasterGUID() == existingAura->GetCasterGUID();
-
-    if (IsPassiveSpell(i_spellId))
-    {
-        // passive non-stackable spells not stackable only for same caster
-        if (!sameCaster)
-            return false;
-
-        // passive non-stackable spells not stackable only with another rank of same spell
-        if (!sSpellMgr->IsRankSpellDueToSpell(spellProto, i_spellId))
-            return false;
-    }
-
-    bool is_triggered_by_spell = false;
-    // prevent triggering aura of removing aura that triggered it
-    // prevent triggered aura of removing aura that triggering it (triggered effect early some aura of parent spell
-    for (uint8 j = 0; j < MAX_SPELL_EFFECTS; ++j)
-    {
-        if (i_spellProto->EffectTriggerSpell[j] == spellProto->Id || spellProto->EffectTriggerSpell[j] == i_spellProto->Id)          // I do not know what is this for
-        {
-            is_triggered_by_spell = true;
-            break;
-        }
-    }
-
-    if (is_triggered_by_spell)
-        return false;
-
-    if (sSpellMgr->CanAurasStack(appliedAura, existingAura, sameCaster))
-        return false;
-    return true;
 }
 
 void Unit::_RegisterAuraEffect (AuraEffect * aurEff, bool apply)
