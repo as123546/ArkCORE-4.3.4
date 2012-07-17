@@ -166,7 +166,7 @@ bool Pet::LoadPetFromDB (Player* owner, uint32 petentry, uint32 petnumber, bool 
     }
 
     uint32 summon_spell_id = fields[17].GetUInt32();
-    SpellEntry const* spellInfo = sSpellMgr->GetSpellInfo(summon_spell_id);
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(summon_spell_id);
 
     bool is_temporary_summoned = spellInfo && GetSpellDuration(spellInfo) > 0;
 
@@ -1075,7 +1075,7 @@ bool Guardian::InitStatsForLevel (uint8 petlevel)
                     case 49636:
                     case 49638:
                     {
-                        if (const SpellEntry *proto = sSpellMgr->GetSpellInfo(itr->first))
+                        if (const SpellInfo *proto = sSpellMgr->GetSpellInfo(itr->first))
                             AddPctN(impurityMod, SpellMgr::CalculateSpellEffectAmount(proto, 0));
                     }
                         break;
@@ -1278,7 +1278,7 @@ void Pet::_LoadAuras (uint32 timediff)
             int32 remaintime = fields[12].GetInt32();
             uint8 remaincharges = fields[13].GetUInt8();
 
-            SpellEntry const* spellproto = sSpellMgr->GetSpellInfo(spellid);
+            SpellInfo const* spellproto = sSpellMgr->GetSpellInfo(spellid);
             if (!spellproto)
             {
                 sLog->outError("Unknown aura (spellid %u), ignore.", spellid);

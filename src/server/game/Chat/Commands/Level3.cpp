@@ -1801,18 +1801,19 @@ bool ChatHandler::HandleLookupSpellCommand (const char *args)
                 }
 
                 bool known = target && target->HasSpell(id);
-                SpellEffectEntry const* spellEffect = spellInfo->GetSpellEffect(EFFECT_0);
-                bool learn = (spellEffect && spellEffect->Effect == SPELL_EFFECT_LEARN_SPELL);
+                bool learn = (spellInfo->Effects[0].Effect == SPELL_EFFECT_LEARN_SPELL);
+
+                SpellInfo const* learnSpellInfo = sSpellMgr->GetSpellInfo(spellInfo->Effects[0].TriggerSpell);
 
                 uint32 talentCost = GetTalentSpellCost(id);
 
                 bool talent = (talentCost > 0);
-                bool passive = IsPassiveSpell(id);
+                bool passive = spellInfo->IsPassive();
                 bool active = target && target->HasAura(id);
 
                 // unit32 used to prevent interpreting uint8 as char at output
                 // find rank of learned spell for learning spell, or talent rank
-                uint32 rank = talentCost ? talentCost : sSpellMgr->GetSpellRank(learn ? (spellEffect ? spellEffect->EffectTriggerSpell : 0) : id);
+                uint32 rank = talentCost ? talentCost : learn ? learnSpellInfo->GetRank() : spellInfo->GetRank();
 
                 // send spell in "id - [name, rank N] [talent] [passive] [learn] [known]" format
                 std::ostringstream ss;

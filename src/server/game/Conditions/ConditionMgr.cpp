@@ -887,7 +887,7 @@ bool ConditionMgr::isSourceTypeValid (Condition* cond)
             return false;
         }
 
-        SpellEntry const* spellProto = sSpellMgr->GetSpellInfo(cond->mSourceEntry);
+        SpellInfo const* spellProto = sSpellMgr->GetSpellInfo(cond->mSourceEntry);
         if (!spellProto)
         {
             sLog->outErrorDb("SourceEntry %u in `condition` table, does not exist in `spell.dbc`, ignoring.", cond->mSourceEntry);

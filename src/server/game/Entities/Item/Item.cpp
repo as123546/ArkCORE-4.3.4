@@ -973,7 +973,7 @@ uint8 Item::CanBeMergedPartlyWith (ItemPrototype const* proto) const
     return EQUIP_ERR_OK;
 }
 
-bool Item::IsFitToSpellRequirements (SpellEntry const* spellInfo) const
+bool Item::IsFitToSpellRequirements (SpellInfo const* spellInfo) const
 {
     ItemPrototype const* proto = GetProto();
 
