@@ -1337,7 +1337,7 @@ void Guardian::UpdateAttackPowerAndDamage (bool ranged)
 
                 if (itr != ToPet()->m_spells.end())          // If pet has Wild Hunt
                 {
-                    SpellEntry const* sProto = sSpellMgr->GetSpellInfo(itr->first);          // Then get the SpellProto and add the dummy effect value
+                    SpellInfo const* sProto = sSpellMgr->GetSpellInfo(itr->first);          // Then get the SpellProto and add the dummy effect value
                     mod += (SpellMgr::CalculateSpellEffectAmount(sProto, 1) / 100.0f);
                 }
             }

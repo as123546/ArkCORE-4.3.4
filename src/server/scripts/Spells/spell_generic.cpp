@@ -521,7 +521,7 @@ public:
             Player* pCaster = GetCaster()->ToPlayer();
             if (!pCaster)
                 return;
-            const SpellEntry* m_spellInfo = GetSpellInfo();
+            const SpellInfo* m_spellInfo = GetSpellInfo();
 
             pCaster->AddSpellCooldown(m_spellInfo->Id, NULL, time(NULL) + GetSpellRecoveryTime(sSpellMgr->GetSpellInfo(SPELL_WILL_OF_THE_FORSAKEN_COOLDOWN_TRIGGER)) / IN_MILLISECONDS);
             WorldPacket data(SMSG_SPELL_COOLDOWN, 8 + 1 + 4);
@@ -856,7 +856,7 @@ public:
         {
             PreventHitDefaultEffect(effIndex);
 
-            SpellEntry const* const spell = GetSpellInfo();
+            SpellInfo const* const spell = GetSpellInfo();
 
             if (Player* player = GetHitPlayer())
             {

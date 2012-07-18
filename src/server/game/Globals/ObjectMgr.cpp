@@ -2376,7 +2376,7 @@ void ObjectMgr::LoadItemPrototypes ()
             }
             else if (proto->Spells[1].SpellId != -1)
             {
-                SpellEntry const* spellInfo = sSpellMgr->GetSpellInfo(proto->Spells[1].SpellId);
+                SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(proto->Spells[1].SpellId);
                 if (!spellInfo && !sDisableMgr->IsDisabledFor(DISABLE_TYPE_SPELL, proto->Spells[1].SpellId, NULL))
                 {
                     sLog->outErrorDb("Item (Entry: %u) has wrong (not existing) spell in spellid_%d (%d)", i, 1 + 1, proto->Spells[1].SpellId);
@@ -2424,7 +2424,7 @@ void ObjectMgr::LoadItemPrototypes ()
 
                 if (proto->Spells[j].SpellId && proto->Spells[j].SpellId != -1)
                 {
-                    SpellEntry const* spellInfo = sSpellMgr->GetSpellInfo(proto->Spells[j].SpellId);
+                    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(proto->Spells[j].SpellId);
                     if (!spellInfo && !sDisableMgr->IsDisabledFor(DISABLE_TYPE_SPELL, proto->Spells[j].SpellId, NULL))
                     {
                         sLog->outErrorDb("Item (Entry: %u) has wrong (not existing) spell in spellid_%d (%d)", i, j + 1, proto->Spells[j].SpellId);
@@ -4148,7 +4148,7 @@ void ObjectMgr::LoadQuests ()
 
         if (qinfo->SrcSpell)
         {
-            SpellEntry const* spellInfo = sSpellMgr->GetSpellInfo(qinfo->SrcSpell);
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(qinfo->SrcSpell);
             if (!spellInfo)
             {
                 sLog->outErrorDb("Quest %u has `SrcSpell` = %u but spell %u doesn't exist, quest can't be done.", qinfo->GetQuestId(), qinfo->SrcSpell, qinfo->SrcSpell);
@@ -4213,7 +4213,7 @@ void ObjectMgr::LoadQuests ()
             uint32 id = qinfo->ReqSpell[j];
             if (id)
             {
-                SpellEntry const* spellInfo = sSpellMgr->GetSpellInfo(id);
+                SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(id);
                 if (!spellInfo)
                 {
                     sLog->outErrorDb("Quest %u has `ReqSpellCast%d` = %u but spell %u does not exist, quest can't be done.", qinfo->GetQuestId(), j + 1, id, id);
@@ -4357,7 +4357,7 @@ void ObjectMgr::LoadQuests ()
 
         if (qinfo->RewSpell)
         {
-            SpellEntry const* spellInfo = sSpellMgr->GetSpellInfo(qinfo->RewSpell);
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(qinfo->RewSpell);
 
             if (!spellInfo)
             {
@@ -4380,7 +4380,7 @@ void ObjectMgr::LoadQuests ()
 
         if (qinfo->RewSpellCast > 0)
         {
-            SpellEntry const* spellInfo = sSpellMgr->GetSpellInfo(qinfo->RewSpellCast);
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(qinfo->RewSpellCast);
 
             if (!spellInfo)
             {
@@ -4403,7 +4403,7 @@ void ObjectMgr::LoadQuests ()
 
         if (qinfo->RewSpellHiddenCast > 0)
         {
-            SpellEntry const* spellInfo = sSpellMgr->GetSpellInfo(qinfo->RewSpellHiddenCast);
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(qinfo->RewSpellHiddenCast);
 
             if (!spellInfo)
             {
@@ -4917,7 +4917,7 @@ void ObjectMgr::LoadSpellScripts ()
     for (ScriptMapMap::const_iterator itr = sSpellScripts.begin(); itr != sSpellScripts.end(); ++itr)
     {
         uint32 spellId = uint32(itr->first) & 0x00FFFFFF;
-        SpellEntry const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
 
         if (!spellInfo)
         {

@@ -3349,7 +3349,7 @@ AuraApplication * Unit::_CreateAuraApplication (Aura * aura, uint8 effMask)
         AddInterruptMask(aurSpellInfo->AuraInterruptFlags);
     }
 
-    if (AuraState aState = GetSpellAuraState(aura->GetSpellInfo()))
+    if (AuraStateType aState = GetSpellAuraState(aura->GetSpellInfo()))
         m_auraStateAuras.insert(AuraStateAurasMap::value_type(aState, aurApp));
 
     aura->_ApplyForTarget(this, caster, aurApp);
@@ -3380,7 +3380,7 @@ void Unit::_ApplyAura (AuraApplication * aurApp, uint8 effMask)
         return;
 
     // Update target aura state flag
-    if (AuraState aState = GetSpellAuraState(aura->GetSpellInfo()))
+    if (AuraStateType aState = GetSpellAuraState(aura->GetSpellInfo()))
         ModifyAuraState(aState, true);
 
     if (aurApp->GetRemoveMode())
@@ -3433,7 +3433,7 @@ void Unit::_UnapplyAura (AuraApplicationMap::iterator &i, AuraRemoveMode removeM
     }
 
     bool auraStateFound = false;
-    AuraState auraState = GetSpellAuraState(aura->GetSpellInfo());
+    AuraStateType auraState = GetSpellAuraState(aura->GetSpellInfo());
     if (auraState)
     {
         bool canBreak = false;
@@ -10453,7 +10453,7 @@ void Unit::RemoveAllAttackers ()
     }
 }
 
-void Unit::ModifyAuraState (AuraState flag, bool apply)
+void Unit::ModifyAuraState (AuraStateType flag, bool apply)
 {
     if (apply)
     {
@@ -10523,7 +10523,7 @@ uint32 Unit::BuildAuraStateUpdateForTarget (Unit * target) const
     return auraStates;
 }
 
-bool Unit::HasAuraState (AuraState flag, SpellInfo const *spellProto, Unit const * Caster) const
+bool Unit::HasAuraState (AuraStateType flag, SpellInfo const *spellProto, Unit const * Caster) const
 {
     if (Caster)
     {
@@ -11197,7 +11197,7 @@ uint32 Unit::SpellDamageBonus (Unit *pVictim, SpellInfo const *spellProto, uint3
     // bonus against aurastate
     AuraEffectList const &mDamageDoneVersusAurastate = GetAuraEffectsByType(SPELL_AURA_MOD_DAMAGE_DONE_VERSUS_AURASTATE);
     for (AuraEffectList::const_iterator i = mDamageDoneVersusAurastate.begin(); i != mDamageDoneVersusAurastate.end(); ++i)
-        if (pVictim->HasAuraState(AuraState((*i)->GetMiscValue())))
+        if (pVictim->HasAuraState(AuraStateType((*i)->GetMiscValue())))
             DoneTotalMod *= ((*i)->GetAmount() + 100.0f) / 100.0f;
 
     // done scripted mod (take it from owner)
@@ -12612,7 +12612,7 @@ void Unit::MeleeDamageBonus (Unit *pVictim, uint32 *pdamage, WeaponAttackType at
     // bonus against aurastate
     AuraEffectList const &mDamageDoneVersusAurastate = GetAuraEffectsByType(SPELL_AURA_MOD_DAMAGE_DONE_VERSUS_AURASTATE);
     for (AuraEffectList::const_iterator i = mDamageDoneVersusAurastate.begin(); i != mDamageDoneVersusAurastate.end(); ++i)
-        if (pVictim->HasAuraState(AuraState((*i)->GetMiscValue())))
+        if (pVictim->HasAuraState(AuraStateType((*i)->GetMiscValue())))
             DoneTotalMod *= ((*i)->GetAmount() + 100.0f) / 100.0f;
 
     // done scripted mod (take it from owner)
