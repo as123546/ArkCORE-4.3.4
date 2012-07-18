@@ -78,7 +78,7 @@ bool IsQuestTameSpell (uint32 spellId)
 }
 
 SpellCastTargets::SpellCastTargets () :
-        m_elevation(0), m_speed(0)
+        m_elevation(0), m_Speed(0)
 {
     m_unitTarget = NULL;
     m_itemTarget = NULL;
@@ -318,7 +318,7 @@ void SpellCastTargets::OutDebug ()
     {
         sLog->outString("TARGET_FLAG_STRING: %s", m_strTarget.c_str());
     }
-    sLog->outString("speed: %f", m_speed);
+    sLog->outString("Speed: %f", m_Speed);
     sLog->outString("elevation: %f", m_elevation);
 }
 
@@ -654,7 +654,7 @@ void Spell::SelectSpellTargets ()
 
         if (!targetA && !targetB)
         {
-            if (!GetSpellMaxRangeForFriend(sSpellRangeStore.LookupEntry(m_spellInfo->rangeIndex)))
+            if (!m_spellInfo->GetMaxRange(true))
             {
                 AddUnitTarget(m_caster, i);
                 continue;
@@ -662,7 +662,7 @@ void Spell::SelectSpellTargets ()
 
             // add here custom effects that need default target.
             // FOR EVERY TARGET TYPE THERE IS A DIFFERENT FILL!!
-            switch (m_spellInfo->Effect[i])
+            switch (m_spellInfo->Effects[i].Effect)
             {
             case SPELL_EFFECT_DUMMY:
             {
@@ -727,7 +727,7 @@ void Spell::SelectSpellTargets ()
                 if (m_targets.getUnitTarget())
                     AddUnitTarget(m_targets.getUnitTarget(), i);
                 // Triggered spells have additional spell targets - cast them even if no explicit unit target is given (required for spell 50516 for example)
-                else if (m_spellInfo->Effect[i] == SPELL_EFFECT_TRIGGER_SPELL)
+                else if (m_spellInfo->Effects[i].Effect == SPELL_EFFECT_TRIGGER_SPELL)
                     AddUnitTarget(m_caster, i);
                 break;
             case SPELL_EFFECT_SUMMON_PLAYER:
@@ -811,7 +811,7 @@ void Spell::SelectSpellTargets ()
                 break;
             }
         }
-        if (IsChanneledSpell(m_spellInfo))
+        if (m_spellInfo->IsChanneled())
         {
             uint8 mask = (1 << i);
             for (std::list<TargetInfo>::iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
@@ -852,14 +852,14 @@ void Spell::SelectSpellTargets ()
     {
         if (m_targets.HasTraj())
         {
-            float speed = m_targets.GetSpeedXY();
-            if (speed > 0.0f)
-                m_delayMoment = (uint64) floor(m_targets.GetDist2d() / speed * 1000.0f);
+            float Speed = m_targets.GetSpeedXY();
+            if (Speed > 0.0f)
+                m_delayMoment = (uint64) floor(m_targets.GetDist2d() / Speed * 1000.0f);
         }
-        else if (m_spellInfo->speed > 0.0f)
+        else if (m_spellInfo->Speed > 0.0f)
         {
             float dist = m_caster->GetDistance(m_targets.m_dstPos);
-            m_delayMoment = (uint64) floor(dist / m_spellInfo->speed * 1000.0f);
+            m_delayMoment = (uint64) floor(dist / m_spellInfo->Speed * 1000.0f);
         }
     }
 }
@@ -952,7 +952,7 @@ void Spell::CleanupTargetList ()
 
 void Spell::AddUnitTarget (Unit* pVictim, uint32 effIndex)
 {
-    if (m_spellInfo->Effect[effIndex] == 0)
+    if (!m_spellInfo->Effects[effIndex].IsEffect())
         return;
 
     if (!CheckTarget(pVictim, effIndex))
@@ -974,7 +974,7 @@ void Spell::AddUnitTarget (Unit* pVictim, uint32 effIndex)
             if (m_auraScaleMask && ihit->effectMask == m_auraScaleMask && m_caster != pVictim)
             {
                 SpellInfo const * auraSpell = sSpellMgr->GetSpellInfo(sSpellMgr->GetFirstSpellInChain(m_spellInfo->Id));
-                if (uint32(pVictim->getLevel() + 10) >= auraSpell->spellLevel)
+                if (uint32(pVictim->getLevel() + 10) >= auraSpell->SpellLevel)
                     ihit->scaleAura = true;
             }
             return;
@@ -995,7 +995,7 @@ void Spell::AddUnitTarget (Unit* pVictim, uint32 effIndex)
     if (m_auraScaleMask && target.effectMask == m_auraScaleMask && m_caster != pVictim)
     {
         SpellInfo const * auraSpell = sSpellMgr->GetSpellInfo(sSpellMgr->GetFirstSpellInChain(m_spellInfo->Id));
-        if (uint32(pVictim->getLevel() + 10) >= auraSpell->spellLevel)
+        if (uint32(pVictim->getLevel() + 10) >= auraSpell->SpellLevel)
             target.scaleAura = true;
     }
 
@@ -1009,9 +1009,9 @@ void Spell::AddUnitTarget (Unit* pVictim, uint32 effIndex)
     else
         target.missCondition = SPELL_MISS_EVADE;          //SPELL_MISS_NONE;
 
-    // Spell have speed - need calculate incoming time
+    // Spell have Speed - need calculate incoming time
     // Incoming time is zero for self casts. At least I think so.
-    if (m_spellInfo->speed > 0.0f && m_caster != pVictim)
+    if (m_spellInfo->Speed > 0.0f && m_caster != pVictim)
     {
         // calculate spell incoming interval
         // TODO: this is a hack
@@ -1019,7 +1019,7 @@ void Spell::AddUnitTarget (Unit* pVictim, uint32 effIndex)
 
         if (dist < 5.0f)
             dist = 5.0f;
-        target.timeDelay = (uint64) floor(dist / m_spellInfo->speed * 1000.0f);
+        target.timeDelay = (uint64) floor(dist / m_spellInfo->Speed * 1000.0f);
 
         // Calculate minimum incoming time
         if (m_delayMoment == 0 || m_delayMoment > target.timeDelay)
@@ -1055,7 +1055,7 @@ void Spell::AddUnitTarget (uint64 unitGUID, uint32 effIndex)
 
 void Spell::AddGOTarget (GameObject* pVictim, uint32 effIndex)
 {
-    if (m_spellInfo->Effect[effIndex] == 0)
+    if (!m_spellInfo->Effects[effIndex].IsEffect())
         return;
 
     uint64 targetGUID = pVictim->GetGUID();
@@ -1077,14 +1077,14 @@ void Spell::AddGOTarget (GameObject* pVictim, uint32 effIndex)
     target.effectMask = 1 << effIndex;
     target.processed = false;          // Effects not apply on target
 
-    // Spell have speed - need calculate incoming time
-    if (m_spellInfo->speed > 0.0f)
+    // Spell have Speed - need calculate incoming time
+    if (m_spellInfo->Speed > 0.0f)
     {
         // calculate spell incoming interval
         float dist = m_caster->GetDistance(pVictim->GetPositionX(), pVictim->GetPositionY(), pVictim->GetPositionZ());
         if (dist < 5.0f)
             dist = 5.0f;
-        target.timeDelay = (uint64) floor(dist / m_spellInfo->speed * 1000.0f);
+        target.timeDelay = (uint64) floor(dist / m_spellInfo->Speed * 1000.0f);
         if (m_delayMoment == 0 || m_delayMoment > target.timeDelay)
             m_delayMoment = target.timeDelay;
     }
@@ -1104,7 +1104,7 @@ void Spell::AddGOTarget (uint64 goGUID, uint32 effIndex)
 
 void Spell::AddItemTarget (Item* pitem, uint32 effIndex)
 {
-    if (m_spellInfo->Effect[effIndex] == 0)
+    if (m_spellInfo->Effects[effIndex].IsEffect())
         return;
 
     // Lookup target in already in list
@@ -1142,7 +1142,7 @@ void Spell::DoAllEffectOnTarget (TargetInfo *target)
         // create far target mask
         for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
         {
-            if (IsFarUnitTargetEffect(m_spellInfo->Effect[i]))
+            if (IsFarUnitTargetEffect(m_spellInfo->Effects[i].Effect))
                 if ((1 << i) & mask)
                     farMask |= (1 << i);
         }
@@ -1165,7 +1165,7 @@ void Spell::DoAllEffectOnTarget (TargetInfo *target)
     if (unit->isAlive() != target->alive)
         return;
 
-    if (getState() == SPELL_STATE_DELAYED && !IsPositiveSpell(m_spellInfo->Id) && (getMSTime() - target->timeDelay) <= unit->m_lastSanctuaryTime)
+    if (getState() == SPELL_STATE_DELAYED && !m_spellInfo->IsPositive() && (getMSTime() - target->timeDelay) <= unit->m_lastSanctuaryTime)
         return;          // No missinfo in that case
 
     // Get original caster (if exist) and calculate damage/healing from him data
@@ -1243,7 +1243,7 @@ void Spell::DoAllEffectOnTarget (TargetInfo *target)
         {
             for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
                 // If at least one effect negative spell is negative hit
-                if (mask & (1 << i) && !IsPositiveEffect(m_spellInfo->Id, i))
+                if (mask & (1 << i) && !m_spellInfo->IsPositive(i))
                 {
                     positive = false;
                     break;
@@ -1369,7 +1369,7 @@ void Spell::DoAllEffectOnTarget (TargetInfo *target)
         m_magnetingAura = NULL;
     }
 
-    if (missInfo != SPELL_MISS_EVADE && m_caster && !m_caster->IsFriendlyTo(unit) && !IsPositiveSpell(m_spellInfo->Id))
+    if (missInfo != SPELL_MISS_EVADE && m_caster && !m_caster->IsFriendlyTo(unit) && !m_spellInfo->IsPositive())
     {
         m_caster->CombatStart(unit, !(m_spellInfo->AttributesEx3 & SPELL_ATTR3_NO_INITIAL_AGGRO));
 
@@ -1387,7 +1387,7 @@ void Spell::DoAllEffectOnTarget (TargetInfo *target)
                 spellHitTarget->ToCreature()->AI()->SpellHit(m_caster, m_spellInfo);
 
             // cast at creature (or GO) quest objectives update at successful cast finished (+channel finished)
-            // ignore pets or autorepeat/melee casts for speed (not exist quest for spells (hm...)
+            // ignore pets or autorepeat/melee casts for Speed (not exist quest for spells (hm...)
             if (m_originalCaster && m_originalCaster->IsControlledByPlayer() && !spellHitTarget->ToCreature()->isPet() && !IsAutoRepeat() && !IsNextMeleeSwingSpell() && !IsChannelActive())
                 if (Player* p = m_originalCaster->GetCharmerOrOwnerPlayerOrPlayerItself())
                     p->CastedCreatureOrGO(spellHitTarget->GetEntry(), spellHitTarget->GetGUID(), m_spellInfo->Id);
@@ -1416,7 +1416,7 @@ SpellMissInfo Spell::DoSpellHitOnUnit (Unit *unit, const uint32 effectMask, bool
         return SPELL_MISS_EVADE;
 
     // Recheck immune (only for delayed spells)
-    if (m_spellInfo->speed && (unit->IsImmunedToDamage(m_spellInfo) || unit->IsImmunedToSpell(m_spellInfo)))
+    if (m_spellInfo->Speed && (unit->IsImmunedToDamage(m_spellInfo) || unit->IsImmunedToSpell(m_spellInfo)))
         return SPELL_MISS_IMMUNE;
 
     PrepareScriptHitHandlers();
@@ -1438,7 +1438,7 @@ SpellMissInfo Spell::DoSpellHitOnUnit (Unit *unit, const uint32 effectMask, bool
     if (m_caster != unit)
     {
         // Recheck  UNIT_FLAG_NON_ATTACKABLE for delayed spells
-        if (m_spellInfo->speed > 0.0f && unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE) && unit->GetCharmerOrOwnerGUID() != m_caster->GetGUID())
+        if (m_spellInfo->Speed > 0.0f && unit->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE) && unit->GetCharmerOrOwnerGUID() != m_caster->GetGUID())
         {
             return SPELL_MISS_EVADE;
         }
@@ -1454,7 +1454,7 @@ SpellMissInfo Spell::DoSpellHitOnUnit (Unit *unit, const uint32 effectMask, bool
         {
             // for delayed spells ignore negative spells (after duel end) for friendly targets
             // TODO: this cause soul transfer bugged
-            if (m_spellInfo->speed > 0.0f && unit->GetTypeId() == TYPEID_PLAYER && !IsPositiveSpell(m_spellInfo->Id))
+            if (m_spellInfo->Speed > 0.0f && unit->GetTypeId() == TYPEID_PLAYER && !IsPositiveSpell(m_spellInfo->Id))
             {
                 return SPELL_MISS_EVADE;
             }
@@ -1656,7 +1656,7 @@ void Spell::DoAllEffectOnTarget (GOTargetInfo *target)
     CallScriptOnHitHandlers();
 
     // cast at creature (or GO) quest objectives update at successful cast finished (+channel finished)
-    // ignore autorepeat/melee casts for speed (not exist quest for spells (hm...)
+    // ignore autorepeat/melee casts for Speed (not exist quest for spells (hm...)
     if (m_originalCaster && m_originalCaster->IsControlledByPlayer() && !IsAutoRepeat() && !IsNextMeleeSwingSpell() && !IsChannelActive())
     {
         if (Player* p = m_originalCaster->GetCharmerOrOwnerPlayerOrPlayerItself())
@@ -2017,14 +2017,14 @@ WorldObject* Spell::SearchNearbyTarget (float range, SpellTargets TargetType, Sp
     }
 }
 
-void Spell::SelectEffectTargets (uint32 i, uint32 cur)
+void Spell::SelectEffectTargets (uint32 i, SpellImplicitTargetInfo const& cur)
 {
     SpellNotifyPushType pushType = PUSH_NONE;
     Player *modOwner = NULL;
     if (m_originalCaster)
         modOwner = m_originalCaster->GetSpellModOwner();
 
-    switch (SpellTargetType[cur])
+    switch (cur.GetType())
     {
     case TARGET_TYPE_UNIT_CASTER:
     {
@@ -2036,8 +2036,8 @@ void Spell::SelectEffectTargets (uint32 i, uint32 cur)
             break;
         case TARGET_UNIT_CASTER_FISHING:
         {
-            float min_dis = GetSpellMinRange(m_spellInfo, true);
-            float max_dis = GetSpellMaxRange(m_spellInfo, true);
+            float min_dis = m_spellInfo->GetMinRange(true);
+            float max_dis = m_spellInfo->GetMaxRange(true);
             float dis = (float) rand_norm() * (max_dis - min_dis) + min_dis;
             float x, y, z;
             m_caster->GetClosePoint(x, y, z, DEFAULT_WORLD_OBJECT_SIZE, dis);
@@ -2099,7 +2099,7 @@ void Spell::SelectEffectTargets (uint32 i, uint32 cur)
             pushType = PUSH_CHAIN;
             break;
         case TARGET_UNIT_TARGET_ANY:
-            if (!IsPositiveSpell(m_spellInfo->Id))
+            if (!m_spellInfo->IsPositivel())
                 if (Unit *magnet = m_caster->SelectMagnetTarget(target, m_spellInfo))
                     if (magnet != target)
                         m_targets.setUnitTarget(magnet);
@@ -2133,7 +2133,7 @@ void Spell::SelectEffectTargets (uint32 i, uint32 cur)
         switch (cur)
         {
         case TARGET_UNIT_NEARBY_ENEMY:
-            range = GetSpellMaxRange(m_spellInfo, false);
+            range = m_spellInfo->GetMaxRange(false);
             if (modOwner)
                 modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_RANGE, range, this);
             target = SearchNearbyTarget(range, SPELL_TARGETS_ENEMY, SpellEffIndex(i));
@@ -2141,7 +2141,7 @@ void Spell::SelectEffectTargets (uint32 i, uint32 cur)
         case TARGET_UNIT_NEARBY_ALLY:
         case TARGET_UNIT_NEARBY_ALLY_UNK:
         case TARGET_UNIT_NEARBY_RAID:
-            range = GetSpellMaxRange(m_spellInfo, true);
+            range = m_spellInfo->GetMaxRange(true);
             if (modOwner)
                 modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_RANGE, range, this);
             target = SearchNearbyTarget(range, SPELL_TARGETS_ALLY, SpellEffIndex(i));
@@ -3532,7 +3532,7 @@ void Spell::cast (bool skipCheck)
     SendSpellGo();
 
     // Okay, everything is prepared. Now we need to distinguish between immediate and evented delayed spells
-    if ((m_spellInfo->speed > 0.0f && !IsChanneledSpell(m_spellInfo)) || m_spellInfo->Id == 14157)
+    if ((m_spellInfo->Speed > 0.0f && !IsChanneledSpell(m_spellInfo)) || m_spellInfo->Id == 14157)
     {
         // Remove used for cast item if need (it can be already NULL after TakeReagents call
         // in case delayed spell remove item at cast delay start
@@ -3877,7 +3877,7 @@ void Spell::update (uint32 difftime)
 
             // channeled spell processed independently for quest targeting
             // cast at creature (or GO) quest objectives update at successful cast channel finished
-            // ignore autorepeat/melee casts for speed (not exist quest for spells (hm...)
+            // ignore autorepeat/melee casts for Speed (not exist quest for spells (hm...)
             if (!IsAutoRepeat() && !IsNextMeleeSwingSpell())
             {
                 if (Player* p = m_caster->GetCharmerOrOwnerPlayerOrPlayerItself())
@@ -7121,7 +7121,7 @@ bool Spell::CheckTarget (Unit* target, uint32 eff)
 
 bool Spell::IsNeedSendToClient () const
 {
-    return m_spellInfo->SpellVisual[0] || m_spellInfo->SpellVisual[1] || IsChanneledSpell(m_spellInfo) || m_spellInfo->speed > 0.0f || (!m_triggeredByAuraSpell && !m_IsTriggeredSpell);
+    return m_spellInfo->SpellVisual[0] || m_spellInfo->SpellVisual[1] || IsChanneledSpell(m_spellInfo) || m_spellInfo->Speed > 0.0f || (!m_triggeredByAuraSpell && !m_IsTriggeredSpell);
 }
 
 bool Spell::HaveTargetsForEffect (uint8 effect) const
