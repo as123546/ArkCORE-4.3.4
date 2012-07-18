@@ -458,7 +458,7 @@ int32 AuraEffect::CalculateAmount (Unit *caster)
 {
     int32 amount;
     // default amount calculation
-    amount = SpellMgr::CalculateSpellEffectAmount(m_spellProto, m_effIndex, caster, &m_baseAmount, NULL);
+    amount = m_spellInfo->Effects[m_effIndex].CalcValue(caster, &m_baseAmount, NULL);
 
     // check item enchant aura cast
     if (!amount && caster)
@@ -476,7 +476,7 @@ int32 AuraEffect::CalculateAmount (Unit *caster)
                                 if (pEnchant)
                                 {
                                     for (int t = 0; t < MAX_SPELL_EFFECTS; t++)
-                                        if (pEnchant->spellid[t] == m_spellProto->Id)
+                                        if (pEnchant->spellid[t] == m_spellInfo->Id)
                                         {
                                             amount = uint32((item_rand_suffix->prefix[k] * castItem->GetItemSuffixFactor()) / 10000);
                                             break;
@@ -526,7 +526,7 @@ int32 AuraEffect::CalculateAmount (Unit *caster)
         m_canBeRecalculated = false;
         if (!caster)
             break;
-        switch (GetSpellProto()->SpellFamilyName)
+        switch (GetSpellInfo()->SpellFamilyName)
         {
         case SPELLFAMILY_GENERIC:
             if (GetId() == 70845)
@@ -534,7 +534,7 @@ int32 AuraEffect::CalculateAmount (Unit *caster)
             break;
         case SPELLFAMILY_MAGE:
             // Ice Barrier
-            if (GetSpellProto()->SpellFamilyFlags[1] & 0x1 && GetSpellProto()->SpellFamilyFlags[2] & 0x8)
+            if (GetSpellProto()->SpellFamilyFlags[1] & 0x1 && GetSpellInfo()->SpellFamilyFlags[2] & 0x8)
             {
                 // +80.68% from sp bonus
                 DoneActualBenefit += caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellProto)) * 0.8068f;
@@ -546,13 +546,13 @@ int32 AuraEffect::CalculateAmount (Unit *caster)
             else if (GetSpellProto()->SpellFamilyFlags[0] & 0x8 && GetSpellProto()->SpellFamilyFlags[2] & 0x8)
             {
                 // +80.68% from sp bonus
-                DoneActualBenefit += caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellProto)) * 0.8068f;
+                DoneActualBenefit += caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellInfo)) * 0.8068f;
             }
             // Frost Ward
             else if (GetSpellProto()->SpellFamilyFlags[0] & 0x100 && GetSpellProto()->SpellFamilyFlags[2] & 0x8)
             {
                 // +80.68% from sp bonus
-                DoneActualBenefit += caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellProto)) * 0.8068f;
+                DoneActualBenefit += caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellInfo)) * 0.8068f;
             }
             break;
         case SPELLFAMILY_WARLOCK:
