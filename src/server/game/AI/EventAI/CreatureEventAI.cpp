@@ -1326,19 +1326,11 @@ bool CreatureEventAI::CanCast(Unit* Target, SpellInfo const *Spell, bool Trigger
         return false;
 
     //Check for power
-    if (!Triggered && me->GetPower((Powers) Spell->powerType) < CalculatePowerCost(Spell, me, GetSpellSchoolMask(Spell)))
-        return false;
-
-    SpellRangeEntry const *TempRange = NULL;
-
-    TempRange = GetSpellRangeStore()->LookupEntry(Spell->rangeIndex);
-
-    //Spell has invalid range store so we can't use it
-    if (!TempRange)
+    if (!Triggered && me->GetPower((Powers) Spell->PowerType) < Spell->CalcPowerCost(me, Spell->GetSchoolMask()))
         return false;
 
     //Unit is out of range of this spell
-    if (!me->IsInRange(Target, TempRange->minRangeHostile, TempRange->maxRangeHostile))
+    if (!me->IsInRange(Target, Spell->GetMinRange(false), Spell->GetMaxRange(false)))
         return false;
 
     return true;

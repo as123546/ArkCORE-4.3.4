@@ -77,7 +77,7 @@ public:
             return false;
         }
 
-        if (AchievementEntry const* pAE = GetAchievementStore()->LookupEntry(achievementId))
+        if (AchievementEntry const* pAE = sAchievementStore.LookupEntry(achievementId))
             target->CompletedAchievement(pAE, true);
 
         return true;

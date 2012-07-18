@@ -90,11 +90,6 @@ public:
             pInstance = c->GetInstanceScript();
             me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_OOC_NOT_ATTACKABLE);
             me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-
-            //below may need another adjustment
-            SpellEntry* spell = (SpellEntry*)sSpellMgr->GetSpellInfo(DUNGEON_MODE(SPELL_FLAME_SPHERE_PERIODIC, H_SPELL_FLAME_SPHERE_PERIODIC));
-            if (spell)
-                spell->EffectAmplitude[0] = 500;
         }
 
         uint32 uiBloodthirstTimer;

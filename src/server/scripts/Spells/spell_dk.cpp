@@ -113,7 +113,7 @@ public:
 
         bool Load ()
         {
-            absorbPct = SpellMgr::CalculateSpellEffectAmount(GetSpellProto(), EFFECT_0, GetCaster());
+            absorbPct = SpellMgr::CalculateSpellEffectAmount(GetSpellInfo(), EFFECT_0, GetCaster());
             return true;
         }
 
@@ -158,14 +158,14 @@ public:
         uint32 absorbPct, hpPct;
         bool Load ()
         {
-            absorbPct = SpellMgr::CalculateSpellEffectAmount(GetSpellProto(), EFFECT_0, GetCaster());
+            absorbPct = SpellMgr::CalculateSpellEffectAmount(GetSpellInfo(), EFFECT_0, GetCaster());
             if (GetCaster()->HasSpell(49224))
                 absorbPct += 8;
             if (GetCaster()->HasSpell(49610))
                 absorbPct += 16;
             if (GetCaster()->HasSpell(49611))
                 absorbPct += 25;
-            hpPct = SpellMgr::CalculateSpellEffectAmount(GetSpellProto(), EFFECT_1, GetCaster());
+            hpPct = SpellMgr::CalculateSpellEffectAmount(GetSpellInfo(), EFFECT_1, GetCaster());
             return true;
         }
 
@@ -226,7 +226,7 @@ public:
 
         bool Load ()
         {
-            absorbPct = SpellMgr::CalculateSpellEffectAmount(GetSpellProto(), EFFECT_0, GetCaster());
+            absorbPct = SpellMgr::CalculateSpellEffectAmount(GetSpellInfo(), EFFECT_0, GetCaster());
             return true;
         }
 
@@ -237,7 +237,7 @@ public:
 
         void CalculateAmount (AuraEffect const* /*aurEff*/, int32 & amount, bool & /*canBeRecalculated*/)
         {
-            SpellEntry const* talentSpell = sSpellMgr->GetSpellInfo(DK_SPELL_ANTI_MAGIC_SHELL_TALENT);
+            SpellInfo const* talentSpell = sSpellMgr->GetSpellInfo(DK_SPELL_ANTI_MAGIC_SHELL_TALENT);
             amount = SpellMgr::CalculateSpellEffectAmount(talentSpell, EFFECT_0, GetCaster());
             Unit* caster = GetCaster();
             if (!caster)
@@ -529,7 +529,7 @@ public:
             if (target->HasAura(DK_SPELL_UNHOLY_PRESENCE) && !target->HasAura(DK_SPELL_IMPROVED_UNHOLY_PRESENCE_TRIGGERED))
             {
                 // Not listed as any effect, only base points set in dbc
-                int32 basePoints0 = SpellMgr::CalculateSpellEffectAmount(GetSpellProto(), EFFECT_0, GetCaster());
+                int32 basePoints0 = SpellMgr::CalculateSpellEffectAmount(GetSpellInfo(), EFFECT_0, GetCaster());
                 target->CastCustomSpell(target, DK_SPELL_IMPROVED_UNHOLY_PRESENCE_TRIGGERED, &basePoints0, &basePoints0, &basePoints0, true, 0, aurEff);
             }
         }

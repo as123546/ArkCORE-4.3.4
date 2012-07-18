@@ -285,17 +285,17 @@ SpellInfo const* ScriptedAI::SelectSpell(Unit* pTarget, uint32 uiSchool, uint32 
             continue;
 
         //Continue if we don't have the mana to actually cast this spell
-        if (pTempRange->ManaCost > me->GetPower(Powers(pTempRange->PowerType)))
+        if (pTempSpell->ManaCost > me->GetPower(Powers(pTempSpell->PowerType)))
             continue;
 
         //Check if the spell meets our range requirements
-        if (fRangeMin && me->GetSpellMinRangeForTarget(pTarget, pTempRange) < fRangeMin)
+        if (fRangeMin && me->GetSpellMinRangeForTarget(pTarget, pTempSpell) < fRangeMin)
             continue;
-        if (fRangeMax && me->GetSpellMaxRangeForTarget(pTarget, pTempRange) > fRangeMax)
+        if (fRangeMax && me->GetSpellMaxRangeForTarget(pTarget, pTempSpell) > fRangeMax)
             continue;
 
         //Check if our target is in range
-        if (me->IsWithinDistInMap(pTarget, (float) me->GetSpellMinRangeForTarget(pTarget, pTempRange)) || !me->IsWithinDistInMap(pTarget, (float) me->GetSpellMaxRangeForTarget(pTarget, pTempRange)))
+        if (me->IsWithinDistInMap(pTarget, float(me->GetSpellMinRangeForTarget(pTarget, pTempSpell)) || !me->IsWithinDistInMap(pTarget, (float) me->GetSpellMaxRangeForTarget(pTarget, pTempSpell))))
             continue;
 
         //All good so lets add it to the spell list

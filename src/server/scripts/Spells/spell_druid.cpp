@@ -355,7 +355,7 @@ class spell_druid_wild_mushroom : public SpellScriptLoader
                 if (Player* player = GetCaster()->ToPlayer())
                 {
                     PreventHitDefaultEffect(effIndex);
-                    const SpellEntry* spell = GetSpellInfo();
+                    const SpellInfo* spell = GetSpellInfo();
 
                     std::list<Creature*> list;
                     player->GetCreatureListWithEntryInGrid(list, DRUID_NPC_WILD_MUSHROOM, 500.0f);
@@ -413,8 +413,6 @@ class spell_druid_wild_mushroom_detonate : public SpellScriptLoader
 
             bool Load()
             {
-                spellRange = GetSpellRangeStore()->LookupEntry(GetSpellInfo()->rangeIndex)->maxRangeFriend;
-
                 Player* player = GetCaster()->ToPlayer();
                 if (!player)
                     return false;
@@ -432,9 +430,6 @@ class spell_druid_wild_mushroom_detonate : public SpellScriptLoader
                     }
                 }
                 mushroomList = summonList;
-
-                if (!spellRange)
-                    return false;
 
                 return true;
             }

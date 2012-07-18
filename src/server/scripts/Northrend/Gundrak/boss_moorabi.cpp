@@ -74,7 +74,7 @@ public:
                 _instance = creature->GetInstanceScript();
 
             // make 55098 interruptable
-            SpellEntry* spell = (SpellEntry*)sSpellMgr->GetSpellInfo(SPELL_TRANSFORMATION);
+            SpellInfo* spell = (SpellInfo*)sSpellMgr->GetSpellInfo(SPELL_TRANSFORMATION);
             if (spell)
                 spell->InterruptFlags |= SPELL_INTERRUPT_FLAG_INTERRUPT;
         }

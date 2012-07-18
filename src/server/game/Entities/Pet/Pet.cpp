@@ -168,7 +168,7 @@ bool Pet::LoadPetFromDB (Player* owner, uint32 petentry, uint32 petnumber, bool 
     uint32 summon_spell_id = fields[17].GetUInt32();
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(summon_spell_id);
 
-    bool is_temporary_summoned = spellInfo && GetSpellDuration(spellInfo) > 0;
+    bool is_temporary_summoned = spellInfo && spellInfo->GetDuration() > 0;
 
     // check temporary summoned pets like mage water elemental
     if (current && is_temporary_summoned)
@@ -667,45 +667,6 @@ HappinessState Pet::GetHappinessState ()
         return CONTENT;
 }
 
-bool Pet::CanTakeMoreActiveSpells (uint32 spellid)
-{
-    uint8 activecount = 1;
-    uint32 chainstartstore[ACTIVE_SPELLS_MAX];
-
-    if (IsPassiveSpell(spellid))
-        return true;
-
-    chainstartstore[0] = sSpellMgr->GetFirstSpellInChain(spellid);
-
-    for (PetSpellMap::const_iterator itr = m_spells.begin(); itr != m_spells.end(); ++itr)
-    {
-        if (itr->second.state == PETSPELL_REMOVED)
-            continue;
-
-        if (IsPassiveSpell(itr->first))
-            continue;
-
-        uint32 chainstart = sSpellMgr->GetFirstSpellInChain(itr->first);
-
-        uint8 x;
-
-        for (x = 0; x < activecount; x++)
-        {
-            if (chainstart == chainstartstore[x])
-                break;
-        }
-
-        if (x == activecount)          //spellchain not yet saved -> add active count
-        {
-            ++activecount;
-            if (activecount > ACTIVE_SPELLS_MAX)
-                return false;
-            chainstartstore[x] = chainstart;
-        }
-    }
-    return true;
-}
-
 void Pet::Remove (PetSlot mode, bool returnreagent)
 {
     m_owner->RemovePet(this, mode, returnreagent);
@@ -1076,7 +1037,7 @@ bool Guardian::InitStatsForLevel (uint8 petlevel)
                     case 49638:
                     {
                         if (const SpellInfo *proto = sSpellMgr->GetSpellInfo(itr->first))
-                            AddPctN(impurityMod, SpellMgr::CalculateSpellEffectAmount(proto, 0));
+                            AddPctN(impurityMod, proto->Effects[0].CalcValue(0));
                     }
                         break;
                     }
@@ -1278,15 +1239,15 @@ void Pet::_LoadAuras (uint32 timediff)
             int32 remaintime = fields[12].GetInt32();
             uint8 remaincharges = fields[13].GetUInt8();
 
-            SpellInfo const* spellproto = sSpellMgr->GetSpellInfo(spellid);
-            if (!spellproto)
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellid);
+            if (!spellInfo)
             {
                 sLog->outError("Unknown aura (spellid %u), ignore.", spellid);
                 continue;
             }
 
             // negative effects should continue counting down after logout
-            if (remaintime != -1 && !IsPositiveSpell(spellid))
+            if (remaintime != -1 && !spellInfo->IsPositive())
             {
                 if (remaintime / IN_MILLISECONDS <= int32(timediff))
                     continue;
@@ -1295,15 +1256,15 @@ void Pet::_LoadAuras (uint32 timediff)
             }
 
             // prevent wrong values of remaincharges
-            if (spellproto->procCharges)
+            if (spellInfo->ProcCharges)
             {
-                if (remaincharges <= 0 || remaincharges > spellproto->procCharges)
-                    remaincharges = spellproto->procCharges;
+                if (remaincharges <= 0 || remaincharges > spellInfo->ProcCharges)
+                    remaincharges = spellInfo->ProcCharges;
             }
             else
                 remaincharges = 0;
 
-            if (Aura * aura = Aura::TryCreate(spellproto, effmask, this, NULL, &baseDamage[0], NULL, caster_guid))
+            if (Aura* aura = Aura::TryCreate(spellInfo, effmask, this, NULL, &baseDamage[0], NULL, caster_guid))
             {
                 if (!aura->CanBeSaved())
                 {
@@ -1312,7 +1273,7 @@ void Pet::_LoadAuras (uint32 timediff)
                 }
                 aura->SetLoadedState(maxduration, remaintime, remaincharges, stackcount, recalculatemask, &damage[0]);
                 aura->ApplyForTargets();
-                sLog->outDetail("Added aura spellid %u, effectmask %u", spellproto->Id, effmask);
+                sLog->outDetail("Added aura spellid %u, effectmask %u", spellInfo->Id, effmask);
             }
         }
         while (result->NextRow());
@@ -1388,9 +1349,9 @@ bool Pet::addSpell (uint32 spell_id, ActiveStates active /*= ACT_DECIDE*/, PetSp
             itr->second.state = PETSPELL_UNCHANGED;
 
             if (active == ACT_ENABLED)
-                ToggleAutocast(spell_id, true);
+                ToggleAutocast(spellInfo, true);
             else if (active == ACT_DISABLED)
-                ToggleAutocast(spell_id, false);
+                ToggleAutocast(spellInfo, false);
 
             return false;
         }
@@ -1404,7 +1365,7 @@ bool Pet::addSpell (uint32 spell_id, ActiveStates active /*= ACT_DECIDE*/, PetSp
 
     if (active == ACT_DECIDE)          // active was not used before, so we save it's autocast/passive state here
     {
-        if (IsAutocastableSpell(spell_id))
+        if (spellInfo->IsAutocastable())
             newspell.active = ACT_DISABLED;
         else
             newspell.active = ACT_PASSIVE;
@@ -1431,28 +1392,33 @@ bool Pet::addSpell (uint32 spell_id, ActiveStates active /*= ACT_DECIDE*/, PetSp
             }
         }
     }
-    else if (sSpellMgr->GetSpellRank(spell_id) != 0)
+    else if (spellInfo->IsRanked())
     {
         for (PetSpellMap::const_iterator itr2 = m_spells.begin(); itr2 != m_spells.end(); ++itr2)
         {
             if (itr2->second.state == PETSPELL_REMOVED)
                 continue;
 
-            if (sSpellMgr->IsRankSpellDueToSpell(spellInfo, itr2->first))
+            SpellInfo const* oldRankSpellInfo = sSpellMgr->GetSpellInfo(itr2->first);
+
+            if (!oldRankSpellInfo)
+                continue;
+
+            if (spellInfo->IsDifferentRankOf(oldRankSpellInfo))
             {
                 // replace by new high rank
-                if (sSpellMgr->IsHighRankOfSpell(spell_id, itr2->first))
+                if (spellInfo->IsHighRankOf(oldRankSpellInfo))
                 {
                     newspell.active = itr2->second.active;
 
                     if (newspell.active == ACT_ENABLED)
-                        ToggleAutocast(itr2->first, false);
+                        ToggleAutocast(oldRankSpellInfo, false);
 
                     unlearnSpell(itr2->first, false, false);
                     break;
                 }
                 // ignore new lesser rank
-                else if (sSpellMgr->IsHighRankOfSpell(itr2->first, spell_id))
+                else
                     return false;
             }
         }
@@ -1460,13 +1426,13 @@ bool Pet::addSpell (uint32 spell_id, ActiveStates active /*= ACT_DECIDE*/, PetSp
 
     m_spells[spell_id] = newspell;
 
-    if (IsPassiveSpell(spell_id) && (!spellInfo->CasterAuraState || HasAuraState(AuraState(spellInfo->CasterAuraState))))
+    if (spellInfo->IsPassive() && (!spellInfo->CasterAuraState || HasAuraState(AuraStateType(spellInfo->CasterAuraState))))
         CastSpell(this, spell_id, true);
     else
-        m_charmInfo->AddSpellToActionBar(spell_id);
+        m_charmInfo->AddSpellToActionBar(spellInfo);
 
     if (newspell.active == ACT_ENABLED)
-        ToggleAutocast(spell_id, true);
+        ToggleAutocast(spellInfo, true);
 
     uint32 talentCost = GetTalentSpellCost(spell_id);
     if (talentCost)
@@ -1610,7 +1576,10 @@ void Pet::CleanupActionBar ()
                 if (!HasSpell(ab->GetAction()))
                     m_charmInfo->SetActionBar(i, 0, ACT_PASSIVE);
                 else if (ab->GetType() == ACT_ENABLED)
-                    ToggleAutocast(ab->GetAction(), true);
+                {
+                    if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(ab->GetAction()))
+                        ToggleAutocast(spellInfo, true);
+                }
             }
 }
 
@@ -1840,10 +1809,12 @@ uint8 Pet::GetMaxTalentPointsForLevel (uint8 level)
     return points;
 }
 
-void Pet::ToggleAutocast (uint32 spellid, bool apply)
+void Pet::ToggleAutocast (SpellInfo const* spellInfo, bool apply)
 {
-    if (!IsAutocastableSpell(spellid))
+    if (!spellInfo->IsAutocastable())
         return;
+
+    uint32 spellid = spellInfo->Id;
 
     PetSpellMap::iterator itr = m_spells.find(spellid);
     if (itr == m_spells.end())

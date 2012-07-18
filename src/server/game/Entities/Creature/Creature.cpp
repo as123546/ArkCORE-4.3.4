@@ -1708,10 +1708,10 @@ bool Creature::IsImmunedToSpell (SpellInfo const* spellInfo)
 
 bool Creature::IsImmunedToSpellEffect (SpellInfo const* spellInfo, uint32 index) const
 {
-    if (GetCreatureInfo()->MechanicImmuneMask & (1 << (spellInfo->EffectMechanic[index] - 1)))
+    if (GetCreatureInfo()->MechanicImmuneMask & (1 << (spellInfo->Effects[index].Mechanic - 1)))
         return true;
 
-    if (GetCreatureInfo()->type == CREATURE_TYPE_MECHANICAL && spellInfo->Effect[index] == SPELL_EFFECT_HEAL)
+    if (GetCreatureInfo()->type == CREATURE_TYPE_MECHANICAL && spellInfo->Effects[index].Effect == SPELL_EFFECT_HEAL)
         return true;
 
     return Unit::IsImmunedToSpellEffect(spellInfo, index);
@@ -1736,7 +1736,7 @@ SpellInfo const *Creature::reachWithSpellAttack (Unit *pVictim)
         bool bcontinue = true;
         for (uint32 j = 0; j < MAX_SPELL_EFFECTS; j++)
         {
-            if ((spellInfo->Effect[j] == SPELL_EFFECT_SCHOOL_DAMAGE) || (spellInfo->Effect[j] == SPELL_EFFECT_INSTAKILL) || (spellInfo->Effect[j] == SPELL_EFFECT_ENVIRONMENTAL_DAMAGE) || (spellInfo->Effect[j] == SPELL_EFFECT_HEALTH_LEECH))
+            if ((spellInfo->Effects[j].Effect == SPELL_EFFECT_SCHOOL_DAMAGE) || (spellInfo->Effects[j].Effect == SPELL_EFFECT_INSTAKILL) || (spellInfo->Effects[j].Effect == SPELL_EFFECT_ENVIRONMENTAL_DAMAGE) || (spellInfo->Effects[j].Effect == SPELL_EFFECT_HEALTH_LEECH))
             {
                 bcontinue = false;
                 break;
@@ -2200,11 +2200,11 @@ void Creature::_AddCreatureCategoryCooldown (uint32 category, time_t apply_time)
 
 void Creature::AddCreatureSpellCooldown (uint32 spellid)
 {
-    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellid);
     if (!spellInfo)
         return;
 
-    uint32 cooldown = GetSpellRecoveryTime(spellInfo);
+    uint32 cooldown = spellInfo->GetRecoveryTime();
     if (Player *modOwner = GetSpellModOwner())
         modOwner->ApplySpellMod(spellid, SPELLMOD_COOLDOWN, cooldown);
 

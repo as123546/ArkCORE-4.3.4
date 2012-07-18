@@ -4224,7 +4224,7 @@ void Player::RemoveTemporarySpell (uint32 spellId)
     m_spells.erase(itr);
 }
 
-bool Player::IsNeedCastPassiveSpellAtLearn (SpellEntry const* spellInfo) const
+bool Player::IsNeedCastPassiveSpellAtLearn (SpellInfo const* spellInfo) const
 {
     // note: form passives activated with shapeshift spells be implemented by HandleShapeshiftBoosts instead of spell_learn_spell
     // talent dependent passives activated at form apply have proper stance data

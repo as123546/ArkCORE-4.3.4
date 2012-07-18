@@ -932,7 +932,7 @@ bool ConditionMgr::isSourceTypeValid (Condition* cond)
                     "TARGET_GAMEOBJECT_AREA_SRC(51), TARGET_GAMEOBJECT_AREA_DST(52)", cond->mSourceEntry);
             return false;
         }
-        if ((cond->mConditionValue1 == SPELL_TARGET_TYPE_DEAD) && !IsAllowingDeadTargetSpell(spellProto))
+        if ((cond->mConditionValue1 == SPELL_TARGET_TYPE_DEAD) && !spellProto->IsAllowingDeadTarget())
         {
             sLog->outErrorDb("SourceEntry %u in `condition` table does have SPELL_TARGET_TYPE_DEAD specified but spell does not have SPELL_ATTR2_ALLOW_DEAD_TARGET", cond->mSourceEntry);
             return false;
@@ -986,7 +986,10 @@ bool ConditionMgr::isSourceTypeValid (Condition* cond)
 
                     for (int j = 0; j < MAX_SPELL_EFFECTS; ++j)
                     {
-                        if (pSpellInfo->EffectImplicitTargetA[j] == TARGET_UNIT_TARGET_ENEMY || pSpellInfo->EffectImplicitTargetB[j] == TARGET_UNIT_TARGET_ENEMY || pSpellInfo->EffectImplicitTargetA[j] == TARGET_UNIT_TARGET_ANY || pSpellInfo->EffectImplicitTargetB[j] == TARGET_UNIT_TARGET_ANY)
+                        if (pSpellInfo->Effects[j].TargetA == TARGET_UNIT_TARGET_ENEMY ||
+                            pSpellInfo->Effects[j].TargetB == TARGET_UNIT_TARGET_ENEMY ||
+                            pSpellInfo->Effects[j].TargetA == TARGET_UNIT_TARGET_ANY ||
+                            pSpellInfo->Effects[j].TargetB == TARGET_UNIT_TARGET_ANY)
                         {
                             bIsItemSpellValid = true;
                             break;

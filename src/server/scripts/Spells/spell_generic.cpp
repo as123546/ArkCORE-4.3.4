@@ -48,7 +48,7 @@ public:
         bool Load ()
         {
             // Max absorb stored in 1 dummy effect
-            limit = SpellMgr::CalculateSpellEffectAmount(GetSpellProto(), EFFECT_1);
+            limit = SpellMgr::CalculateSpellEffectAmount(GetSpellInfo(), EFFECT_1);
             return true;
         }
 

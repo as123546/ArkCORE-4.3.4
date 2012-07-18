@@ -68,7 +68,7 @@ public:
 
         bool Load ()
         {
-            healPct = SpellMgr::CalculateSpellEffectAmount(GetSpellProto(), EFFECT_1);
+            healPct = SpellMgr::CalculateSpellEffectAmount(GetSpellInfo(), EFFECT_1);
             return true;
         }
 

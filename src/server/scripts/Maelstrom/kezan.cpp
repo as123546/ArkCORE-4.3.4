@@ -145,7 +145,7 @@ class npc_defiant_troll : public CreatureScript
         if (player->GetQuestStatus(QUEST_GOOD_HELP_IS_HARD_TO_FIND) == QUEST_STATUS_INCOMPLETE)
         {
             player->CastSpell(creature, SPELL_LIGHTNING_VISUAL, true);
-            SpellEntry const* spell = sSpellMgr->GetSpellInfo(SPELL_LIGHTNING_VISUAL);
+            SpellInfo const* spell = sSpellMgr->GetSpellInfo(SPELL_LIGHTNING_VISUAL);
             CAST_AI(npc_defiant_troll::npc_defiant_trollAI, creature->AI())->SpellHit(player, spell);
             return true;
         }

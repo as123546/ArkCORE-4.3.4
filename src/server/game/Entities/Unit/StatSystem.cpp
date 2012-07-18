@@ -389,7 +389,7 @@ void Player::UpdateAttackPowerAndDamage (bool ranged)
                 for (Unit::AuraEffectList::const_iterator itr = mDummy.begin(); itr != mDummy.end(); ++itr)
                 {
                     AuraEffect* aurEff = *itr;
-                    if (aurEff->GetSpellProto()->SpellIconID == 1563)
+                    if (aurEff->GetSpellInfo()->SpellIconID == 1563)
                     {
                         switch (aurEff->GetEffIndex())
                         {
@@ -788,10 +788,10 @@ void Player::UpdateExpertise (WeaponAttackType attack)
     for (AuraEffectList::const_iterator itr = expAuras.begin(); itr != expAuras.end(); ++itr)
     {
         // item neutral spell
-        if ((*itr)->GetSpellProto()->EquippedItemClass == -1)
+        if ((*itr)->GetSpellInfo()->EquippedItemClass == -1)
             expertise += (*itr)->GetAmount();
         // item dependent spell
-        else if (weapon && weapon->IsFitToSpellRequirements((*itr)->GetSpellProto()))
+        else if (weapon && weapon->IsFitToSpellRequirements((*itr)->GetSpellInfo()))
             expertise += (*itr)->GetAmount();
     }
 
@@ -1077,7 +1077,7 @@ bool Guardian::UpdateStats (Stats stat)
         aurEff = owner->GetAuraEffect(SPELL_AURA_MOD_TOTAL_STAT_PERCENTAGE, SPELLFAMILY_DEATHKNIGHT, 3010, 0);
         if (aurEff)
         {
-            SpellEntry const* sProto = aurEff->GetSpellProto();          // Then get the SpellProto and add the dummy effect value
+            SpellInfo const* sProto = aurEff->GetSpellInfo();          // Then get the SpellProto and add the dummy effect value
             mod += mod * (SpellMgr::CalculateSpellEffectAmount(sProto, 1) / 100.0f);          // Ravenous Dead edits the original scale
         }
         // Glyph of the Ghoul
@@ -1120,7 +1120,7 @@ bool Guardian::UpdateStats (Stats stat)
 
                 if (itr != ToPet()->m_spells.end())          // If pet has Wild Hunt
                 {
-                    SpellEntry const* sProto = sSpellMgr->GetSpellInfo(itr->first);          // Then get the SpellProto and add the dummy effect value
+                    SpellInfo const* sProto = sSpellMgr->GetSpellInfo(itr->first);          // Then get the SpellProto and add the dummy effect value
                     mod += mod * (SpellMgr::CalculateSpellEffectAmount(sProto, 0) / 100.0f);
                 }
             }
@@ -1470,7 +1470,7 @@ void Guardian::UpdateDamagePhysical (WeaponAttackType attType)
     Unit::AuraEffectList const& mDummy = GetAuraEffectsByType(SPELL_AURA_MOD_ATTACKSPEED);
     for (Unit::AuraEffectList::const_iterator itr = mDummy.begin(); itr != mDummy.end(); ++itr)
     {
-        switch ((*itr)->GetSpellProto()->Id)
+        switch ((*itr)->GetSpellInfo()->Id)
         {
         case 61682:
         case 61683:

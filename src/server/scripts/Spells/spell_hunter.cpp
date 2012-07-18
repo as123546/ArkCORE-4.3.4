@@ -429,7 +429,7 @@ public:
             if (Player* pPlayerTarget = pTarget->ToPlayer())
             {
                 int32 baseAmount = aurEff->GetBaseAmount();
-                int32 amount = pPlayerTarget->isMoving() ? pTarget->CalculateSpellDamage(pTarget, GetSpellProto(), aurEff->GetEffIndex(), &baseAmount) : aurEff->GetAmount() - 1;
+                int32 amount = pPlayerTarget->isMoving() ? pTarget->CalculateSpellDamage(pTarget, GetSpellInfo(), aurEff->GetEffIndex(), &baseAmount) : aurEff->GetAmount() - 1;
                 aurEff->SetAmount(amount);
             }
         }

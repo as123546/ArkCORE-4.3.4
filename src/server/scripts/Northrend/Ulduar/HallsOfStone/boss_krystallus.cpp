@@ -69,7 +69,7 @@ public:
             _instance = c->GetInstanceScript();
 
             //temporary to let ground slam effect not be interrupted
-            SpellEntry* spell = (SpellEntry*)sSpellMgr->GetSpellInfo(SPELL_GROUND_SLAM_TRIGGERED);
+            SpellInfo* spell = (SpellInfo*)sSpellMgr->GetSpellInfo(SPELL_GROUND_SLAM_TRIGGERED);
             if (spell)
                 spell->InterruptFlags = 0;
         }
