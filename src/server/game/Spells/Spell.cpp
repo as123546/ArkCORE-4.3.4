@@ -57,6 +57,7 @@
 #include "DisableMgr.h"
 #include "SpellScript.h"
 #include "InstanceScript.h"
+#include "SpellInfo.h"
 #include "DB2Structure.h"
 #include "DB2Stores.h"
 
@@ -436,6 +437,15 @@ void SpellCastTargets::write (ByteBuffer & data)
         data << m_strTarget;
 }
 
+SpellValue::SpellValue(SpellInfo const* proto)
+{
+    for (uint32 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+        EffectBasePoints[i] = proto->Effects[i].BasePoints;
+    MaxAffectedTargets = proto->MaxAffectedTargets;
+    RadiusMod = 1.0f;
+    AuraStackAmount = 1;
+}
+
 Spell::Spell (Unit* Caster, SpellInfo const *info, bool triggered, uint64 originalCasterGUID, bool skipCheck) :
         m_spellInfo(sSpellMgr->GetSpellForDifficultyFromSpell(info, Caster)), m_caster(Caster), m_spellValue(new SpellValue(m_spellInfo))
 {
@@ -445,7 +455,7 @@ Spell::Spell (Unit* Caster, SpellInfo const *info, bool triggered, uint64 origin
     m_selfContainer = NULL;
     m_referencedFromCurrentSpell = false;
     m_executedCurrently = false;
-    m_needComboPoints = NeedsComboPoints(m_spellInfo);
+    m_needComboPoints = m_spellInfo->NeedsComboPoints();
     m_comboPointGain = 0;
     m_delayStart = 0;
     m_delayAtDamageCount = 0;
@@ -464,7 +474,7 @@ Spell::Spell (Unit* Caster, SpellInfo const *info, bool triggered, uint64 origin
             m_attackType = BASE_ATTACK;
         break;
     case SPELL_DAMAGE_CLASS_RANGED:
-        m_attackType = IsRangedWeaponSpell(m_spellInfo) ? RANGED_ATTACK : BASE_ATTACK;
+        m_attackType = m_spellInfo->IsRangedWeaponSpell() ? RANGED_ATTACK : BASE_ATTACK;
         break;
     default:
         // Wands
@@ -475,7 +485,7 @@ Spell::Spell (Unit* Caster, SpellInfo const *info, bool triggered, uint64 origin
         break;
     }
 
-    m_spellSchoolMask = GetSpellSchoolMask(info);          // Can be override for some spell (wand shoot for example)
+    m_spellSchoolMask = info->GetSpellSchoolMask();          // Can be override for some spell (wand shoot for example)
 
     if (m_attackType == RANGED_ATTACK)
     {
@@ -518,7 +528,7 @@ Spell::Spell (Unit* Caster, SpellInfo const *info, bool triggered, uint64 origin
     m_magnetingAura = NULL;
 
     //Auto Shot & Shoot (wand)
-    m_autoRepeat = IsAutoRepeatRangedSpell(m_spellInfo);
+    m_autoRepeat = m_spellInfo->IsAutoRepeatRangedSpell();
 
     m_runesState = 0;
     m_powerCost = 0;          // setup to correct value in Spell::prepare, don't must be used before.
@@ -537,7 +547,7 @@ Spell::Spell (Unit* Caster, SpellInfo const *info, bool triggered, uint64 origin
             if (m_spellInfo->Effect[j] == 0)
                 continue;
 
-            if (!IsPositiveTarget(m_spellInfo->EffectImplicitTargetA[j], m_spellInfo->EffectImplicitTargetB[j]))
+            if (!IsPositiveTarget(m_spellInfo->Effects[j].TargetA, m_spellInfo->Effects[j].TargetB))
                 m_canReflect = true;
             else
                 m_canReflect = (m_spellInfo->AttributesEx & SPELL_ATTR1_NEGATIVE) ? true : false;
@@ -583,7 +593,7 @@ template<typename T>
 WorldObject* Spell::FindCorpseUsing ()
 {
     // non-standard target selection
-    float max_range = GetSpellMaxRange(m_spellInfo, false);
+    float max_range = m_spellInfo->GetMaxRange(false);
 
     CellPair p(Trinity::ComputeCellPair(m_caster->GetPositionX(), m_caster->GetPositionY()));
     Cell cell(p);
@@ -616,19 +626,19 @@ void Spell::SelectSpellTargets ()
         if (!m_spellInfo->Effect[i])
             continue;
 
-        uint32 effectTargetType = EffectTargetType[m_spellInfo->Effect[i]];
+        uint32 effectTargetType = EffectTargetType[m_spellInfo->Effects[i].Effect];
 
         // is it possible that areaaura is not applied to caster?
         if (effectTargetType == SPELL_REQUIRE_NONE)
             continue;
 
-        uint32 targetA = m_spellInfo->EffectImplicitTargetA[i];
-        uint32 targetB = m_spellInfo->EffectImplicitTargetB[i];
+        uint32 targetA = m_spellInfo->Effects[i].TargetA;
+        uint32 targetB = m_spellInfo->Effects[i].TargetA;
 
         if (targetA)
-            SelectEffectTargets(i, targetA);
+            SelectEffectTargets(i, m_spellInfo->Effects[i].TargetA);
         if (targetB)          // In very rare case !A && B
-            SelectEffectTargets(i, targetB);
+            SelectEffectTargets(i, m_spellInfo->Effects[i].TargetB);
 
         if (effectTargetType != SPELL_REQUIRE_UNIT)
         {
