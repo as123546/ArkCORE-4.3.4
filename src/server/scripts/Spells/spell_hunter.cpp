@@ -320,7 +320,7 @@ public:
                 SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(itr->first);
 
                 ///! If spellId in cooldown map isn't valid, the above will return a null pointer.
-                if (spellInfo && spellInfo->SpellFamilyName == SPELLFAMILY_HUNTER && spellInfo->Id != HUNTER_SPELL_READINESS && spellInfo->Id != HUNTER_SPELL_BESTIAL_WRATH && GetSpellRecoveryTime(spellInfo) > 0)
+                if (spellInfo && spellInfo->SpellFamilyName == SPELLFAMILY_HUNTER && spellInfo->Id != HUNTER_SPELL_READINESS && spellInfo->Id != HUNTER_SPELL_BESTIAL_WRATH && spellInfo->GetRecoveryTime() > 0)
                     caster->ToPlayer()->RemoveSpellCooldown((itr++)->first, true);
                 else
                     ++itr;

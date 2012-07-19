@@ -68,8 +68,8 @@ public:
 
         bool Load ()
         {
-            healPct = SpellMgr::CalculateSpellEffectAmount(GetSpellInfo(), EFFECT_1);
-            absorbPct = SpellMgr::CalculateSpellEffectAmount(GetSpellInfo(), EFFECT_0);
+            healPct = GetSpellInfo()->Effects[EFFECT_1].CalcValue();
+            absorbPct = GetSpellInfo()->Effects[EFFECT_0].CalcValue();
             return GetUnitOwner()->ToPlayer();
         }
 

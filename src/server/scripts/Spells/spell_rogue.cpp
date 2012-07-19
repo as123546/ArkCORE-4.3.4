@@ -63,7 +63,7 @@ public:
 
         bool Load ()
         {
-            absorbChance = SpellMgr::CalculateSpellEffectAmount(GetSpellProto(), EFFECT_0);
+            absorbChance = GetSpellInfo()->Effects[EFFECT_0].CalcValue();
             return GetUnitOwner()->ToPlayer();
         }
 
@@ -127,7 +127,7 @@ public:
 
         bool Load ()
         {
-            absorbPct = SpellMgr::CalculateSpellEffectAmount(GetSpellInfo(), EFFECT_0, GetCaster());
+            absorbPct = GetSpellInfo()->Effects[EFFECT_0].CalcValue(GetCaster());
             return true;
         }
 
@@ -250,7 +250,7 @@ public:
             {
                 if (!pTarget->HasAura(ROGUE_SPELL_PREY_ON_THE_WEAK))
                 {
-                    int32 bp = SpellMgr::CalculateSpellEffectAmount(GetSpellProto(), 0);
+                    int32 bp = GetSpellInfo()->Effects[EFFECT_0].CalcValue();
                     pTarget->CastCustomSpell(pTarget, ROGUE_SPELL_PREY_ON_THE_WEAK, &bp, 0, 0, true);
                 }
             }
