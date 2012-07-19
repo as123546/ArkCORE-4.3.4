@@ -369,13 +369,13 @@ class spell_druid_wild_mushroom : public SpellScriptLoader
                         list.remove((*i));
                     }
 
-                    if ((int32)list.size() >= spell->EffectBasePoints[0]) // Max 3
+                    if ((int32)list.size() >= spell->Effects[0].BasePoints) // Max 3
                         list.front()->ToTempSummon()->UnSummon();
 
                     Position pos;
                     GetTargetDest()->GetPosition(&pos);
-                    const SummonPropertiesEntry* properties = sSummonPropertiesStore.LookupEntry(spell->EffectMiscValueB[effIndex]);
-                    TempSummon* summon = player->SummonCreature(spell->EffectMiscValue[0], pos, TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, GetSpellDuration(spell));
+                    const SummonPropertiesEntry* properties = sSummonPropertiesStore.LookupEntry(spell->Effects[effIndex].MiscValueB);
+                    TempSummon* summon = player->SummonCreature(spell->Effects[0].MiscValue, pos, TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, spell->GetDuration());
                     if (!summon)
                         return;
                     summon->SetUInt64Value(UNIT_FIELD_SUMMONEDBY, player->GetGUID());

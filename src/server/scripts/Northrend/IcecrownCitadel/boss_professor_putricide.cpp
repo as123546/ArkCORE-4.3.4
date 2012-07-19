@@ -1036,7 +1036,7 @@ class spell_putricide_choking_gas_bomb : public SpellScriptLoader
                     if (i == skipIndex)
                         continue;
 
-                    uint32 spellId = uint32(SpellMgr::CalculateSpellEffectAmount(GetSpellInfo(), uint8(i)));
+                    uint32 spellId = uint32(GetSpellInfo()->Effects[i].CalcValue());
                     GetCaster()->CastSpell(GetCaster(), spellId, true, NULL, NULL, GetCaster()->GetGUID());
                 }
             }
@@ -1365,8 +1365,8 @@ class spell_putricide_mutated_transformation : public SpellScriptLoader
                 }
 
                 uint32 entry = uint32(GetSpellInfo()->Effects[effIndex].MiscValue);
-                SummonPropertiesEntry const* properties = sSummonPropertiesStore.LookupEntry(uint32(GetSpellInfo()->EffectMiscValueB[effIndex]));
-                uint32 duration = uint32(GetSpellDuration(GetSpellInfo()));
+                SummonPropertiesEntry const* properties = sSummonPropertiesStore.LookupEntry(uint32(GetSpellInfo()->Effects[effIndex].MiscValueB));
+                uint32 duration = uint32(GetSpellInfo()->GetDuration());
 
                 Position pos;
                 caster->GetPosition(&pos);

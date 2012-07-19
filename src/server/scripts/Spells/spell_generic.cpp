@@ -48,7 +48,7 @@ public:
         bool Load ()
         {
             // Max absorb stored in 1 dummy effect
-            limit = SpellMgr::CalculateSpellEffectAmount(GetSpellInfo(), EFFECT_1);
+            limit = GetSpellInfo()->Effects[EFFECT_1].CalcValue();
             return true;
         }
 
@@ -523,7 +523,7 @@ public:
                 return;
             const SpellInfo* m_spellInfo = GetSpellInfo();
 
-            pCaster->AddSpellCooldown(m_spellInfo->Id, NULL, time(NULL) + GetSpellRecoveryTime(sSpellMgr->GetSpellInfo(SPELL_WILL_OF_THE_FORSAKEN_COOLDOWN_TRIGGER)) / IN_MILLISECONDS);
+            pCaster->AddSpellCooldown(m_spellInfo->Id, 0, time(NULL) + sSpellMgr->GetSpellInfo(SPELL_WILL_OF_THE_FORSAKEN_COOLDOWN_TRIGGER)->GetRecoveryTime() / IN_MILLISECONDS);
             WorldPacket data(SMSG_SPELL_COOLDOWN, 8 + 1 + 4);
             data << uint64(pCaster->GetGUID());
             data << uint8(0);
@@ -860,7 +860,7 @@ public:
 
             if (Player* player = GetHitPlayer())
             {
-                player->CastSpell(player, spell->EffectTriggerSpell[1], true);          // changes the player's seat
+                player->CastSpell(player, spell->Effects[1].TriggerSpell, true);          // changes the player's seat
                 player->AddAura(SPELL_LAUNCH_NO_FALLING_DAMAGE, player);          // prevents falling damage
             }
         }

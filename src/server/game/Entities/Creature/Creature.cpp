@@ -1780,7 +1780,7 @@ SpellInfo const *Creature::reachWithSpellCure (Unit *pVictim)
         bool bcontinue = true;
         for (uint32 j = 0; j < MAX_SPELL_EFFECTS; j++)
         {
-            if ((spellInfo->Effect[j] == SPELL_EFFECT_HEAL))
+            if ((spellInfo->Effects[j].Effect == SPELL_EFFECT_HEAL))
             {
                 bcontinue = false;
                 break;

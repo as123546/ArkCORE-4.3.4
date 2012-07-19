@@ -1077,8 +1077,8 @@ bool Guardian::UpdateStats (Stats stat)
         aurEff = owner->GetAuraEffect(SPELL_AURA_MOD_TOTAL_STAT_PERCENTAGE, SPELLFAMILY_DEATHKNIGHT, 3010, 0);
         if (aurEff)
         {
-            SpellInfo const* sProto = aurEff->GetSpellInfo();          // Then get the SpellProto and add the dummy effect value
-            mod += mod * (SpellMgr::CalculateSpellEffectAmount(sProto, 1) / 100.0f);          // Ravenous Dead edits the original scale
+            SpellInfo const* spellInfo = aurEff->GetSpellInfo();          // Then get the SpellProto and add the dummy effect value
+            AddPctN(mod, spellInfo->Effects[EFFECT_1].CalcValue()) / 100.0f;          // Ravenous Dead edits the original scale
         }
         // Glyph of the Ghoul
         aurEff = owner->GetAuraEffect(58686, 0);
@@ -1120,8 +1120,8 @@ bool Guardian::UpdateStats (Stats stat)
 
                 if (itr != ToPet()->m_spells.end())          // If pet has Wild Hunt
                 {
-                    SpellInfo const* sProto = sSpellMgr->GetSpellInfo(itr->first);          // Then get the SpellProto and add the dummy effect value
-                    mod += mod * (SpellMgr::CalculateSpellEffectAmount(sProto, 0) / 100.0f);
+                    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(itr->first); // Then get the SpellProto and add the dummy effect value
+                    AddPctN(mod, spellInfo->Effects[EFFECT_0].CalcValue() / 100.0f);
                 }
             }
             ownersBonus = float(owner->GetStat(stat)) * mod;
@@ -1337,8 +1337,8 @@ void Guardian::UpdateAttackPowerAndDamage (bool ranged)
 
                 if (itr != ToPet()->m_spells.end())          // If pet has Wild Hunt
                 {
-                    SpellInfo const* sProto = sSpellMgr->GetSpellInfo(itr->first);          // Then get the SpellProto and add the dummy effect value
-                    mod += (SpellMgr::CalculateSpellEffectAmount(sProto, 1) / 100.0f);
+                    SpellInfo const* sProto = sSpellMgr->GetSpellInfo(itr->first); // Then get the SpellProto and add the dummy effect value
+                    mod += CalculatePctN(1.0f, sProto->Effects[1].CalcValue() / 100.0f);
                 }
             }
 

@@ -260,9 +260,9 @@ public:
         {
             if (!sSpellMgr->GetSpellInfo(HUNTER_SPELL_MASTERS_CALL_TRIGGERED))
                 return false;
-            if (!sSpellMgr->GetSpellInfo(SpellMgr::CalculateSpellEffectAmount(spellEntry, EFFECT_0)))
+            if (!sSpellMgr->GetSpellInfo(spellEntry->Effects[EFFECT_0].CalcValue()))
                 return false;
-            if (!sSpellMgr->GetSpellInfo(SpellMgr::CalculateSpellEffectAmount(spellEntry, EFFECT_1)))
+            if (!sSpellMgr->GetSpellInfo(spellEntry->Effects[EFFECT_1].CalcValue()))
                 return false;
             return true;
         }
@@ -279,7 +279,7 @@ public:
                 if (Unit * ally = GetTargetUnit())
                 {
                     target->CastSpell(ally, GetEffectValue(), true);
-                    target->CastSpell(ally, SpellMgr::CalculateSpellEffectAmount(GetSpellInfo(), EFFECT_0), true);
+                    target->CastSpell(ally, GetSpellInfo()->Effects[EFFECT_0].CalcValue(), true);
                 }
             }
         }
@@ -418,7 +418,7 @@ public:
             if (!pTarget->HasAura(spellId))
             {
                 SpellInfo const * triggeredSpellInfo = sSpellMgr->GetSpellInfo(spellId);
-                Unit* triggerCaster = GetTriggeredSpellCaster(triggeredSpellInfo, GetCaster(), pTarget);
+                Unit* triggerCaster = triggeredSpellInfo->IsRequiringSelectedTarget() ? GetCaster() : pTarget;
                 triggerCaster->CastSpell(pTarget, triggeredSpellInfo, true, 0, aurEff);
             }
         }

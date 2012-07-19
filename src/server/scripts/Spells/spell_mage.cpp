@@ -66,10 +66,8 @@ public:
             {
                 SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(itr->first);
 
-                if (spellInfo->SpellFamilyName == SPELLFAMILY_MAGE && (GetSpellSchoolMask(spellInfo) & SPELL_SCHOOL_MASK_FROST) && spellInfo->Id != SPELL_MAGE_COLD_SNAP && GetSpellRecoveryTime(spellInfo) > 0)
-                {
+                if (spellInfo->SpellFamilyName == SPELLFAMILY_MAGE && (spellInfo->GetSchoolMask() & SPELL_SCHOOL_MASK_FROST) && spellInfo->Id != SPELL_MAGE_COLD_SNAP && spellInfo->GetRecoveryTime() > 0)
                     caster->ToPlayer()->RemoveSpellCooldown((itr++)->first, true);
-                }
                 else
                     ++itr;
             }

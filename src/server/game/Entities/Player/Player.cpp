@@ -3837,7 +3837,7 @@ bool Player::AddTalent (uint32 spell_id, uint8 spec, bool learning)
 
 bool Player::addSpell (uint32 spell_id, bool active, bool learning, bool dependent, bool disabled)
 {
-    SpellInfo const *spellInfo = sSpellMgr.LookupEntry(spell_id);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spell_id);
     if (!spellInfo)
     {
         // do character spell book cleanup (all characters)
@@ -3881,7 +3881,7 @@ bool Player::addSpell (uint32 spell_id, bool active, bool learning, bool depende
     {
         uint32 next_active_spell_id = 0;
         // fix activate state for non-stackable low rank (and find next spell for !active case)
-        if (!SpellMgr::canStackSpellRanks(spellInfo) && sSpellMgr->GetSpellRank(spellInfo->Id) != 0)
+        if (!spellInfo->IsStackableWithRanks() && spellInfo->IsRanked())
         {
             if (uint32 next = sSpellMgr->GetNextSpellInChain(spell_id))
             {
@@ -3924,7 +3924,7 @@ bool Player::addSpell (uint32 spell_id, bool active, bool learning, bool depende
 
             if (active)
             {
-                if (IsPassiveSpell(spell_id) && IsNeedCastPassiveSpellAtLearn(spellInfo))
+                if (spellInfo->IsPassive() && IsNeedCastPassiveSpellAtLearn(spellInfo))
                     CastSpell(this, spell_id, true);
             }
             else if (IsInWorld())
