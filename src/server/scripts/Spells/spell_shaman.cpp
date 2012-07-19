@@ -125,7 +125,7 @@ public:
 
         void OnQuake ()
         {
-            int32 chance = SpellMgr::CalculateSpellEffectAmount(GetSpellInfo(), EFFECT_1);
+            int32 chance = GetSpellInfo()->Effects[EFFECT_1].CalcValue(GetCaster());
             Unit* target = GetHitUnit();
 
             if (roll_chance_i(chance))

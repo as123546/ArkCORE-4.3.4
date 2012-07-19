@@ -2996,7 +2996,7 @@ public:
             if (who->isAlive() && who->HasAura(81782))
             {
                 if (AuraEffect const* aur = who->GetAuraEffect(81782, 0))
-                    aur->GetBase()->SetDuration(GetSpellMaxDuration(aur->GetSpellInfo()), true);
+                    aur->GetBase()->SetDuration(aur->GetSpellInfo()->GetMaxDuration(), true);
             }
         }
 

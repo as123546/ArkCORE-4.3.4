@@ -30,6 +30,7 @@
 #include "World.h"
 #include "ObjectMgr.h"
 #include "SpellMgr.h"
+#include "SpellInfo.h"
 #include "Unit.h"
 #include "QuestDef.h"
 #include "Player.h"
@@ -2316,14 +2317,14 @@ uint32 Unit::CalculateDamage (WeaponAttackType attType, bool normalized, bool ad
 
 float Unit::CalculateLevelPenalty (SpellInfo const* spellProto) const
 {
-    if (spellProto->spellLevel <= 0 || spellProto->spellLevel >= spellProto->maxLevel)
+    if (spellProto->SpellLevel <= 0 || spellProto->SpellLevel >= spellProto->MaxLevel)
         return 1.0f;
 
     float LvlPenalty = 0.0f;
 
-    if (spellProto->spellLevel < 20)
-        LvlPenalty = 20.0f - spellProto->spellLevel * 3.75f;
-    float LvlFactor = (float(spellProto->spellLevel) + 6.0f) / float(getLevel());
+    if (spellProto->SpellLevel < 20)
+        LvlPenalty = 20.0f - spellProto->SpellLevel * 3.75f;
+    float LvlFactor = (float(spellProto->SpellLevel) + 6.0f) / float(getLevel());
     if (LvlFactor > 1.0f)
         LvlFactor = 1.0f;
 
@@ -2387,9 +2388,9 @@ int32 Unit::GetMechanicResistChance (const SpellInfo *spell)
     int32 resist_mech = 0;
     for (uint8 eff = 0; eff < MAX_SPELL_EFFECTS; ++eff)
     {
-        if (spell->Effect[eff] == 0)
+        if (spell->Effects[eff].Effect == 0)
             break;
-        int32 effect_mech = GetEffectMechanic(spell, eff);
+        int32 effect_mech = spell->GetEffectMechanic(eff);
         if (effect_mech)
         {
             int32 temp = GetTotalAuraModifierByMiscValue(SPELL_AURA_MOD_MECHANIC_RESISTANCE, effect_mech);
@@ -2412,7 +2413,7 @@ SpellMissInfo Unit::MeleeSpellHitResult (Unit *pVictim, SpellInfo const *spell)
 
     int32 attackerWeaponSkill;
     // skill value for these spells (for example judgements) is 5* level
-    if (spell->DmgClass == SPELL_DAMAGE_CLASS_RANGED && !IsRangedWeaponSpell(spell))
+    if (spell->DmgClass == SPELL_DAMAGE_CLASS_RANGED && !spell->IsRangedWeaponSpell())
         attackerWeaponSkill = getLevel() * 5;
     // bonus from skills is 0.04% per skill Diff
     else
@@ -2434,7 +2435,7 @@ SpellMissInfo Unit::MeleeSpellHitResult (Unit *pVictim, SpellInfo const *spell)
     // Get effects mechanic and chance
     for (uint8 eff = 0; eff < MAX_SPELL_EFFECTS; ++eff)
     {
-        int32 effect_mech = GetEffectMechanic(spell, eff);
+        int32 effect_mech = spell->GetEffectMechanic(eff);
         if (effect_mech)
         {
             int32 temp = pVictim->GetTotalAuraModifierByMiscValue(SPELL_AURA_MOD_MECHANIC_RESISTANCE, effect_mech);
@@ -2575,7 +2576,7 @@ SpellMissInfo Unit::MagicSpellHitResult (Unit *pVictim, SpellInfo const *spell)
     if (!pVictim->isAlive() && pVictim->GetTypeId() != TYPEID_PLAYER)
         return SPELL_MISS_NONE;
 
-    SpellSchoolMask schoolMask = GetSpellSchoolMask(spell);
+    SpellSchoolMask schoolMask = spell->GetSchoolMask();
     // PvP - PvE spell misschances per leveldif > 2
     int32 lchance = pVictim->GetTypeId() == TYPEID_PLAYER ? 7 : 11;
     int32 leveldif = int32(pVictim->getLevelForTarget(this)) - int32(getLevelForTarget(pVictim));
@@ -2595,7 +2596,7 @@ SpellMissInfo Unit::MagicSpellHitResult (Unit *pVictim, SpellInfo const *spell)
     // Chance hit from victim SPELL_AURA_MOD_ATTACKER_SPELL_HIT_CHANCE auras
     modHitChance += pVictim->GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_ATTACKER_SPELL_HIT_CHANCE, schoolMask);
     // Reduce spell hit chance for Area of effect spells from victim SPELL_AURA_MOD_AOE_AVOIDANCE aura
-    if (IsAreaOfEffectSpell(spell))
+    if (spell->IsAOE())
         modHitChance -= pVictim->GetTotalAuraModifier(SPELL_AURA_MOD_AOE_AVOIDANCE);
 
     int32 HitChance = modHitChance * 100;
@@ -2623,12 +2624,12 @@ SpellMissInfo Unit::MagicSpellHitResult (Unit *pVictim, SpellInfo const *spell)
     tmp += resist_chance;
 
     // Chance resist debuff
-    if (!IsPositiveSpell(spell->Id))
+    if (!spell->IsPositive())
     {
         bool bNegativeAura = false;
         for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
         {
-            if (spell->EffectApplyAuraName[i] != 0)
+            if (spell->Effects[i].ApplyAuraName != 0)
             {
                 bNegativeAura = true;
                 break;
@@ -2678,7 +2679,7 @@ SpellMissInfo Unit::SpellHitResult (Unit *pVictim, SpellInfo const *spell, bool 
 
     // All positive spells can`t miss
     // TODO: client not show miss log for this spells - so need find info for this in dbc and use it!
-    if (IsPositiveSpell(spell->Id) && (!IsHostileTo(pVictim)))          //prevent from affecting enemy by "positive" spell
+    if (spell->IsPositive() && (!IsHostileTo(pVictim)))          //prevent from affecting enemy by "positive" spell
         return SPELL_MISS_NONE;
     // Check for immune
     if (pVictim->IsImmunedToDamage(spell))
@@ -2693,7 +2694,7 @@ SpellMissInfo Unit::SpellHitResult (Unit *pVictim, SpellInfo const *spell, bool 
         int32 reflectchance = pVictim->GetTotalAuraModifier(SPELL_AURA_REFLECT_SPELLS);
         Unit::AuraEffectList const& mReflectSpellsSchool = pVictim->GetAuraEffectsByType(SPELL_AURA_REFLECT_SPELLS_SCHOOL);
         for (Unit::AuraEffectList::const_iterator i = mReflectSpellsSchool.begin(); i != mReflectSpellsSchool.end(); ++i)
-            if ((*i)->GetMiscValue() & GetSpellSchoolMask(spell))
+            if ((*i)->GetMiscValue() & spell->GetSchoolMask())
                 reflectchance += (*i)->GetAmount();
         if (reflectchance > 0 && roll_chance_i(reflectchance))
         {
@@ -4326,8 +4327,8 @@ bool Unit::HasAuraWithMechanic (uint32 mechanicMask)
             return true;
 
         for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
-            if (iter->second->HasEffect(i) && spellInfo->Effect[i] && spellInfo->EffectMechanic[i])
-                if (mechanicMask & (1 << spellInfo->EffectMechanic[i]))
+            if (iter->second->HasEffect(i) && spellInfo->Effects[i].Effect && spellInfo->Effects[i].Mechanic)
+                if (mechanicMask & (1 << spellInfo->Effects[i].Mechanic))
                     return true;
     }
 
@@ -4815,7 +4816,7 @@ void Unit::SendPeriodicAuraLog (SpellPeriodicAuraLogInfo *pInfo)
     case SPELL_AURA_PERIODIC_DAMAGE_PERCENT:
         data << uint32(pInfo->damage);          // damage
         data << uint32(pInfo->overDamage);          // overkill?
-        data << uint32(GetSpellSchoolMask(aura->GetSpellInfo()));
+        data << uint32(aura->GetSpellInfo()->GetSchoolMask());
         data << uint32(pInfo->absorb);          // absorb
         data << uint32(pInfo->resist);          // resist
         data << uint8(pInfo->critical);          // new 3.1.2 critical tick
@@ -4992,7 +4993,7 @@ bool Unit::HandleModPowerRegenAuraProc (Unit *pVictim, uint32 damage, AuraEffect
     }
 
     // default case
-    if ((!target && !sSpellMgr->IsSrcTargetSpell(triggerEntry)) || (target && target != this && !target->isAlive()))
+    if ((!target && triggerEntry->IsRequiringSelectedTarget()) || (target && target != this && !target->isAlive()))
         return false;
 
     if (cooldown && GetTypeId() == TYPEID_PLAYER && this->ToPlayer()->HasSpellCooldown(triggered_spell_id))
@@ -5155,7 +5156,7 @@ bool Unit::HandleDummyAuraProc (Unit *pVictim, uint32 damage, AuraEffect* trigge
             if (!GetAuraEffect(SPELL_AURA_MOD_MANA_REGEN_INTERRUPT, SPELLFAMILY_MAGE, 0x10000000, 0, 0))
                 return false;
 
-            switch (GetFirstSchoolInMask(GetSpellSchoolMask(procSpell)))
+            switch (GetFirstSchoolInMask(procSpell->GetSchoolMask()))
             {
             case SPELL_SCHOOL_NORMAL:
             case SPELL_SCHOOL_HOLY:
@@ -5188,7 +5189,7 @@ bool Unit::HandleDummyAuraProc (Unit *pVictim, uint32 damage, AuraEffect* trigge
             if (!procSpell)
                 return false;
 
-            switch (GetFirstSchoolInMask(GetSpellSchoolMask(procSpell)))
+            switch (GetFirstSchoolInMask(procSpell->GetSchoolMask()))
             {
             case SPELL_SCHOOL_NORMAL:
                 return false;          // ignore
@@ -5683,7 +5684,7 @@ bool Unit::HandleDummyAuraProc (Unit *pVictim, uint32 damage, AuraEffect* trigge
                 return false;
 
             // mana cost save
-            int32 cost = procSpell->manaCost + procSpell->ManaCostPercentage * GetCreateMana() / 100;
+            int32 cost = procSpell->ManaCost + procSpell->ManaCostPercentage * GetCreateMana() / 100;
             basepoints0 = cost * triggerAmount / 100;
             if (basepoints0 <= 0)
                 return false;
@@ -5752,7 +5753,7 @@ bool Unit::HandleDummyAuraProc (Unit *pVictim, uint32 damage, AuraEffect* trigge
             if (!procSpell)
                 return false;
 
-            int32 cost = procSpell->manaCost + procSpell->ManaCostPercentage * GetCreateMana() / 100;
+            int32 cost = procSpell->ManaCost + procSpell->ManaCostPercentage * GetCreateMana() / 100;
             basepoints0 = cost * triggerAmount / 100;
             if (basepoints0 <= 0)
                 return false;
@@ -5926,7 +5927,7 @@ bool Unit::HandleDummyAuraProc (Unit *pVictim, uint32 damage, AuraEffect* trigge
             if (procSpell == 0 || !(procEx & (PROC_EX_NORMAL_HIT | PROC_EX_CRITICAL_HIT)) || this == pVictim)
                 return false;
             // Need stun or root mechanic
-            if (!(GetAllSpellMechanicMask(procSpell) & ((1 << MECHANIC_ROOT) | (1 << MECHANIC_STUN))))
+            if (!(procSpell->GetAllEffectsMechanicMask() & ((1 << MECHANIC_ROOT) | (1 << MECHANIC_STUN))))
                 return false;
 
             switch (dummySpell->Id)
@@ -6048,7 +6049,7 @@ bool Unit::HandleDummyAuraProc (Unit *pVictim, uint32 damage, AuraEffect* trigge
         {
             if (Unit* caster = triggeredByAura->GetCaster())
             {
-                caster->ToPlayer()->UpdateSpellCooldown(47241, -(dummySpell->EffectBasePoints[1]));
+                caster->ToPlayer()->UpdateSpellCooldown(47241, -(dummySpell->Effects[1].BasePoints));
             }
             return true;
         }
@@ -6263,13 +6264,13 @@ bool Unit::HandleDummyAuraProc (Unit *pVictim, uint32 damage, AuraEffect* trigge
             int EffIndex = 0;
             for (uint8 i = 0; i < MAX_SPELL_EFFECTS; i++)
             {
-                if (GoPoH->Effect[i] == SPELL_EFFECT_APPLY_AURA)
+                if (GoPoH->Effects[i].Effect == SPELL_EFFECT_APPLY_AURA)
                 {
                     EffIndex = i;
                     break;
                 }
             }
-            int32 tickcount = GetSpellMaxDuration(GoPoH) / GoPoH->EffectAmplitude[EffIndex];
+            int32 tickcount = GoPoH->GetMaxDuration() / GoPoH->Effects[EffIndex].Amplitude;
             if (!tickcount)
                 return false;
 
@@ -6333,7 +6334,7 @@ bool Unit::HandleDummyAuraProc (Unit *pVictim, uint32 damage, AuraEffect* trigge
             if (procSpell->SpellFamilyFlags[0] & 0x800)
             {
                 triggered_spell_id = 70772;
-                SpellEntry const* blessHealing = sSpellMgr->GetSpellInfo(triggered_spell_id);
+                SpellInfo const* blessHealing = sSpellMgr->GetSpellInfo(triggered_spell_id);
                 if (!blessHealing)
                     return false;
                 basepoints0 = int32(triggerAmount * damage / 100 / (GetSpellMaxDuration(blessHealing) / blessHealing->EffectAmplitude[0]));

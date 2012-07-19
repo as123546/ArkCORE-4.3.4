@@ -638,12 +638,12 @@ public:
         PrepareSpellScript(spell_q12683_take_sputum_sample_SpellScript)
         void HandleDummy (SpellEffIndex /*effIndex*/)
         {
-            uint32 reqAuraId = SpellMgr::CalculateSpellEffectAmount(GetSpellInfo(), 1);
+            uint32 reqAuraId = GetSpellInfo()->Effects[EFFECT_1].CalcValue();
 
             Unit* pCaster = GetCaster();
             if (pCaster->HasAuraEffect(reqAuraId, 0))
             {
-                uint32 spellId = SpellMgr::CalculateSpellEffectAmount(GetSpellInfo(), 0);
+                uint32 spellId = GetSpellInfo()->Effects[EFFECT_0].CalcValue();
                 pCaster->CastSpell(pCaster, spellId, true, NULL);
             }
         }

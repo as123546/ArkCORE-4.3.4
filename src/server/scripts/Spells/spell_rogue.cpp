@@ -394,7 +394,7 @@ public:
                     if (spellInfo->SpellFamilyFlags.IsEqual(0x10000, 0x80000, 0))
                         continue;
 
-                    if (IsPositiveSpell(pEnchant->spellid[s]))
+                    if (spellInfo->IsPositive())
                         player->CastSpell(player, pEnchant->spellid[s], true, item);
                     else
                         player->CastSpell(target, pEnchant->spellid[s], true, item);
