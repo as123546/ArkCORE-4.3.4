@@ -29,6 +29,7 @@
 #include "MapManager.h"
 #include "ObjectMgr.h"
 #include "SpellMgr.h"
+#include "SpellInfo.h"
 #include "UpdateMask.h"
 #include "World.h"
 #include "Group.h"
@@ -952,12 +953,12 @@ void ObjectMgr::ConvertCreatureAddonAuras (CreatureDataAddon* addon, char const*
         {
             if ((1 << eff) & cAura.effectMask)
             {
-                if (!AdditionalSpellInfo->Effect[eff] || !AdditionalSpellInfo->EffectApplyAuraName[eff])
+                if (!AdditionalSpellInfo->Effects[eff].Effect || !AdditionalSpellInfo->Effects[eff].ApplyAuraName)
                 {
                     sLog->outErrorDb("Creature (%s: %u) has not aura effect %u of spell %u defined in `auras` field in `%s`.", guidEntryStr, addon->guidOrEntry, eff, cAura.spell_id, table);
                     continue;
                 }
-                else if (AdditionalSpellInfo->Effect[eff] == SPELL_EFFECT_PERSISTENT_AREA_AURA)
+                else if (AdditionalSpellInfo->Effects[eff].Effect == SPELL_EFFECT_PERSISTENT_AREA_AURA)
                 {
                     sLog->outErrorDb("Creature (%s: %u) has persistent area aura effect %u of spell %u defined in `auras` field in `%s`.", guidEntryStr, addon->guidOrEntry, eff, cAura.spell_id, table);
                     continue;
@@ -4225,7 +4226,7 @@ void ObjectMgr::LoadQuests ()
                     bool found = false;
                     for (uint8 k = 0; k < MAX_SPELL_EFFECTS; ++k)
                     {
-                        if ((spellInfo->Effect[k] == SPELL_EFFECT_QUEST_COMPLETE && uint32(spellInfo->EffectMiscValue[k]) == qinfo->QuestId) || spellInfo->Effect[k] == SPELL_EFFECT_SEND_EVENT)
+                        if ((spellInfo->Effects[k].Effect == SPELL_EFFECT_QUEST_COMPLETE && uint32(spellInfo->Effects[k].MiscValue) == qinfo->QuestId) || spellInfo->Effects[k].Effect == SPELL_EFFECT_SEND_EVENT)
                         {
                             found = true;
                             break;
@@ -4497,10 +4498,10 @@ void ObjectMgr::LoadQuests ()
 
         for (uint8 j = 0; j < MAX_SPELL_EFFECTS; ++j)
         {
-            if (spellInfo->Effect[j] != SPELL_EFFECT_QUEST_COMPLETE)
+            if (spellInfo->Effects[j].Effect != SPELL_EFFECT_QUEST_COMPLETE)
                 continue;
 
-            uint32 quest_id = spellInfo->EffectMiscValue[j];
+            uint32 quest_id = spellInfo->Effects[j].MiscValue;
 
             Quest const *quest = GetQuestTemplate(quest_id);
 
@@ -4927,7 +4928,7 @@ void ObjectMgr::LoadSpellScripts ()
 
         uint8 i = (uint8) ((uint32(itr->first) >> 24) & 0x000000FF);
         //check for correct spellEffect
-        if (!spellInfo->Effect[i] || (spellInfo->Effect[i] != SPELL_EFFECT_SCRIPT_EFFECT && spellInfo->Effect[i] != SPELL_EFFECT_DUMMY))
+        if (!spellInfo->Effects[i].Effect || (spellInfo->Effects[i].Effect != SPELL_EFFECT_SCRIPT_EFFECT && spellInfo->Effects[i].Effect != SPELL_EFFECT_DUMMY))
             sLog->outErrorDb("Table `spell_scripts` - spell %u effect %u is not SPELL_EFFECT_SCRIPT_EFFECT or SPELL_EFFECT_DUMMY", spellId, i);
     }
 }
@@ -4952,10 +4953,10 @@ void ObjectMgr::LoadEventScripts ()
         {
             for (uint8 j = 0; j < MAX_SPELL_EFFECTS; ++j)
             {
-                if (spell->Effect[j] == SPELL_EFFECT_SEND_EVENT)
+                if (spell->Effects[j].Effect == SPELL_EFFECT_SEND_EVENT)
                 {
-                    if (spell->EffectMiscValue[j])
-                        evt_scripts.insert(spell->EffectMiscValue[j]);
+                    if (spell->Effects[j].MiscValue)
+                        evt_scripts.insert(spell->Effects[j].MiscValue);
                 }
             }
         }

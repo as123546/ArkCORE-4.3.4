@@ -6312,7 +6312,7 @@ bool Unit::HandleDummyAuraProc (Unit *pVictim, uint32 damage, AuraEffect* trigge
             // Frozen Shadoweave (Shadow's Embrace set) warning! its not only priest set
         case 39372:
         {
-            if (!procSpell || (GetSpellSchoolMask(procSpell) & (SPELL_SCHOOL_MASK_FROST | SPELL_SCHOOL_MASK_SHADOW)) == 0)
+            if (!procSpell || (procSpell->GetSchoolMask() & (SPELL_SCHOOL_MASK_FROST | SPELL_SCHOOL_MASK_SHADOW)) == 0)
                 return false;
 
             // heal amount
@@ -6337,7 +6337,7 @@ bool Unit::HandleDummyAuraProc (Unit *pVictim, uint32 damage, AuraEffect* trigge
                 SpellInfo const* blessHealing = sSpellMgr->GetSpellInfo(triggered_spell_id);
                 if (!blessHealing)
                     return false;
-                basepoints0 = int32(triggerAmount * damage / 100 / (GetSpellMaxDuration(blessHealing) / blessHealing->EffectAmplitude[0]));
+                basepoints0 = int32(triggerAmount * damage / 100 / (blessHealing->GetMaxDuration() / blessHealing->Effects[0].Amplitude));
             }
             break;
         }
@@ -6417,7 +6417,7 @@ bool Unit::HandleDummyAuraProc (Unit *pVictim, uint32 damage, AuraEffect* trigge
             if (procSpell->SpellIconID != 62)
                 return false;
 
-            int32 mana_perc = SpellMgr::CalculateSpellEffectAmount(triggeredByAura->GetSpellInfo(), triggeredByAura->GetEffIndex());
+            int32 mana_perc = triggeredByAura->GetSpellInfo()->Effects[triggeredByAura->GetEffIndex()].CalcValue();
             basepoints0 = uint32((GetCreatePowers(POWER_MANA) * mana_perc / 100) / 10);
             triggered_spell_id = 54833;
             target = this;
@@ -6441,7 +6441,7 @@ bool Unit::HandleDummyAuraProc (Unit *pVictim, uint32 damage, AuraEffect* trigge
                 uint32 CountMin = AurEff->GetBase()->GetMaxDuration();
 
                 // just Rip's max duration without other spells
-                uint32 CountMax = GetSpellMaxDuration(AurEff->GetSpellInfo());
+                uint32 CountMax = AurEff->GetSpellInfo()->GetMaxDuration();
 
                 // add possible auras' and Glyph of Shred's max duration
                 CountMax += 3 * triggerAmount * 1000;          // Glyph of Shred               -> +6 seconds
@@ -6463,7 +6463,7 @@ bool Unit::HandleDummyAuraProc (Unit *pVictim, uint32 damage, AuraEffect* trigge
             // Glyph of Rake
         case 54821:
         {
-            if (procSpell->SpellVisual[0] == 750 && procSpell->EffectApplyAuraName[1] == 3)
+            if (procSpell->SpellVisual[0] == 750 && procSpell->Effects[1].ApplyAuraName == 3)
             {
                 if (target && target->GetTypeId() == TYPEID_UNIT)
                 {
@@ -6492,7 +6492,7 @@ bool Unit::HandleDummyAuraProc (Unit *pVictim, uint32 damage, AuraEffect* trigge
         case 28719:
         {
             // mana back
-            basepoints0 = int32(procSpell->manaCost * 30 / 100);
+            basepoints0 = int32(procSpell->ManaCost * 30 / 100);
             target = this;
             triggered_spell_id = 28742;
             break;
@@ -6579,10 +6579,10 @@ bool Unit::HandleDummyAuraProc (Unit *pVictim, uint32 damage, AuraEffect* trigge
             if ((procSpell->SpellFamilyFlags[0] & 0x5) && (procEx & PROC_EX_CRITICAL_HIT))
             {
                 triggered_spell_id = 71023;
-                SpellEntry const* triggeredSpell = sSpellMgr->GetSpellInfo(triggered_spell_id);
+                SpellInfo const* triggeredSpell = sSpellMgr->GetSpellInfo(triggered_spell_id);
                 if (!triggeredSpell)
                     return false;
-                basepoints0 = int32(triggerAmount * damage / 100 / (GetSpellMaxDuration(triggeredSpell) / triggeredSpell->EffectAmplitude[0]));
+                basepoints0 = CalculatePctN(int32(damage), triggerAmount) / (triggeredSpell->GetMaxDuration() / triggeredSpell->Effects[0].Amplitude);
                 // Add remaining ticks to damage done
                 basepoints0 += pVictim->GetRemainingDotDamage(GetGUID(), triggered_spell_id);
             }
@@ -6727,7 +6727,7 @@ bool Unit::HandleDummyAuraProc (Unit *pVictim, uint32 damage, AuraEffect* trigge
                 return false;
 
             // energy cost save
-            basepoints0 = procSpell->manaCost * triggerAmount / 100;
+            basepoints0 = procSpell->ManaCost * triggerAmount / 100;
             if (basepoints0 <= 0)
                 return false;
 
@@ -6742,7 +6742,7 @@ bool Unit::HandleDummyAuraProc (Unit *pVictim, uint32 damage, AuraEffect* trigge
         // Crouching Tiger, Hidden Chimera
         if (dummySpell->SpellIconID == 4752)
         {
-            if (!(dummySpell->procFlags == 0x000202A8))
+            if (!(dummySpell->ProcFlags == 0x000202A8))
                 return false;
             if (ToPlayer()->HasSpellCooldown(dummySpell->Id))
                 return false;
@@ -8557,7 +8557,7 @@ bool Unit::HandleAuraProc (Unit * pVictim, uint32 damage, Aura * triggeredByAura
     return false;
 }
 
-bool Unit::HandleProcTriggerSpell (Unit *pVictim, uint32 damage, AuraEffect* triggeredByAura, SpellInfo const *procSpell, uint32 procFlags, uint32 procEx, uint32 cooldown)
+bool Unit::HandleProcTriggerSpell (Unit *pVictim, uint32 damage, AuraEffect* triggeredByAura, SpellInfo const *procSpell, uint32 ProcFlags, uint32 procEx, uint32 cooldown)
 {
     // Get triggered aura spell info
     SpellEntry const* auraSpellInfo = triggeredByAura->GetSpellInfo();
@@ -8855,7 +8855,7 @@ bool Unit::HandleProcTriggerSpell (Unit *pVictim, uint32 damage, AuraEffect* tri
             }
             if (auraSpellInfo->SpellIconID == 2225)          // Serpent Spread 1, 2
             {
-                if (!(auraSpellInfo->procFlags == 0x1140))
+                if (!(auraSpellInfo->ProcFlags == 0x1140))
                     return false;
 
                 switch (auraSpellInfo->Id)
@@ -8874,7 +8874,7 @@ bool Unit::HandleProcTriggerSpell (Unit *pVictim, uint32 damage, AuraEffect* tri
             if (auraSpellInfo->Id == 82661)          // Aspect of the Fox: Focus bonus
             {
                 uint32 basepoints = 0;
-                if (!((auraSpellInfo->procFlags & PROC_FLAG_TAKEN_MELEE_AUTO_ATTACK) || (auraSpellInfo->procFlags & PROC_FLAG_TAKEN_SPELL_MELEE_DMG_CLASS)))
+                if (!((auraSpellInfo->ProcFlags & PROC_FLAG_TAKEN_MELEE_AUTO_ATTACK) || (auraSpellInfo->ProcFlags & PROC_FLAG_TAKEN_SPELL_MELEE_DMG_CLASS)))
                     return false;
 
                 //One With Nature
@@ -8991,7 +8991,7 @@ bool Unit::HandleProcTriggerSpell (Unit *pVictim, uint32 damage, AuraEffect* tri
                         return false;
                     }
                     // percent stored in effect 1 (class scripts) base points
-                    int32 cost = originalSpell->manaCost + originalSpell->ManaCostPercentage * GetCreateMana() / 100;
+                    int32 cost = originalSpell->ManaCost + originalSpell->ManaCostPercentage * GetCreateMana() / 100;
                     basepoints0 = cost * SpellMgr::CalculateSpellEffectAmount(auraSpellInfo, 1) / 100;
                     trigger_spell_id = 20272;
                     target = this;
@@ -9022,7 +9022,7 @@ bool Unit::HandleProcTriggerSpell (Unit *pVictim, uint32 damage, AuraEffect* tri
             {
                 if (!procSpell)
                     return false;
-                basepoints0 = procSpell->manaCost * 35 / 100;
+                basepoints0 = procSpell->ManaCost * 35 / 100;
                 trigger_spell_id = 23571;
                 target = this;
                 break;
@@ -9444,7 +9444,7 @@ bool Unit::HandleProcTriggerSpell (Unit *pVictim, uint32 damage, AuraEffect* tri
         // Enlightenment (trigger only from mana cost spells)
     case 35095:
     {
-        if (!procSpell || procSpell->powerType != POWER_MANA || (procSpell->manaCost == 0 && procSpell->ManaCostPercentage == 0 && procSpell->manaCostPerlevel == 0))
+        if (!procSpell || procSpell->powerType != POWER_MANA || (procSpell->ManaCost == 0 && procSpell->ManaCostPercentage == 0 && procSpell->manaCostPerlevel == 0))
             return false;
         break;
     }
@@ -9527,7 +9527,7 @@ bool Unit::HandleProcTriggerSpell (Unit *pVictim, uint32 damage, AuraEffect* tri
     case 56453:
     {
         // Proc only from Frost/Freezing trap activation or from Freezing Arrow (the periodic dmg proc handled elsewhere)
-        if (!(procFlags & PROC_FLAG_DONE_TRAP_ACTIVATION) || !procSpell || !(procSpell->SchoolMask & SPELL_SCHOOL_MASK_FROST) || !roll_chance_i(triggerAmount))
+        if (!(ProcFlags & PROC_FLAG_DONE_TRAP_ACTIVATION) || !procSpell || !(procSpell->SchoolMask & SPELL_SCHOOL_MASK_FROST) || !roll_chance_i(triggerAmount))
             return false;
         break;
     }
@@ -9655,7 +9655,7 @@ bool Unit::HandleProcTriggerSpell (Unit *pVictim, uint32 damage, AuraEffect* tri
 
     // try detect target manually if not set
     if (target == NULL)
-        target = !(procFlags & (PROC_FLAG_DONE_SPELL_MAGIC_DMG_CLASS_POS | PROC_FLAG_DONE_SPELL_NONE_DMG_CLASS_POS)) && IsPositiveSpell(trigger_spell_id) ? this : pVictim;
+        target = !(ProcFlags & (PROC_FLAG_DONE_SPELL_MAGIC_DMG_CLASS_POS | PROC_FLAG_DONE_SPELL_NONE_DMG_CLASS_POS)) && IsPositiveSpell(trigger_spell_id) ? this : pVictim;
 
     // default case
     if ((!target && !sSpellMgr->IsSrcTargetSpell(triggerEntry)) || (target && target != this && !target->isAlive()))
@@ -15433,7 +15433,7 @@ void Unit::ProcDamageAndSpellFor (bool isVictim, Unit * pTarget, uint32 procFlag
                 case SPELL_AURA_MOD_POWER_COST_SCHOOL_PCT:
                 case SPELL_AURA_MOD_POWER_COST_SCHOOL:
                     // Skip melee hits and spells ws wrong school or zero cost
-                    if (procSpell && (procSpell->manaCost != 0 || procSpell->ManaCostPercentage != 0) &&          // Cost check
+                    if (procSpell && (procSpell->ManaCost != 0 || procSpell->ManaCostPercentage != 0) &&          // Cost check
                     (triggeredByAura->GetMiscValue() & procSpell->SchoolMask))          // School check
                         takeCharges = true;
                     break;
@@ -16081,10 +16081,10 @@ bool Unit::IsTriggeredAtSpellProcEvent (Unit *pVictim, Aura * aura, SpellEntry c
 
     // Get EventProcFlag
     uint32 EventProcFlag;
-    if (spellProcEvent && spellProcEvent->procFlags)          // if exist get custom spellProcEvent->procFlags
-        EventProcFlag = spellProcEvent->procFlags;
+    if (spellProcEvent && spellProcEvent->ProcFlags)          // if exist get custom spellProcEvent->ProcFlags
+        EventProcFlag = spellProcEvent->ProcFlags;
     else
-        EventProcFlag = spellProto->procFlags;          // else get from spell proto
+        EventProcFlag = spellProto->ProcFlags;          // else get from spell proto
     // Continue if no trigger exist
     if (!EventProcFlag)
         return false;
@@ -16115,7 +16115,7 @@ bool Unit::IsTriggeredAtSpellProcEvent (Unit *pVictim, Aura * aura, SpellEntry c
     }
     // Aura added by spell can`t trigger from self (prevent drop charges/do triggers)
     // But except periodic and kill triggers (can triggered from self)
-    if (procSpell && procSpell->Id == spellProto->Id && !(spellProto->procFlags & (PROC_FLAG_TAKEN_PERIODIC | PROC_FLAG_KILL)))
+    if (procSpell && procSpell->Id == spellProto->Id && !(spellProto->ProcFlags & (PROC_FLAG_TAKEN_PERIODIC | PROC_FLAG_KILL)))
         return false;
 
     // Check if current equipment allows aura to proc

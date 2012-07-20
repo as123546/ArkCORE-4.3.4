@@ -295,9 +295,9 @@ uint32 const spell_warl_create_healthstone::spell_warl_create_healthstone_SpellS
             // Pandemic
             if (AuraEffect* aurEff = GetCaster()->GetAuraEffect(SPELL_AURA_ADD_FLAT_MODIFIER, SPELLFAMILY_WARLOCK, 4554, 1))
             {
-                SpellEntry const* spellproto = aurEff->GetSpellProto();
+                SpellInfo const* spellproto = aurEff->GetSpellInfo();
                 if (GetTarget()->HealthBelowPct(25))
-                    if (roll_chance_i(spellproto->EffectBasePoints[0]))
+                    if (roll_chance_i(spellproto->Effects[0].BasePoints))
                         if (AuraEffect* aur = GetTarget()->GetAuraEffect(SPELL_AURA_PERIODIC_DAMAGE, SPELLFAMILY_WARLOCK, 0, 0x100, 0, GetCaster()->GetGUID()))
                            aur->GetBase()->RefreshDuration();
             }

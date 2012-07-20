@@ -4017,7 +4017,7 @@ bool Player::addSpell (uint32 spell_id, bool active, bool learning, bool depende
         newspell->disabled = disabled;
 
         // replace spells in action bars and spellbook to bigger rank if only one spell rank must be accessible
-        if (newspell->active && !newspell->disabled && !SpellMgr::canStackSpellRanks(spellInfo) && sSpellMgr->GetSpellRank(spellInfo->Id) != 0)
+        if (newspell->active && !newspell->disabled && !spellInfo->IsStackableWithRanks() && spellInfo->IsRanked() != 0)
         {
             for (PlayerSpellMap::iterator itr2 = m_spells.begin(); itr2 != m_spells.end(); ++itr2)
             {
@@ -4027,11 +4027,11 @@ bool Player::addSpell (uint32 spell_id, bool active, bool learning, bool depende
                 if (!i_spellInfo)
                     continue;
 
-                if (sSpellMgr->IsRankSpellDueToSpell(spellInfo, itr2->first))
+                if (spellInfo->IsDifferentRankOf(i_spellInfo))
                 {
                     if (itr2->second->active)
                     {
-                        if (sSpellMgr->IsHighRankOfSpell(spell_id, itr2->first))
+                        if (spellInfo->IsHighRankOf(i_spellInfo))
                         {
                             if (IsInWorld())          // not send spell (re-/over-)learn packets at loading
                             {
@@ -4047,7 +4047,7 @@ bool Player::addSpell (uint32 spell_id, bool active, bool learning, bool depende
                                 itr2->second->state = PLAYERSPELL_CHANGED;
                             superceded_old = true;          // new spell replace old in action bars and spell book.
                         }
-                        else if (sSpellMgr->IsHighRankOfSpell(itr2->first, spell_id))
+                        else
                         {
                             if (IsInWorld())          // not send spell (re-/over-)learn packets at loading
                             {
@@ -4078,18 +4078,18 @@ bool Player::addSpell (uint32 spell_id, bool active, bool learning, bool depende
 
     // cast talents with SPELL_EFFECT_LEARN_SPELL (other dependent spells will learned later as not auto-learned)
     // note: all spells with SPELL_EFFECT_LEARN_SPELL isn't passive
-    if (talentCost > 0 && IsSpellHaveEffect(spellInfo, SPELL_EFFECT_LEARN_SPELL))
+    if (talentCost > 0 && spellInfo->HasEffect(SPELL_EFFECT_LEARN_SPELL))
     {
         // ignore stance requirement for talent learn spell (stance set for spell only for client spell description show)
         CastSpell(this, spell_id, true);
     }
     // also cast passive spells (including all talents without SPELL_EFFECT_LEARN_SPELL) with additional checks
-    else if (IsPassiveSpell(spell_id))
+    else if (spellInfo->IsPassive())
     {
         if (IsNeedCastPassiveSpellAtLearn(spellInfo))
             CastSpell(this, spell_id, true);
     }
-    else if (IsSpellHaveEffect(spellInfo, SPELL_EFFECT_SKILL_STEP))
+    else if (spellInfo->HasEffect(SPELL_EFFECT_SKILL_STEP))
     {
         CastSpell(this, spell_id, true);
         return false;
@@ -4101,7 +4101,7 @@ bool Player::addSpell (uint32 spell_id, bool active, bool learning, bool depende
     // update free primary prof.points (if any, can be none in case GM .learn prof. learning)
     if (uint32 freeProfs = GetFreePrimaryProfessionPoints())
     {
-        if (sSpellMgr->IsPrimaryProfessionFirstRankSpell(spell_id))
+        if (spellInfo->IsPrimaryProfessionFirstRank())
             SetFreePrimaryProfessions(freeProfs - 1);
     }
 
@@ -4138,7 +4138,8 @@ bool Player::addSpell (uint32 spell_id, bool active, bool learning, bool depende
 
             if (!Has310Flyer(false) && pSkill->id == SKILL_MOUNTS)
                 for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
-                    if (spellInfo->EffectApplyAuraName[i] == SPELL_AURA_MOD_INCREASE_MOUNTED_FLIGHT_SPEED && SpellMgr::CalculateSpellEffectAmount(spellInfo, i) == 310)
+                    if (spellInfo->Effects[i].ApplyAuraName == SPELL_AURA_MOD_INCREASE_MOUNTED_FLIGHT_SPEED &&
+                        spellInfo->Effects[i].CalcValue() == 310)
                         SetHas310Flyer(true);
 
             if (HasSkill(pSkill->id))
@@ -4256,12 +4257,11 @@ void Player::learnSpell (uint32 spell_id, bool dependent)
     // learn all disabled higher ranks and required spells (recursive)
     if (disabled)
     {
-        SpellChainNode const* node = sSpellMgr->GetSpellChainNode(spell_id);
-        if (node)
+        if (uint32 nextSpell = sSpellMgr->GetNextSpellInChain(spell_id))
         {
-            PlayerSpellMap::iterator iter = m_spells.find(node->next);
+            PlayerSpellMap::iterator iter = m_spells.find(nextSpell);
             if (iter != m_spells.end() && iter->second->disabled)
-                learnSpell(node->next, false);
+                learnSpell(nextSpell, false);
         }
 
         SpellsRequiringSpellMapBounds spellsRequiringSpell = sSpellMgr->GetSpellsRequiringSpellBounds(spell_id);
@@ -4284,10 +4284,10 @@ void Player::removeSpell (uint32 spell_id, bool disabled, bool learn_low_rank)
         return;
 
     // unlearn non talent higher ranks (recursive)
-    if (SpellChainNode const* node = sSpellMgr->GetSpellChainNode(spell_id))
+    if (uint32 nextSpell = sSpellMgr->GetNextSpellInChain(spell_id))
     {
-        if (HasSpell(node->next) && !GetTalentSpellPos(node->next))
-            removeSpell(node->next, disabled, false);
+        if (HasSpell(nextSpell) && !GetTalentSpellPos(nextSpell))
+            removeSpell(nextSpell, disabled, false);
     }
     //unlearn spells dependent from recently removed spells
     SpellsRequiringSpellMapBounds spellsRequiringSpell = sSpellMgr->GetSpellsRequiringSpellBounds(spell_id);
@@ -4339,7 +4339,8 @@ void Player::removeSpell (uint32 spell_id, bool disabled, bool learn_low_rank)
     }
 
     // update free primary prof.points (if not overflow setting, can be in case GM use before .learn prof. learning)
-    if (sSpellMgr->IsPrimaryProfessionFirstRankSpell(spell_id))
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell_id);
+    if (spellInfo && spellInfo->IsPrimaryProfessionFirstRank())
     {
         uint32 freeProfs = GetFreePrimaryProfessionPoints() + 1;
         if (freeProfs <= sWorld->getIntConfig(CONFIG_MAX_PRIMARY_TRADE_SKILL))
@@ -4409,7 +4410,8 @@ void Player::removeSpell (uint32 spell_id, bool disabled, bool learn_low_rank)
             {
                 SpellInfo const *pSpellInfo = sSpellMgr->GetSpellInfo(spell_id);
                 for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
-                    if (pSpellInfo->EffectApplyAuraName[i] == SPELL_AURA_MOD_INCREASE_MOUNTED_FLIGHT_SPEED && SpellMgr::CalculateSpellEffectAmount(pSpellInfo, i) == 310)
+                    if (pSpellInfo->Effects[i].ApplyAuraName == SPELL_AURA_MOD_INCREASE_MOUNTED_FLIGHT_SPEED &&
+                        pSpellInfo->Effects[i].CalcValue() == 310)
                         Has310Flyer(true, spell_id);          // with true as first argument its also used to set/remove the flag
             }
         }
@@ -4436,7 +4438,7 @@ void Player::removeSpell (uint32 spell_id, bool disabled, bool learn_low_rank)
             //    learnSpell(prev_id, false);
         }
         // if ranked non-stackable spell: need activate lesser rank and update dendence state
-        else if (cur_active && !SpellMgr::canStackSpellRanks(spellInfo) && sSpellMgr->GetSpellRank(spellInfo->Id) != 0)
+        else if (cur_active && !spellInfo->IsStackableWithRanks() && spellInfo->IsRanked())
         {
             // need manually update dependence state (learn spell ignore like attempts)
             PlayerSpellMap::iterator prev_itr = m_spells.find(prev_id);
@@ -4504,7 +4506,8 @@ bool Player::Has310Flyer (bool checkAllSpells, uint32 excludeSpellId)
 
                 pSpellInfo = sSpellMgr->GetSpellInfo(itr->first);
                 for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
-                    if (pSpellInfo->EffectApplyAuraName[i] == SPELL_AURA_MOD_INCREASE_MOUNTED_FLIGHT_SPEED && SpellMgr::CalculateSpellEffectAmount(pSpellInfo, i) == 310)
+                    if (pSpellInfo->Effects[i].ApplyAuraName == SPELL_AURA_MOD_INCREASE_MOUNTED_FLIGHT_SPEED &&
+                        pSpellInfo->Effects[i].CalcValue() == 310)
                     {
                         SetHas310Flyer(true);
                         return true;
