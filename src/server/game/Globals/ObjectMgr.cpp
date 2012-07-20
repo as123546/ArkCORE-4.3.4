@@ -7317,8 +7317,8 @@ void ObjectMgr::LoadNPCSpellClickSpells ()
             const_cast<CreatureInfo*>(cInfo)->npcflag |= UNIT_NPC_FLAG_SPELLCLICK;
 
         uint32 spellid = fields[1].GetUInt32();
-        SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
-        if (!spellinfo)
+        SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellid);
+        if (!spellInfo)
         {
             sLog->outErrorDb("Table npc_spellclick_spells references unknown spellid %u. Skipping entry.", spellid);
             continue;
@@ -8285,13 +8285,13 @@ void ObjectMgr::AddSpellToTrainer (uint32 entry, uint32 spell, uint32 spellCost,
     }
 
     SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spell);
-    if (!spellinfo)
+    if (!spellInfo)
     {
         sLog->outErrorDb("Table `npc_trainer` contains an entry (Entry: %u) for a non-existing spell (Spell: %u), ignoring", entry, spell);
         return;
     }
 
-    if (!SpellMgr::IsSpellValid(spellinfo))
+    if (!SpellMgr::IsSpellValid(spellInfo))
     {
         sLog->outErrorDb("Table `npc_trainer` contains an entry (Entry: %u) for a broken spell (Spell: %u), ignoring", entry, spell);
         return;
@@ -8314,27 +8314,32 @@ void ObjectMgr::AddSpellToTrainer (uint32 entry, uint32 spell, uint32 spellCost,
     trainerSpell.KillCredit = KillCredit;
 
     if (!trainerSpell.reqLevel)
-        trainerSpell.reqLevel = spellinfo->spellLevel;
+        trainerSpell.reqLevel = spellInfo->SpellLevel;
 
     // calculate learned spell for profession case when stored cast-spell
     trainerSpell.learnedSpell[0] = spell;
     for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
     {
-        if (spellinfo->Effect[i] != SPELL_EFFECT_LEARN_SPELL)
+        if (spellInfo->Effects[i].Effect != SPELL_EFFECT_LEARN_SPELL)
             continue;
         if (trainerSpell.learnedSpell[0] == spell)
             trainerSpell.learnedSpell[0] = 0;
         // player must be able to cast spell on himself
-        if (spellinfo->EffectImplicitTargetA[i] != 0 && spellinfo->EffectImplicitTargetA[i] != TARGET_UNIT_TARGET_ALLY && spellinfo->EffectImplicitTargetA[i] != TARGET_UNIT_TARGET_ANY && spellinfo->EffectImplicitTargetA[i] != TARGET_UNIT_CASTER)
+        if (spellInfo->Effects[i].TargetA != 0 && spellInfo->Effects[i].TargetA != TARGET_UNIT_TARGET_ALLY
+            && spellInfo->Effects[i].TargetA != TARGET_UNIT_TARGET_ANY && spellInfo->Effects[i].TargetA != TARGET_UNIT_CASTER)
         {
             sLog->outErrorDb("Table `npc_trainer` has spell %u for trainer entry %u with learn effect which has incorrect target type, ignoring learn effect!", spell, entry);
             continue;
         }
 
-        trainerSpell.learnedSpell[i] = spellinfo->EffectTriggerSpell[i];
+        trainerSpell.learnedSpell[i] = spellInfo->Effects[i].TriggerSpell;
 
-        if (trainerSpell.learnedSpell[i] && SpellMgr::IsProfessionSpell(trainerSpell.learnedSpell[i]))
-            data.trainerType = 2;
+        if (trainerSpell.learnedSpell[i])
+        {
+            SpellInfo const* learnedSpellInfo = sSpellMgr->GetSpellInfo(trainerSpell.learnedSpell[i]);
+            if (learnedSpellInfo && learnedSpellInfo->IsProfession())
+                data.trainerType = 2;
+        }
     }
 
     return;

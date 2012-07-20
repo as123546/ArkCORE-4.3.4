@@ -766,7 +766,7 @@ void WorldSession::HandlePetCastSpellOpcode (WorldPacket& recvPacket)
         return;
     }
 
-    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellId);
     if (!spellInfo)
     {
         sLog->outError("WORLD: unknown PET spell id %i", spellId);
@@ -781,7 +781,7 @@ void WorldSession::HandlePetCastSpellOpcode (WorldPacket& recvPacket)
         }
 
     // do not cast not learned spells
-    if (!caster->HasSpell(spellId) || IsPassiveSpell(spellId))
+    if (!caster->HasSpell(spellId) || spellInfo->IsPassive())
         return;
 
     SpellCastTargets targets;

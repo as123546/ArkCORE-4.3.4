@@ -4751,10 +4751,10 @@ bool Player::resetTalents (bool no_cost)
             if (talentInfo->RankID[rank] == 0)
                 continue;
             removeSpell(talentInfo->RankID[rank], true);
-            if (const SpellEntry *_spellEntry = sSpellMgr->GetSpellInfo(talentInfo->RankID[rank]))
-                for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)          // search through the SpellEntry for valid trigger spells
-                    if (_spellEntry->EffectTriggerSpell[i] > 0 && _spellEntry->Effect[i] == SPELL_EFFECT_LEARN_SPELL)
-                        removeSpell(_spellEntry->EffectTriggerSpell[i], true);          // and remove any spells that the talent teaches
+            if (const SpellInfo *_spellEntry = sSpellMgr->GetSpellInfo(talentInfo->RankID[rank]))
+                for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)                  // search through the SpellInfo for valid trigger spells
+                    if (_spellEntry->Effects[i].TriggerSpell > 0 && _spellEntry->Effects[i].Effect == SPELL_EFFECT_LEARN_SPELL)
+                        removeSpell(_spellEntry->Effects[i].TriggerSpell, true); // and remove any spells that the talent teaches
                 // if this talent rank can be found in the PlayerTalentMap, mark the talent as removed so it gets deleted
             PlayerTalentMap::iterator plrTalent = m_talents[m_activeSpec]->find(talentInfo->RankID[rank]);
             if (plrTalent != m_talents[m_activeSpec]->end())
@@ -5047,10 +5047,10 @@ TrainerSpellState Player::GetTrainerSpellState (TrainerSpell const* trainer_spel
         if (!IsSpellFitByClassAndRace(trainer_spell->learnedSpell[i]))
             return TRAINER_SPELL_RED;
 
-        if (SpellChainNode const* spell_chain = sSpellMgr->GetSpellChainNode(trainer_spell->learnedSpell[i]))
+        if (uint32 prevSpell = sSpellMgr->GetPrevSpellInChain(trainer_spell->learnedSpell[i]))
         {
             // check prev.rank requirement
-            if (spell_chain->prev && !HasSpell(spell_chain->prev))
+            if (prevSpell && !HasSpell(prevSpell))
                 return TRAINER_SPELL_RED;
         }
 
@@ -5069,7 +5069,8 @@ TrainerSpellState Player::GetTrainerSpellState (TrainerSpell const* trainer_spel
     {
         if (!trainer_spell->learnedSpell[i])
             continue;
-        if ((sSpellMgr->IsPrimaryProfessionFirstRankSpell(trainer_spell->learnedSpell[i])) && (GetFreePrimaryProfessionPoints() == 0))
+        SpellInfo const* learnedSpellInfo = sSpellMgr->GetSpellInfo(trainer_spell->learnedSpell[i]);
+        if (learnedSpellInfo && learnedSpellInfo->IsPrimaryProfessionFirstRank() && (GetFreePrimaryProfessionPoints() == 0))
             return TRAINER_SPELL_GREEN_DISABLED;
     }
 
@@ -8472,7 +8473,7 @@ void Player::_ApplyWeaponDependentAuraMods (Item *item, WeaponAttackType attackT
     float mod = 100.0f;
     AuraEffectList const& auraDamagePctList = GetAuraEffectsByType(SPELL_AURA_MOD_DAMAGE_PERCENT_DONE);
     for (AuraEffectList::const_iterator itr = auraDamagePctList.begin(); itr != auraDamagePctList.end(); ++itr)
-        if ((apply && item->IsFitToSpellRequirements((*itr)->GetSpellProto())) || HasItemFitToSpellRequirements((*itr)->GetSpellProto(), item))
+        if ((apply && item->IsFitToSpellRequirements((*itr)->GetSpellInfo())) || HasItemFitToSpellRequirements((*itr)->GetSpellInfo(), item))
             mod += (*itr)->GetAmount();
 
     SetFloatValue(PLAYER_FIELD_MOD_DAMAGE_DONE_PCT, mod / 100.0f);
@@ -8481,7 +8482,7 @@ void Player::_ApplyWeaponDependentAuraMods (Item *item, WeaponAttackType attackT
 void Player::_ApplyWeaponDependentAuraCritMod (Item *item, WeaponAttackType attackType, AuraEffect const* aura, bool apply)
 {
     // generic not weapon specific case processes in aura code
-    if (aura->GetSpellProto()->EquippedItemClass == -1)
+    if (aura->GetSpellInfo()->EquippedItemClass == -1)
         return;
 
     BaseModGroup mod = BASEMOD_END;
@@ -8500,7 +8501,7 @@ void Player::_ApplyWeaponDependentAuraCritMod (Item *item, WeaponAttackType atta
         return;
     }
 
-    if (!item->IsBroken() && item->IsFitToSpellRequirements(aura->GetSpellProto()))
+    if (!item->IsBroken() && item->IsFitToSpellRequirements(aura->GetSpellInfo()))
         HandleBaseModValue(mod, FLAT_MOD, float(aura->GetAmount()), apply);
 }
 
@@ -8515,7 +8516,7 @@ void Player::_ApplyWeaponDependentAuraDamageMod (Item *item, WeaponAttackType at
         return;
 
     // generic not weapon specific case processes in aura code
-    if (aura->GetSpellProto()->EquippedItemClass == -1)
+    if (aura->GetSpellInfo()->EquippedItemClass == -1)
         return;
 
     UnitMods unitMod = UNIT_MOD_END;
@@ -8547,7 +8548,7 @@ void Player::_ApplyWeaponDependentAuraDamageMod (Item *item, WeaponAttackType at
         return;
     }
 
-    if (item->IsFitToSpellRequirements(aura->GetSpellProto()))
+    if (item->IsFitToSpellRequirements(aura->GetSpellInfo()))
     {
         HandleStatModifier(unitMod, unitModType, float(aura->GetAmount()), apply);
         ApplyModUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS, aura->GetAmount(), apply);
@@ -8581,7 +8582,7 @@ void Player::ApplyItemEquipSpell (Item *item, bool apply, bool form_change)
             continue;
 
         // check if it is valid spell
-        SpellEntry const* spellproto = sSpellMgr->GetSpellInfo(spellData.SpellId);
+        SpellInfo const* spellproto = sSpellMgr->GetSpellInfo(spellData.SpellId);
         if (!spellproto)
             continue;
 
@@ -8589,7 +8590,7 @@ void Player::ApplyItemEquipSpell (Item *item, bool apply, bool form_change)
     }
 }
 
-void Player::ApplyEquipSpell (SpellEntry const* spellInfo, Item* item, bool apply, bool form_change)
+void Player::ApplyEquipSpell (SpellInfo const* spellInfo, Item* item, bool apply, bool form_change)
 {
     if (apply)
     {
@@ -8645,7 +8646,7 @@ void Player::UpdateEquipSpellsAtFormChange ()
 
         for (uint32 y = 0; y < MAX_ITEM_SET_SPELLS; ++y)
         {
-            SpellEntry const* spellInfo = eff->spells[y];
+            SpellInfo const* spellInfo = eff->spells[y];
             if (!spellInfo)
                 continue;
 
@@ -8727,7 +8728,7 @@ void Player::CastItemCombatSpell (Unit *target, WeaponAttackType attType, uint32
             if (m_extraAttacks && IsSpellHaveEffect(spellInfo, SPELL_EFFECT_ADD_EXTRA_ATTACKS))
                 return;
 
-            float chance = (float) spellInfo->procChance;
+            float chance = (float) spellInfo->ProcChance;
 
             if (spellData.SpellPPMRate)
             {
@@ -12763,7 +12764,7 @@ Item* Player::EquipItem (uint16 pos, Item *pItem, bool update)
                 if (getClass() == CLASS_ROGUE)
                     cooldownSpell = 6123;
 
-                SpellEntry const* spellProto = sSpellMgr->GetSpellInfo(cooldownSpell);
+                SpellInfo const* spellProto = sSpellMgr->GetSpellInfo(cooldownSpell);
 
                 if (!spellProto)
                     sLog->outError("Weapon switch cooldown spell %u couldn't be found in Spell.dbc", cooldownSpell);
@@ -18001,7 +18002,7 @@ void Player::_LoadAuras (PreparedQueryResult result, uint32 timediff)
             int32 remaintime = fields[12].GetInt32();
             uint8 remaincharges = fields[13].GetUInt8();
 
-            SpellEntry const* spellproto = sSpellMgr->GetSpellInfo(spellid);
+            SpellInfo const* spellproto = sSpellMgr->GetSpellInfo(spellid);
             if (!spellproto)
             {
                 sLog->outError("Unknown aura (spellid %u), ignore.", spellid);

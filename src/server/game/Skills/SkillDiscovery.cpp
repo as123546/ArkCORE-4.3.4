@@ -94,8 +94,8 @@ void LoadSkillDiscoveryTable ()
 
         if (reqSkillOrSpell > 0)          // spell case
         {
-            SpellEntry const* reqSpellEntry = sSpellMgr->GetSpellInfo(reqSkillOrSpell);
-            if (!reqSpellEntry)
+            SpellInfo const* reqSpellInfo = sSpellMgr->GetSpellInfo(reqSkillOrSpell);
+            if (!reqSpellInfo)
             {
                 if (reportedReqSpells.find(reqSkillOrSpell) == reportedReqSpells.end())
                 {
@@ -106,9 +106,9 @@ void LoadSkillDiscoveryTable ()
             }
 
             // mechanic discovery
-            if (reqSpellEntry->Mechanic != MECHANIC_DISCOVERY &&
+            if (reqSpellInfo->Mechanic != MECHANIC_DISCOVERY &&
             // explicit discovery ability
-            !IsExplicitDiscoverySpell(reqSpellEntry))
+            !reqSpellInfo->IsExplicitDiscovery())
             {
                 if (reportedReqSpells.find(reqSkillOrSpell) == reportedReqSpells.end())
                 {
@@ -155,7 +155,7 @@ void LoadSkillDiscoveryTable ()
             continue;
 
         // skip not explicit discovery spells
-        if (!IsExplicitDiscoverySpell(spellEntry))
+        if (!spellEntry->IsExplicitDiscovery())
             continue;
 
         if (SkillDiscoveryStore.find(spell_id) == SkillDiscoveryStore.end())

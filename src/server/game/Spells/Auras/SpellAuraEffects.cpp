@@ -501,7 +501,7 @@ int32 AuraEffect::CalculateAmount (Unit *caster)
     case SPELL_AURA_MOD_ROOT:
     case SPELL_AURA_TRANSFORM:
         m_canBeRecalculated = false;
-        if (!m_spellInfo->procFlags)
+        if (!m_spellInfo->ProcFlags)
             break;
         amount = int32(GetBase()->GetUnitOwner()->CountPctFromMaxHealth(10));
         if (caster)
@@ -537,7 +537,7 @@ int32 AuraEffect::CalculateAmount (Unit *caster)
             if (GetSpellInfo()->SpellFamilyFlags[1] & 0x1 && GetSpellInfo()->SpellFamilyFlags[2] & 0x8)
             {
                 // +80.68% from sp bonus
-                DoneActualBenefit += caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellInfo)) * 0.8068f;
+                DoneActualBenefit += caster->SpellBaseDamageBonus(m_spellInfo->GetSchoolMask()) * 0.8068f;
                 // Glyph of Ice Barrier: its weird having a SPELLMOD_ALL_EFFECTS here but its blizzards doing :)
                 // Glyph of Ice Barrier is only applied at the spell damage bonus because it was already applied to the base value in CalculateSpellDamage
                 DoneActualBenefit = float(caster->ApplyEffectModifiers(GetSpellInfo(), m_effIndex, (int32) DoneActualBenefit));
@@ -546,13 +546,13 @@ int32 AuraEffect::CalculateAmount (Unit *caster)
             else if (GetSpellInfo()->SpellFamilyFlags[0] & 0x8 && GetSpellInfo()->SpellFamilyFlags[2] & 0x8)
             {
                 // +80.68% from sp bonus
-                DoneActualBenefit += caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellInfo)) * 0.8068f;
+                DoneActualBenefit += caster->SpellBaseDamageBonus(m_spellInfo->GetSchoolMask()) * 0.8068f;
             }
             // Frost Ward
             else if (GetSpellInfo()->SpellFamilyFlags[0] & 0x100 && GetSpellInfo()->SpellFamilyFlags[2] & 0x8)
             {
                 // +80.68% from sp bonus
-                DoneActualBenefit += caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellInfo)) * 0.8068f;
+                DoneActualBenefit += caster->SpellBaseDamageBonus(m_spellInfo->GetSchoolMask()) * 0.8068f;
             }
             break;
         case SPELLFAMILY_WARLOCK:
@@ -560,7 +560,7 @@ int32 AuraEffect::CalculateAmount (Unit *caster)
             if (m_spellInfo->Id == 6229)
             {
                 // +80.68% from sp bonus
-                DoneActualBenefit += caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellInfo)) * 0.8068f;
+                DoneActualBenefit += caster->SpellBaseDamageBonus(m_spellInfo->GetSchoolMask()) * 0.8068f;
             }
             break;
         case SPELLFAMILY_PRIEST:
@@ -571,7 +571,7 @@ int32 AuraEffect::CalculateAmount (Unit *caster)
                 //+80.68% from sp bonus
                 float bonus = 0.8068f;
 
-                DoneActualBenefit += caster->SpellBaseHealingBonus(GetSpellSchoolMask(m_spellInfo)) * bonus;
+                DoneActualBenefit += caster->SpellBaseHealingBonus(m_spellInfo->GetSchoolMask()) * bonus;
                 DoneActualBenefit *= caster->CalculateLevelPenalty(GetSpellInfo());
                 amount += (int32) DoneActualBenefit;
 
@@ -610,7 +610,7 @@ int32 AuraEffect::CalculateAmount (Unit *caster)
                 //+75.00% from sp bonus
                 float bonus = 0.75f;
 
-                DoneActualBenefit += caster->SpellBaseHealingBonus(GetSpellSchoolMask(m_spellInfo)) * bonus;
+                DoneActualBenefit += caster->SpellBaseHealingBonus(m_spellInfo->GetSchoolMask()) * bonus;
                 // Divine Guardian is only applied at the spell healing bonus because it was already applied to the base value in CalculateSpellDamage
                 DoneActualBenefit = float(caster->ApplyEffectModifiers(GetSpellInfo(), m_effIndex, (int32) DoneActualBenefit));
                 DoneActualBenefit *= caster->CalculateLevelPenalty(GetSpellInfo());
@@ -639,7 +639,7 @@ int32 AuraEffect::CalculateAmount (Unit *caster)
         if (GetSpellInfo()->SpellFamilyName == SPELLFAMILY_MAGE && GetSpellInfo()->SpellFamilyFlags[0] & 0x8000 && m_spellInfo->SpellFamilyFlags[2] & 0x8)
         {
             // +80.53% from +spd bonus
-            DoneActualBenefit += caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellInfo)) * 0.8053f;
+            DoneActualBenefit += caster->SpellBaseDamageBonus(m_spellInfo->GetSchoolMask()) * 0.8053f;
             ;
         }
         break;
@@ -650,7 +650,7 @@ int32 AuraEffect::CalculateAmount (Unit *caster)
         if (GetSpellInfo()->SpellFamilyName == SPELLFAMILY_SHAMAN && m_spellInfo->SpellFamilyFlags[1] & 0x400)
         {
             // return to unmodified by spellmods value
-            amount = m_spellInfo->EffectBasePoints[m_effIndex];
+            amount = m_spellInfo->Effects[m_effIndex].BasePoints;
             // apply spell healing bonus
             amount = caster->SpellHealingBonus(GetBase()->GetUnitOwner(), GetSpellInfo(), GetEffIndex(), amount, SPELL_DIRECT_DAMAGE);
             // apply spellmods
@@ -663,7 +663,7 @@ int32 AuraEffect::CalculateAmount (Unit *caster)
         // Thorns
         if (GetSpellInfo()->SpellFamilyName == SPELLFAMILY_DRUID && m_spellInfo->SpellFamilyFlags[0] & 0x100)
             // 3.3% from sp bonus
-            DoneActualBenefit = caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellInfo)) * 0.033f;
+            DoneActualBenefit = caster->SpellBaseDamageBonus(m_spellInfo->GetSchoolMask()) * 0.033f;
         break;
     case SPELL_AURA_PERIODIC_DAMAGE:
         if (!caster)
