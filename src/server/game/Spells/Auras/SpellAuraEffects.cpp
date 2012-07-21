@@ -716,7 +716,7 @@ int32 AuraEffect::CalculateAmount (Unit *caster)
             // as for 3.1.3 only ranks above 9 (wrong tooltip?)
             if (sSpellMgr->GetSpellRank(m_spellInfo->Id) >= 9)
                 if (GetBase()->GetUnitOwner()->HasAuraState(AURA_STATE_HEALTH_ABOVE_75_PERCENT, m_spellInfo, caster))
-                    amount += int32(amount * SpellMgr::CalculateSpellEffectAmount(m_spellInfo, 2, caster) / 100.0f);
+                    amount += int32(amount * m_spellInfo->Effects[EFFECT_2].CalcValue(caster) / 100.0f);
         }
         // Unholy Blight damage over time effect
         else if (GetId() == 50536)
@@ -2063,7 +2063,7 @@ void AuraEffect::PeriodicTick (AuraApplication * aurApp, Unit * caster) const
 
         float dmgMultiplier = SpellMgr::CalculateSpellEffectValueMultiplier(GetSpellInfo(), GetEffIndex(), caster);
 
-        SpellEntry const* spellProto = GetSpellInfo();
+        SpellInfo const* spellProto = GetSpellInfo();
         //maybe has to be sent different to client, but not by SMSG_PERIODICAURALOG
         SpellNonMeleeDamage damageInfo(caster, target, spellProto->Id, spellProto->SchoolMask);
         //no SpellDamageBonus for burn mana
@@ -2193,7 +2193,8 @@ void AuraEffect::PeriodicDummyTick (Unit *target, Unit *caster) const
         case 48018:
             if (GameObject *obj = target->GetGameObject(GetSpellInfo()->Id))
             {
-                if (target->IsWithinDist(obj, GetSpellMaxRange(48020, true)))
+                SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(48020);
+                if (target->IsWithinDist(obj, spellInfo->GetMaxRange(true)))
                 {
                     if (!target->HasAura(48018))
                         target->CastSpell(target, 48018, true);
@@ -2776,7 +2777,7 @@ void AuraEffect::CleanupTriggeredSpells (Unit *target)
     if (!tSpellId)
         return;
 
-    SpellEntry const* tProto = sSpellMgr->GetSpellInfo(tSpellId);
+    SpellInfo const* tProto = sSpellMgr->GetSpellInfo(tSpellId);
     if (!tProto)
         return;
 
