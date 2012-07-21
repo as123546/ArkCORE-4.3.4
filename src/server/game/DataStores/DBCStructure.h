@@ -1722,9 +1722,6 @@ struct SpellEffectEntry
     uint32    EffectImplicitTargetB;                        // 21       m_implicitTargetB
     uint32    EffectSpellId;                                // 22       new 4.0.0
     uint32    EffectIndex;                                  // 23       new 4.0.0
-
-    // struct access functions
-    SpellEffectEntry const* GetSpellEffect(uint32 eff) const;
 };
 
 // SpellEquippedItems.dbc
@@ -1869,6 +1866,9 @@ struct SpellEntry
     uint32 SpellTargetRestrictionsId;                       // 44       SpellTargetRestrictions.dbc
     uint32 SpellTotemsId;                                   // 45       SpellTotems.dbc
     //uint32 unk2;                                          // 46
+
+    // struct access functions
+    SpellEffectEntry const* GetSpellEffect(uint32 eff) const;
 };
 
 typedef std::set<uint32> SpellCategorySet;
