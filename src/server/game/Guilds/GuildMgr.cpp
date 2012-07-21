@@ -67,6 +67,17 @@ Guild* GuildMgr::GetGuildById (uint32 guildId) const
     return NULL;
 }
 
+Guild* GuildMgr::GetGuildByGuid(uint64 guid) const
+{
+    // Full guids are only used when receiving/sending data to client
+    // everywhere else guild id is used
+    if (IS_GUILD(guid))
+        if (uint32 guildId = GUID_LOPART(guid))
+            return GetGuildById(guildId);
+
+    return NULL;
+}
+
 Guild* GuildMgr::GetGuildByName (const std::string& guildName) const
 {
     std::string search = guildName;
@@ -105,8 +116,8 @@ void GuildMgr::LoadGuilds()
     {
         uint32 oldMSTime = getMSTime();
 
-        //                                                       0        1       2             3              4              5              6              7                 8         9          10             11     12     13      14         15        16	
-        QueryResult result = CharacterDatabase.Query("SELECT g.guildid, g.name, g.leaderguid, g.EmblemStyle, g.EmblemColor, g.BorderStyle, g.BorderColor, g.BackgroundColor, g.info, g.motd, g.createdate, g.BankMoney, g.xp, g.level, g.todayXP, g.XPCap, COUNT(gbt.guildid) FROM guild g LEFT JOIN guild_bank_tab gbt ON g.guildid = gbt.guildid GROUP BY g.guildid ORDER BY g.guildid ASC");
+        //                                                       0        1       2             3              4              5              6              7                 8         9          10             11        12               13   14     15      16
+        QueryResult result = CharacterDatabase.Query("SELECT g.guildid, g.name, g.leaderguid, g.EmblemStyle, g.EmblemColor, g.BorderStyle, g.BorderColor, g.BackgroundColor, g.info, g.motd, g.createdate, g.BankMoney, COUNT(gbt.guildid), xp, level, todayXP, XPCap FROM guild g LEFT JOIN guild_bank_tab gbt ON g.guildid = gbt.guildid GROUP BY g.guildid ORDER BY g.guildid ASC");
 
         if (!result)
         {
@@ -399,18 +410,19 @@ void GuildMgr::LoadGuilds()
     sLog->outString("Validating data of loaded guilds...");
     {
         uint32 oldMSTime = getMSTime();
+        std::set<Guild*> rm; // temporary storage to avoid modifying GuildStore with RemoveGuild() while iterating
 
         for (GuildContainer::iterator itr = GuildStore.begin(); itr != GuildStore.end(); ++itr)
         {
             Guild* guild = itr->second;
-            if (guild)
-            {
-                if (!guild->Validate())
-                {
-                    RemoveGuild(guild->GetId());
-                    delete guild;
-                }
-            }
+            if (guild && !guild->Validate())
+                rm.insert(guild);
+        }
+        for (std::set<Guild*>::iterator itr = rm.begin(); itr != rm.end(); ++itr)
+        {
+            Guild* guild = *itr;
+            RemoveGuild(guild->GetId());
+            delete guild;
         }
 
         sLog->outString(">> Validated data of loaded guilds in %u ms", GetMSTimeDiffToNow(oldMSTime));
