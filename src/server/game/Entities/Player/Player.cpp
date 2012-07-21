@@ -8595,7 +8595,7 @@ void Player::ApplyEquipSpell (SpellInfo const* spellInfo, Item* item, bool apply
     if (apply)
     {
         // Cannot be used in this stance/form
-        if (GetErrorAtShapeshiftedCast(spellInfo, GetShapeshiftForm()) != SPELL_CAST_OK)
+        if (spellInfo->CheckShapeshift(GetShapeshiftForm()) != SPELL_CAST_OK)
             return;
 
         if (form_change)          // check aura active state from other form
@@ -8615,7 +8615,7 @@ void Player::ApplyEquipSpell (SpellInfo const* spellInfo, Item* item, bool apply
         if (form_change)          // check aura compatibility
         {
             // Cannot be used in this stance/form
-            if (GetErrorAtShapeshiftedCast(spellInfo, GetShapeshiftForm()) == SPELL_CAST_OK)
+            if (spellInfo->CheckShapeshift(GetShapeshiftForm()) == SPELL_CAST_OK)
                 return;          // and remove only not compatible at form change
         }
 
@@ -18019,7 +18019,7 @@ void Player::_LoadAuras (PreparedQueryResult result, uint32 timediff)
             }
 
             // prevent wrong values of remaincharges
-            if (spellproto->procCharges)
+            if (spellproto->ProcCharges)
             {
                 if (remaincharges <= 0 || remaincharges > spellproto->ProcCharges)
                     remaincharges = spellproto->ProcCharges;
@@ -20558,7 +20558,7 @@ void Player::RestoreSpellMods (Spell *spell, uint32 ownerAuraId)
                 continue;
 
             // Restore only specific owner aura mods
-            if (ownerAuraId && (ownerAuraId != mod->ownerAura->GetSpellProto()->Id))
+            if (ownerAuraId && (ownerAuraId != mod->ownerAura->GetSpellInfo()->Id))
                 continue;
 
             // check if mod affected this spell
@@ -21586,7 +21586,7 @@ void Player::UpdatePotionCooldown (Spell* spell)
         if (ItemPrototype const* proto = ObjectMgr::GetItemPrototype(m_lastPotionId))
             for (uint8 idx = 0; idx < MAX_ITEM_SPELLS; ++idx)
                 if (proto->Spells[idx].SpellId && proto->Spells[idx].SpellTrigger == ITEM_SPELLTRIGGER_ON_USE)
-                    if (SpellEntry const* spellInfo = sSpellMgr->GetSpellInfo(proto->Spells[idx].SpellId))
+                    if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(proto->Spells[idx].SpellId))
                         SendCooldownEvent(spellInfo, m_lastPotionId);
     }
     // from spell cases (m_lastPotionId set in Spell::SendSpellCooldown)
@@ -22509,7 +22509,7 @@ void Player::resetSpells (bool myClassOnly)
                 continue;
 
             // skip server-side/triggered spells
-            if (spellInfo->spellLevel == 0)
+            if (spellInfo->SpellLevel == 0)
                 continue;
 
             // skip wrong class/race skills
@@ -23053,7 +23053,7 @@ OutdoorPvP * Player::GetOutdoorPvP () const
     return sOutdoorPvPMgr->GetOutdoorPvPToZoneId(GetZoneId());
 }
 
-bool Player::HasItemFitToSpellRequirements (SpellEntry const* spellInfo, Item const* ignoreItem)
+bool Player::HasItemFitToSpellRequirements (SpellInfo const* spellInfo, Item const* ignoreItem)
 {
     if (spellInfo->EquippedItemClass < 0)
         return true;
@@ -23098,7 +23098,7 @@ bool Player::HasItemFitToSpellRequirements (SpellEntry const* spellInfo, Item co
     return false;
 }
 
-bool Player::CanNoReagentCast (SpellEntry const* spellInfo) const
+bool Player::CanNoReagentCast (SpellInfo const* spellInfo) const
 {
     // don't take reagents for spells with SPELL_ATTR5_NO_REAGENT_WHILE_PREP
     if (spellInfo->AttributesEx5 & SPELL_ATTR5_NO_REAGENT_WHILE_PREP && HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PREPARATION))
@@ -23122,7 +23122,7 @@ void Player::RemoveItemDependentAurasAndCasts (Item * pItem)
         Aura * aura = itr->second;
 
         // skip passive (passive item dependent spells work in another way) and not self applied auras
-        SpellEntry const* spellInfo = aura->GetSpellProto();
+        SpellInfo const* spellInfo = aura->GetSpellInfo();
         if (aura->IsPassive() || aura->GetCasterGUID() != GetGUID())
         {
             ++itr;
@@ -23156,7 +23156,7 @@ uint32 Player::GetResurrectionSpellId ()
     for (AuraEffectList::const_iterator itr = dummyAuras.begin(); itr != dummyAuras.end(); ++itr)
     {
         // Soulstone Resurrection                           // prio: 3 (max, non death persistent)
-        if (prio < 2 && (*itr)->GetSpellProto()->SpellVisual[0] == 99 && (*itr)->GetSpellProto()->SpellIconID == 92)
+        if (prio < 2 && (*itr)->GetSpellInfo()->SpellVisual[0] == 99 && (*itr)->GetSpellInfo()->SpellIconID == 92)
         {
             switch ((*itr)->GetId())
             {
@@ -23395,7 +23395,7 @@ void Player::UpdateAreaDependentAuras (uint32 newArea)
     for (AuraMap::iterator iter = m_ownedAuras.begin(); iter != m_ownedAuras.end();)
     {
         // use m_zoneUpdateId for speed: UpdateArea called from UpdateZone or instead UpdateZone in both cases m_zoneUpdateId up-to-date
-        if (sSpellMgr->GetSpellAllowedInLocationError(iter->second->GetSpellProto(), GetMapId(), m_zoneUpdateId, newArea, this) != SPELL_CAST_OK)
+        if (sSpellMgr->GetSpellAllowedInLocationError(iter->second->GetSpellInfo(), GetMapId(), m_zoneUpdateId, newArea, this) != SPELL_CAST_OK)
             RemoveOwnedAura(iter);
         else
             ++iter;
@@ -24018,7 +24018,7 @@ void Player::RemoveRunesByAuraEffect (AuraEffect const * aura)
 void Player::RestoreBaseRune (uint8 index)
 {
     AuraEffect const * aura = m_runes->runes[index].ConvertAura;
-    if (aura && !(aura->GetSpellProto()->Attributes & SPELL_ATTR0_PASSIVE))
+    if (aura && !(aura->GetSpellInfo()->Attributes & SPELL_ATTR0_PASSIVE))
         return;
 
     ConvertRune(index, GetBaseRune(index));

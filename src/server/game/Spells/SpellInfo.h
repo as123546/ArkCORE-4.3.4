@@ -145,26 +145,26 @@ class SpellEffectInfo
     SpellInfo const* _spellInfo;
     uint8 _effIndex;
 public:
-    uint32    Effect;
-    uint32    ApplyAuraName;
-    uint32    Amplitude;
-    int32     DieSides;
-    float     RealPointsPerLevel;
-    int32     BasePoints;
-    float     PointsPerComboPoint;
-    float     ValueMultiplier;
-    float     DamageMultiplier;
-    float     BonusMultiplier;
-    int32     MiscValue;
-    int32     MiscValueB;
+    uint32 Effect;
+    float ValueMultiplier;
+    uint32 ApplyAuraName;
+    uint32 Amplitude;
+    int32 BasePoints;
+    float BonusCoefficient;
+    float DamageMultiplier;
+    uint32 ChainTarget;
+    int32 DieSides;
+    uint32 ItemType;
     Mechanics Mechanic;
+    int32 MiscValue;
+    int32 MiscValueB;
+    float PointsPerComboPoint;
     SpellImplicitTargetInfo TargetA;
     SpellImplicitTargetInfo TargetB;
     SpellRadiusEntry const* RadiusEntry;
-    uint32    ChainTarget;
-    uint32    ItemType;
-    uint32    TriggerSpell;
-    flag96    SpellClassMask;
+    float RealPointsPerLevel;
+    flag96 SpellClassMask;
+    uint32 TriggerSpell;
 
     SpellEffectInfo() {}
     SpellEffectInfo(SpellEntry const* spellEntry, SpellInfo const* spellInfo, uint8 effIndex);

@@ -12079,7 +12079,7 @@ uint32 Unit::SpellHealingBonus (Unit *pVictim, SpellInfo const *spellProto, uint
 
     for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
     {
-        switch (spellProto->EffectApplyAuraName[i])
+        switch (spellProto->Effects[i].ApplyAuraName)
         {
         // These auras do not use healing coeff
         case SPELL_AURA_PERIODIC_LEECH:
@@ -12532,7 +12532,7 @@ void Unit::MeleeDamageBonus (Unit *pVictim, uint32 *pdamage, WeaponAttackType at
         bool normalized = false;
         if (spellProto)
             for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
-                if (spellProto->Effect[i] == SPELL_EFFECT_NORMALIZED_WEAPON_DMG)
+                if (spellProto->Effects[i].Effect == SPELL_EFFECT_NORMALIZED_WEAPON_DMG)
                 {
                     normalized = true;
                     break;
@@ -12561,11 +12561,11 @@ void Unit::MeleeDamageBonus (Unit *pVictim, uint32 *pdamage, WeaponAttackType at
 
     // SPELL_AURA_MOD_DAMAGE_PERCENT_DONE for non-physical spells like Scourge Strike, Frost Strike, this is NOT included in weapon damage
     if (spellProto)
-        if (GetSpellSchoolMask(spellProto) != SPELL_SCHOOL_MASK_NORMAL)
+        if (spellProto->GetSchoolMask() != SPELL_SCHOOL_MASK_NORMAL)
         {
             AuraEffectList const &mModDamagePercentDone = GetAuraEffectsByType(SPELL_AURA_MOD_DAMAGE_PERCENT_DONE);
             for (AuraEffectList::const_iterator i = mModDamagePercentDone.begin(); i != mModDamagePercentDone.end(); ++i)
-                if (((*i)->GetMiscValue() & GetSpellSchoolMask(spellProto)) && !((*i)->GetMiscValue() & SPELL_SCHOOL_MASK_NORMAL))
+                if (((*i)->GetMiscValue() & spellProto->GetSchoolMask()) && !((*i)->GetMiscValue() & SPELL_SCHOOL_MASK_NORMAL))
                     DoneTotalMod *= ((*i)->GetAmount() + 100.0f) / 100.0f;
         }
 
@@ -12649,7 +12649,7 @@ void Unit::MeleeDamageBonus (Unit *pVictim, uint32 *pdamage, WeaponAttackType at
     if (spellProto)
     {
         // Mod damage from spell mechanic
-        uint32 mechanicMask = GetAllSpellMechanicMask(spellProto);
+        uint32 mechanicMask = spellProto->GetAllEffectsMechanicMask();
 
         // Shred, Maul - "Effects which increase Bleed damage also increase Shred damage"
         if (spellProto->SpellFamilyName == SPELLFAMILY_DRUID && spellProto->SpellFamilyFlags[0] & 0x00008800)
@@ -12691,13 +12691,13 @@ void Unit::MeleeDamageBonus (Unit *pVictim, uint32 *pdamage, WeaponAttackType at
             if ((*i)->GetSpellInfo()->SpellFamilyName != SPELLFAMILY_PALADIN)
                 continue;
 
-            if ((*i)->GetMiscValue() & (spellProto ? GetSpellSchoolMask(spellProto) : 0))
+            if ((*i)->GetMiscValue() & (spellProto ? spellProto->GetSchoolMask() : 0))
                 TakenTotalMod *= ((*i)->GetAmount() + 100.0f) / 100.0f;
             break;
         }
             // Ebon Plague
         case 1933:
-            if ((*i)->GetMiscValue() & (spellProto ? GetSpellSchoolMask(spellProto) : 0))
+            if ((*i)->GetMiscValue() & (spellProto ? spellProto->GetSchoolMask() : 0))
                 TakenTotalMod *= ((*i)->GetAmount() + 100.0f) / 100.0f;
             break;
         }
@@ -12792,13 +12792,13 @@ void Unit::ApplySpellDispelImmunity (const SpellInfo * spellProto, DispelType ty
     if (apply && spellProto->AttributesEx & SPELL_ATTR1_DISPEL_AURAS_ON_IMMUNITY)
     {
         // Create dispel mask by dispel type
-        uint32 dispelMask = GetDispellMask(type);
+        uint32 dispelMask = SpellInfo::GetDispelMask(type);
         // Dispel all existing auras vs current dispel type
         AuraApplicationMap& auras = GetAppliedAuras();
         for (AuraApplicationMap::iterator itr = auras.begin(); itr != auras.end();)
         {
-            SpellEntry const* spell = itr->second->GetBase()->GetSpellInfo();
-            if ((1 << spell->Dispel) & dispelMask)
+            SpellInfo const* spell = itr->second->GetBase()->GetSpellInfo();
+            if (spell->GetDispelMask() & dispelMask)
             {
                 // Dispel aura
                 RemoveAura(itr);
@@ -13914,15 +13914,15 @@ int32 Unit::ApplyEffectModifiers (SpellInfo const* spellProto, uint8 effect_inde
 // function uses real base points (typically value - 1)
 int32 Unit::CalculateSpellDamage (Unit const* target, SpellInfo const* spellProto, uint8 effect_index, int32 const* basePoints) const
 {
-    return SpellMgr::CalculateSpellEffectAmount(spellProto, effect_index, this, basePoints, target);
+    return spellProto->Effects[effect_index].CalcValue(this, basePoints, target);
 }
 
 int32 Unit::CalcSpellDuration (SpellInfo const* spellProto)
 {
     uint8 comboPoints = m_movedPlayer ? m_movedPlayer->GetComboPoints() : 0;
 
-    int32 minduration = GetSpellDuration(spellProto);
-    int32 maxduration = GetSpellMaxDuration(spellProto);
+    int32 minduration = spellProto->GetDuration();
+    int32 maxduration = spellProto->GetMaxDuration();
 
     int32 duration;
 
@@ -13943,7 +13943,7 @@ int32 Unit::ModSpellDuration (SpellInfo const* spellProto, Unit const* target, i
     //cut duration only of negative effects
     if (!positive)
     {
-        int32 mechanic = GetAllSpellMechanicMask(spellProto);
+        int32 mechanic = spellProto->GetAllEffectsMechanicMask();
 
         int32 durationMod;
         int32 durationMod_always = 0;
@@ -13996,7 +13996,7 @@ int32 Unit::ModSpellDuration (SpellInfo const* spellProto, Unit const* target, i
         {
             if (spellProto->SpellFamilyName == SPELLFAMILY_POTION && (sSpellMgr->IsSpellMemberOfSpellGroup(spellProto->Id, SPELL_GROUP_ELIXIR_BATTLE) || sSpellMgr->IsSpellMemberOfSpellGroup(spellProto->Id, SPELL_GROUP_ELIXIR_GUARDIAN)))
             {
-                if (target->HasAura(53042) && target->HasSpell(spellProto->EffectTriggerSpell[0]))
+                if (target->HasAura(53042) && target->HasSpell(spellProto->Effects[0].TriggerSpell))
                     duration *= 2;
             }
         }
@@ -14846,13 +14846,14 @@ void CharmInfo::InitPossessCreateSpells ()
         for (uint32 i = 0; i < CREATURE_MAX_SPELLS; ++i)
         {
             uint32 spellId = m_unit->ToCreature()->m_spells[i];
-            SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
+            SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellId);
             if (spellInfo && spellInfo->Attributes & SPELL_ATTR0_CASTABLE_WHILE_DEAD)
-                spellId = 0;
-            if (IsPassiveSpell(spellId))
-                m_unit->CastSpell(m_unit, spellId, true);
-            else
-                AddSpellToActionBar(m_unit->ToCreature()->m_spells[i], ACT_PASSIVE);
+            {
+                if (spellInfo->IsPassive())
+                    m_unit->CastSpell(m_unit, spellInfo, true);
+                else
+                    AddSpellToActionBar(spellInfo, ACT_PASSIVE);
+            }
         }
     }
 }
@@ -14870,19 +14871,17 @@ void CharmInfo::InitCharmCreateSpells ()
     for (uint32 x = 0; x < MAX_SPELL_CHARM; ++x)
     {
         uint32 spellId = m_unit->ToCreature()->m_spells[x];
-        SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
-        if (spellInfo && spellInfo->Attributes & SPELL_ATTR0_CASTABLE_WHILE_DEAD)
-            spellId = 0;
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
 
-        if (!spellId)
+        if (!spellInfo || spellInfo->Attributes & SPELL_ATTR0_CASTABLE_WHILE_DEAD)
         {
             m_charmspells[x].SetActionAndType(spellId, ACT_DISABLED);
             continue;
         }
 
-        if (IsPassiveSpell(spellId))
+        if (spellInfo->IsPassive())
         {
-            m_unit->CastSpell(m_unit, spellId, true);
+            m_unit->CastSpell(m_unit, spellInfo, true);
             m_charmspells[x].SetActionAndType(spellId, ACT_PASSIVE);
         }
         else
@@ -14890,35 +14889,32 @@ void CharmInfo::InitCharmCreateSpells ()
             m_charmspells[x].SetActionAndType(spellId, ACT_DISABLED);
 
             ActiveStates newstate = ACT_PASSIVE;
-            if (spellInfo)
-            {
-                if (!IsAutocastableSpell(spellId))
-                    newstate = ACT_PASSIVE;
-                else
-                {
-                    bool autocast = false;
-                    for (uint32 i = 0; i < MAX_SPELL_EFFECTS && !autocast; ++i)
-                        if (SpellTargetType[spellInfo->EffectImplicitTargetA[i]] == TARGET_TYPE_UNIT_TARGET)
-                            autocast = true;
 
-                    if (autocast)
-                    {
-                        newstate = ACT_ENABLED;
-                        ToggleCreatureAutocast(spellId, true);
-                    }
-                    else
-                        newstate = ACT_DISABLED;
+            if (!spellInfo->IsAutocastable())
+                newstate = ACT_PASSIVE;
+            else
+            {
+                bool autocast = false;
+                for (uint32 i = 0; i < MAX_SPELL_EFFECTS && !autocast; ++i)
+                    if (spellInfo->Effects[i].TargetA.GetType() == TARGET_TYPE_UNIT_TARGET)
+                        autocast = true;
+
+                if (autocast)
+                {
+                    newstate = ACT_ENABLED;
+                    ToggleCreatureAutocast(spellInfo, true);
                 }
             }
 
-            AddSpellToActionBar(spellId, newstate);
+            AddSpellToActionBar(spellInfo, newstate);
         }
     }
 }
 
-bool CharmInfo::AddSpellToActionBar (uint32 spell_id, ActiveStates newstate)
+bool CharmInfo::AddSpellToActionBar(SpellInfo const* spellInfo, ActiveStates newstate)
 {
-    uint32 first_id = sSpellMgr->GetFirstSpellInChain(spell_id);
+    uint32 spell_id = spellInfo->Id;
+    uint32 first_id = spellInfo->GetFirstRankSpell()->Id;
 
     // new spell rank can be already listed
     for (uint8 i = 0; i < MAX_UNIT_ACTION_BAR_INDEX; ++i)
@@ -14938,7 +14934,7 @@ bool CharmInfo::AddSpellToActionBar (uint32 spell_id, ActiveStates newstate)
     {
         if (!PetActionBar[i].GetAction() && PetActionBar[i].IsActionBarForSpell())
         {
-            SetActionBar(i, spell_id, newstate == ACT_DECIDE ? IsAutocastableSpell(spell_id) ? ACT_DISABLED : ACT_PASSIVE : newstate);
+            SetActionBar(i, spell_id, newstate == ACT_DECIDE ? spellInfo->IsAutocastable() ? ACT_DISABLED : ACT_PASSIVE : newstate);
             return true;
         }
     }
@@ -14964,13 +14960,13 @@ bool CharmInfo::RemoveSpellFromActionBar (uint32 spell_id)
     return false;
 }
 
-void CharmInfo::ToggleCreatureAutocast (uint32 spellid, bool apply)
+void CharmInfo::ToggleCreatureAutocast(SpellInfo const* spellInfo, bool apply)
 {
-    if (IsPassiveSpell(spellid))
+    if (spellInfo->IsPassive())
         return;
 
     for (uint32 x = 0; x < MAX_SPELL_CHARM; ++x)
-        if (spellid == m_charmspells[x].GetAction())
+        if (spellInfo->Id == m_charmspells[x].GetAction())
             m_charmspells[x].SetType(apply ? ACT_ENABLED : ACT_DISABLED);
 }
 
@@ -15006,9 +15002,10 @@ void CharmInfo::LoadPetActionBar (const std::string& data)
         // check correctness
         if (PetActionBar[index].IsActionBarForSpell())
         {
-            if (!sSpellMgr->GetSpellInfo(PetActionBar[index].GetAction()))
+            SpellInfo const* spelInfo = sSpellMgr->GetSpellInfo(PetActionBar[index].GetAction());
+            if (!spelInfo)
                 SetActionBar(index, 0, ACT_PASSIVE);
-            else if (!IsAutocastableSpell(PetActionBar[index].GetAction()))
+            else if (!spelInfo->IsAutocastable())
                 SetActionBar(index, PetActionBar[index].GetAction(), ACT_PASSIVE);
         }
     }
@@ -15020,11 +15017,11 @@ void CharmInfo::BuildActionBar (WorldPacket* data)
         *data << uint32(PetActionBar[i].packedData);
 }
 
-void CharmInfo::SetSpellAutocast (uint32 spell_id, bool state)
+void CharmInfo::SetSpellAutocast(SpellInfo const* spellInfo, bool state)
 {
     for (uint8 i = 0; i < MAX_UNIT_ACTION_BAR_INDEX; ++i)
     {
-        if (spell_id == PetActionBar[i].GetAction() && PetActionBar[i].IsActionBarForSpell())
+        if (spellInfo->Id == PetActionBar[i].GetAction() && PetActionBar[i].IsActionBarForSpell())
         {
             PetActionBar[i].SetType(state ? ACT_ENABLED : ACT_DISABLED);
             break;
@@ -15259,7 +15256,7 @@ void Unit::ProcDamageAndSpellFor (bool isVictim, Unit * pTarget, uint32 procFlag
         bool active = (damage > 0) || (procExtra & (PROC_EX_ABSORB | PROC_EX_BLOCK) && isVictim);
         if (isVictim)
             procExtra &= ~PROC_EX_INTERNAL_REQ_FAMILY;
-        SpellEntry const* spellProto = itr->second->GetBase()->GetSpellInfo();
+        SpellInfo const* spellProto = itr->second->GetBase()->GetSpellInfo();
         if (!IsTriggeredAtSpellProcEvent(pTarget, triggerData.aura, procSpell, procFlag, procExtra, attType, isVictim, active, triggerData.spellProcEvent))
             continue;
 
@@ -15412,7 +15409,7 @@ void Unit::ProcDamageAndSpellFor (bool isVictim, Unit * pTarget, uint32 procFlag
                 }
                 case SPELL_AURA_MOD_CASTING_SPEED_NOT_STACK:
                     // Skip melee hits or instant cast spells
-                    if (procSpell && GetSpellCastTime(procSpell) != 0)
+                    if (procSpell && procSpell->CalcCastTime() != 0)
                         takeCharges = true;
                     break;
                 case SPELL_AURA_REFLECT_SPELLS_SCHOOL:
@@ -15629,11 +15626,11 @@ bool Unit::IsPolymorphed () const
     if (!transformId)
         return false;
 
-    const SpellEntry *spellInfo = sSpellMgr->GetSpellInfo(transformId);
+    const SpellInfo *spellInfo = sSpellMgr->GetSpellInfo(transformId);
     if (!spellInfo)
         return false;
 
-    return GetSpellSpecific(spellInfo) == SPELL_SPECIFIC_MAGE_POLYMORPH;
+    return spellInfo->GetSpellSpecific() == SPELL_SPECIFIC_MAGE_POLYMORPH;
 }
 
 void Unit::SetDisplayId (uint32 modelId)
@@ -15815,7 +15812,7 @@ uint32 Unit::GetCastingTimeForBonus (SpellInfo const *spellProto, DamageEffectTy
     if (CastingTime < 1500)
         CastingTime = 1500;
 
-    if (damagetype == DOT && !IsChanneledSpell(spellProto))
+    if (damagetype == DOT && !spellProto->IsChanneled())
         CastingTime = 3500;
 
     int32 overTime = 0;
@@ -15825,7 +15822,7 @@ uint32 Unit::GetCastingTimeForBonus (SpellInfo const *spellProto, DamageEffectTy
 
     for (uint32 i = 0; i < MAX_SPELL_EFFECTS; i++)
     {
-        switch (spellProto->Effect[i])
+        switch (spellProto->Effects[i].Effect)
         {
         case SPELL_EFFECT_SCHOOL_DAMAGE:
         case SPELL_EFFECT_POWER_DRAIN:
@@ -15836,13 +15833,13 @@ uint32 Unit::GetCastingTimeForBonus (SpellInfo const *spellProto, DamageEffectTy
             DirectDamage = true;
             break;
         case SPELL_EFFECT_APPLY_AURA:
-            switch (spellProto->EffectApplyAuraName[i])
+            switch (spellProto->Effects[i].ApplyAuraName)
             {
             case SPELL_AURA_PERIODIC_DAMAGE:
             case SPELL_AURA_PERIODIC_HEAL:
             case SPELL_AURA_PERIODIC_LEECH:
-                if (GetSpellDuration(spellProto))
-                    overTime = GetSpellDuration(spellProto);
+                if (spellProto->GetDuration())
+                    overTime = spellProto->GetDuration();
                 break;
             default:
                 // -5% per additional effect
@@ -15853,7 +15850,7 @@ uint32 Unit::GetCastingTimeForBonus (SpellInfo const *spellProto, DamageEffectTy
             break;
         }
 
-        if (IsAreaEffectTarget[spellProto->EffectImplicitTargetA[i]] || IsAreaEffectTarget[spellProto->EffectImplicitTargetB[i]])
+        if (spellProto->Effects[i].IsArea())
             AreaEffect = true;
     }
 
@@ -15861,7 +15858,7 @@ uint32 Unit::GetCastingTimeForBonus (SpellInfo const *spellProto, DamageEffectTy
     if (overTime > 0 && CastingTime > 0 && DirectDamage)
     {
         // mainly for DoTs which are 3500 here otherwise
-        uint32 OriginalCastTime = GetSpellCastTime(spellProto);
+        uint32 OriginalCastTime = spellProto->CalcCastTime();
         if (OriginalCastTime > 7000)
             OriginalCastTime = 7000;
         if (OriginalCastTime < 1500)
@@ -15885,9 +15882,7 @@ uint32 Unit::GetCastingTimeForBonus (SpellInfo const *spellProto, DamageEffectTy
     for (uint8 i = 0; i < effects; ++i)
     {
         if (CastingTime > 175)
-        {
             CastingTime -= 175;
-        }
         else
         {
             CastingTime = 0;
@@ -16062,7 +16057,7 @@ bool Unit::InitTamedPet (Pet * pet, uint8 level, uint32 spell_id)
     return true;
 }
 
-bool Unit::IsTriggeredAtSpellProcEvent (Unit *pVictim, Aura * aura, SpellEntry const* procSpell, uint32 procFlag, uint32 procExtra, WeaponAttackType attType, bool isVictim, bool active, SpellProcEventEntry const *& spellProcEvent)
+bool Unit::IsTriggeredAtSpellProcEvent (Unit *pVictim, Aura * aura, SpellInfo const* procSpell, uint32 procFlag, uint32 procExtra, WeaponAttackType attType, bool isVictim, bool active, SpellProcEventEntry const *& spellProcEvent)
 {
     SpellInfo const *spellProto = aura->GetSpellInfo();
 
@@ -16071,8 +16066,8 @@ bool Unit::IsTriggeredAtSpellProcEvent (Unit *pVictim, Aura * aura, SpellEntry c
 
     // Get EventProcFlag
     uint32 EventProcFlag;
-    if (spellProcEvent && spellProcEvent->ProcFlags)          // if exist get custom spellProcEvent->ProcFlags
-        EventProcFlag = spellProcEvent->ProcFlags;
+    if (spellProcEvent && spellProcEvent->procFlags)          // if exist get custom spellProcEvent->ProcFlags
+        EventProcFlag = spellProcEvent->procFlags;
     else
         EventProcFlag = spellProto->ProcFlags;          // else get from spell proto
     // Continue if no trigger exist
@@ -16136,7 +16131,7 @@ bool Unit::IsTriggeredAtSpellProcEvent (Unit *pVictim, Aura * aura, SpellEntry c
         }
     }
     // Get chance from spell
-    float chance = float(spellProto->procChance);
+    float chance = float(spellProto->ProcChance);
     // If in spellProcEvent exist custom chance, chance = spellProcEvent->customChance;
     if (spellProcEvent && spellProcEvent->customChance)
         chance = spellProcEvent->customChance;
@@ -16192,16 +16187,9 @@ bool Unit::HandleAuraRaidProcFromChargeWithValue (AuraEffect *triggeredByAura)
     // next target selection
     if (jumps > 0)
     {
-        float radius;
-        if (spellProto->EffectRadiusIndex[effIdx])
-            radius = (float) GetSpellRadiusForTarget(triggeredByAura->GetCaster(), sSpellRadiusStore.LookupEntry(spellProto->EffectRadiusIndex[effIdx]));
-        else
-            radius = (float) GetSpellMaxRangeForTarget(triggeredByAura->GetCaster(), sSpellRangeStore.LookupEntry(spellProto->rangeIndex));
-
         if (Unit * caster = triggeredByAura->GetCaster())
         {
-            if (Player * modOwner = caster->GetSpellModOwner())
-                modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_RADIUS, radius, NULL);
+            float radius = triggeredByAura->GetSpellInfo()->Effects[triggeredByAura->GetEffIndex()].CalcRadius(caster);
 
             if (Unit *target = GetNextRandomRaidMemberOrPet(radius))
             {
@@ -16219,7 +16207,7 @@ bool Unit::HandleAuraRaidProcFromChargeWithValue (AuraEffect *triggeredByAura)
 bool Unit::HandleAuraRaidProcFromCharge (AuraEffect* triggeredByAura)
 {
     // aura can be deleted at casts
-    SpellEntry const* spellProto = triggeredByAura->GetSpellInfo();
+    SpellInfo const* spellProto = triggeredByAura->GetSpellInfo();
 
     uint32 damageSpellId;
     switch (spellProto->Id)
@@ -16251,16 +16239,9 @@ bool Unit::HandleAuraRaidProcFromCharge (AuraEffect* triggeredByAura)
     // next target selection
     if (jumps > 0)
     {
-        float radius;
-        if (spellProto->EffectRadiusIndex[effIdx])
-            radius = (float) GetSpellRadiusForTarget(triggeredByAura->GetCaster(), sSpellRadiusStore.LookupEntry(spellProto->EffectRadiusIndex[effIdx]));
-        else
-            radius = (float) GetSpellMaxRangeForTarget(triggeredByAura->GetCaster(), sSpellRangeStore.LookupEntry(spellProto->rangeIndex));
-
         if (Unit * caster = triggeredByAura->GetCaster())
         {
-            if (Player * modOwner = caster->GetSpellModOwner())
-                modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_RADIUS, radius, NULL);
+            float radius = triggeredByAura->GetSpellInfo()->Effects[triggeredByAura->GetEffIndex()].CalcRadius(caster);
 
             if (Unit* target = GetNextRandomRaidMemberOrPet(radius))
             {
@@ -17231,7 +17212,7 @@ Aura * Unit::AddAura (uint32 spellId, Unit *target)
     if (!target)
         return NULL;
 
-    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellId);
     if (!spellInfo)
         return NULL;
 
