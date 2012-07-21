@@ -1698,30 +1698,33 @@ struct SpellCooldownsEntry
 // SpellEffect.dbc
 struct SpellEffectEntry
 {
-    uint32 Id;          // 0        m_ID
-    uint32 Effect;          // 1        m_effect
-    float EffectValueMultiplier;          // 2        m_effectAmplitude
-    uint32 EffectApplyAuraName;          // 3        m_effectAura
-    uint32 EffectAmplitude;          // 4        m_effectAuraPeriod
-    int32 EffectBasePoints;          // 5        m_effectBasePoints (don't must be used in spell/auras explicitly, must be used cached Spell::m_currentBasePoints)
-    float EffectBonusCoefficient;          // 6        m_effectBonusCoefficient
-    float EffectDamageMultiplier;          // 7        m_effectChainAmplitude
-    uint32 EffectChainTarget;          // 8        m_effectChainTargets
-    int32 EffectDieSides;          // 9        m_effectDieSides
-    uint32 EffectItemType;          // 10       m_effectItemType
-    uint32 EffectMechanic;          // 11       m_effectMechanic
-    int32 EffectMiscValue;          // 12       m_effectMiscValue
-    int32 EffectMiscValueB;          // 13       m_effectMiscValueB
-    float EffectPointsPerComboPoint;          // 14       m_effectPointsPerCombo
-    uint32 EffectRadiusIndex;          // 15       m_effectRadiusIndex - spellradius.dbc
-    //uint32   EffectRadiusMaxIndex;                        // 16       4.0.0
-    float EffectRealPointsPerLevel;          // 17       m_effectRealPointsPerLevel
-    flag96 EffectSpellClassMask;          // 18       m_effectSpellClassMask, effect 0
-    uint32 EffectTriggerSpell;          // 19       m_effectTriggerSpell
-    uint32 EffectImplicitTargetA;          // 20       m_implicitTargetA
-    uint32 EffectImplicitTargetB;          // 21       m_implicitTargetB
-    uint32 EffectSpellId;          // 22       new 4.0.0
-    uint32 EffectIndex;          // 23       new 4.0.0
+    uint32    Id;                                           // 0        m_ID
+    uint32    Effect;                                       // 1        m_effect
+    float     EffectValueMultiplier;                        // 2        m_effectAmplitude
+    uint32    EffectApplyAuraName;                          // 3        m_effectAura
+    uint32    EffectAmplitude;                              // 4        m_effectAuraPeriod
+    int32     EffectBasePoints;                             // 5        m_effectBasePoints (don't must be used in spell/auras explicitly, must be used cached Spell::m_currentBasePoints)
+    float     EffectBonusCoefficient;                       // 6        m_effectBonusCoefficient
+    float     EffectDamageMultiplier;                       // 7        m_effectChainAmplitude
+    uint32    EffectChainTarget;                            // 8        m_effectChainTargets
+    int32     EffectDieSides;                               // 9        m_effectDieSides
+    uint32    EffectItemType;                               // 10       m_effectItemType
+    uint32    EffectMechanic;                               // 11       m_effectMechanic
+    int32     EffectMiscValue;                              // 12       m_effectMiscValue
+    int32     EffectMiscValueB;                             // 13       m_effectMiscValueB
+    float     EffectPointsPerComboPoint;                    // 14       m_effectPointsPerCombo
+    uint32    EffectRadiusIndex;                            // 15       m_effectRadiusIndex - spellradius.dbc
+    uint32    EffectRadiusMaxIndex;                         // 16       4.0.0
+    float     EffectRealPointsPerLevel;                     // 17       m_effectRealPointsPerLevel
+    flag96    EffectSpellClassMask;                         // 18       m_effectSpellClassMask, effect 0
+    uint32    EffectTriggerSpell;                           // 19       m_effectTriggerSpell
+    uint32    EffectImplicitTargetA;                        // 20       m_implicitTargetA
+    uint32    EffectImplicitTargetB;                        // 21       m_implicitTargetB
+    uint32    EffectSpellId;                                // 22       new 4.0.0
+    uint32    EffectIndex;                                  // 23       new 4.0.0
+
+    // struct access functions
+    SpellEffectEntry const* GetSpellEffect(uint32 eff) const;
 };
 
 // SpellEquippedItems.dbc
@@ -1776,16 +1779,16 @@ struct SpellReagentsEntry
 // SpellScaling.dbc
 struct SpellScalingEntry
 {
-    uint32 Id;          // 0
-    int32 ct_min;          // 1        minimum cast time
-    int32 ct_max;          // 2        maximum cast time
-    uint32 ct_max_level;          // 3        first level with maximum cast time
-    int32 class_;          // 4        Caster's class. Can be a negative value : MAX_CLASSES + 1 - class_.
-    float coefMultiplier[3];          // 5-7
-    float coefRandomMultiplier[3];          // 8-10
-    float coefOther[3];          // 11-13
-    float base_coef;          // 14
-    uint32 base_level_coef;          // 15       under this level, the final base coef will be < 1.
+    uint32    Id;                                           // 0        m_ID
+    int32     castTimeMin;                                  // 1        minimum cast time
+    int32     castTimeMax;                                  // 2        maximum cast time
+    uint32    castScalingMaxLevel;                          // 3        first level with maximum cast time
+    int32     playerClass;                                  // 4        (index * 100) + charLevel => gtSpellScaling.dbc
+    float     Multiplier[3];                                // 5-7
+    float     RandomMultiplier[3];                          // 8-10
+    float     OtherMultiplier[3];                           // 11-13
+    float     CoefBase;                                     // 14        some coefficient, mostly 1.0f
+    uint32    CoefLevelBase;                                // 15        under this level, the final base coef will be < 1.
 };
 
 // SpellShapeshift.dbc

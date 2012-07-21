@@ -130,7 +130,7 @@ void AuraApplication::_InitFlags (Unit * caster, uint8 effMask)
         bool negativeFound = false;
         for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
         {
-            if (((1 << i) & effMask) && !IsPositiveEffect(GetBase()->GetId(), i))
+            if (((1 << i) & effMask) && !GetBase()->GetSpellInfo()->IsPositiveEffect(i))
             {
                 negativeFound = true;
                 break;
@@ -145,7 +145,7 @@ void AuraApplication::_InitFlags (Unit * caster, uint8 effMask)
         bool positiveFound = false;
         for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
         {
-            if (((1 << i) & effMask) && IsPositiveEffect(GetBase()->GetId(), i))
+            if (((1<<i) & effMask) && GetBase()->GetSpellInfo()->IsPositiveEffect(i))
             {
                 positiveFound = true;
                 break;
@@ -204,7 +204,7 @@ void AuraApplication::ClientUpdate (bool remove)
     Aura const * aura = GetBase();
     data << uint32(aura->GetId());
     uint32 flags = m_flags;
-    if (aura->GetMaxDuration() > 0 && !(aura->GetSpellProto()->AttributesEx5 & SPELL_ATTR5_HIDE_DURATION))
+    if (aura->GetMaxDuration() > 0 && !(aura->GetSpellInfo()->AttributesEx5 & SPELL_ATTR5_HIDE_DURATION))
         flags |= AFLAG_DURATION;
     if (!aura->IsPassive())
         flags |= AFLAG_ANY_EFFECT_AMOUNT_SENT;
@@ -233,7 +233,7 @@ void AuraApplication::ClientUpdate (bool remove)
     m_target->SendMessageToSet(&data, true);
 }
 
-Aura * Aura::TryCreate (SpellEntry const* spellproto, uint8 tryEffMask, WorldObject * owner, Unit * caster, int32 *baseAmount, Item * castItem, uint64 casterGUID)
+Aura * Aura::TryCreate (SpellInfo const* spellproto, uint8 tryEffMask, WorldObject * owner, Unit * caster, int32 *baseAmount, Item * castItem, uint64 casterGUID)
 {
     ASSERT(spellproto);
     ASSERT(owner);
@@ -246,14 +246,14 @@ Aura * Aura::TryCreate (SpellEntry const* spellproto, uint8 tryEffMask, WorldObj
     case TYPEID_PLAYER:
         for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
         {
-            if (IsUnitOwnedAuraEffect(spellproto->Effect[i]))
+            if (spellproto->Effects[i].IsUnitOwnedAuraEffect())
                 effMask |= 1 << i;
         }
         break;
     case TYPEID_DYNAMICOBJECT:
         for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
         {
-            if (spellproto->Effect[i] == SPELL_EFFECT_PERSISTENT_AREA_AURA)
+            if (spellproto->Effects[i].Effect == SPELL_EFFECT_PERSISTENT_AREA_AURA)
                 effMask |= 1 << i;
         }
         break;
@@ -265,7 +265,7 @@ Aura * Aura::TryCreate (SpellEntry const* spellproto, uint8 tryEffMask, WorldObj
     return NULL;
 }
 
-Aura * Aura::TryCreate (SpellEntry const* spellproto, WorldObject * owner, Unit * caster, int32 *baseAmount, Item * castItem, uint64 casterGUID)
+Aura * Aura::TryCreate (SpellInfo const* spellproto, WorldObject * owner, Unit * caster, int32 *baseAmount, Item * castItem, uint64 casterGUID)
 {
     ASSERT(spellproto);
     ASSERT(owner);
@@ -277,14 +277,14 @@ Aura * Aura::TryCreate (SpellEntry const* spellproto, WorldObject * owner, Unit 
     case TYPEID_PLAYER:
         for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
         {
-            if (IsUnitOwnedAuraEffect(spellproto->Effect[i]))
+            if (spellproto->Effects[i].IsUnitOwnedAuraEffect())
                 effMask |= 1 << i;
         }
         break;
     case TYPEID_DYNAMICOBJECT:
         for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
         {
-            if (spellproto->Effect[i] == SPELL_EFFECT_PERSISTENT_AREA_AURA)
+            if (spellproto->Effects[i].Effect == SPELL_EFFECT_PERSISTENT_AREA_AURA)
                 effMask |= 1 << i;
         }
         break;
@@ -296,7 +296,7 @@ Aura * Aura::TryCreate (SpellEntry const* spellproto, WorldObject * owner, Unit 
     return NULL;
 }
 
-Aura * Aura::Create (SpellEntry const* spellproto, uint8 effMask, WorldObject * owner, Unit * caster, int32 *baseAmount, Item * castItem, uint64 casterGUID)
+Aura * Aura::Create (SpellInfo const* spellproto, uint8 effMask, WorldObject * owner, Unit * caster, int32 *baseAmount, Item * castItem, uint64 casterGUID)
 {
     ASSERT(effMask);
     ASSERT(spellproto);
@@ -322,7 +322,7 @@ Aura * Aura::Create (SpellEntry const* spellproto, uint8 effMask, WorldObject * 
         {
             // owner not in world so
             // don't allow to own not self casted single target auras
-            if (casterGUID != owner->GetGUID() && IsSingleTargetSpell(spellproto))
+            if (casterGUID != owner->GetGUID() && spellproto->IsSingleTarget())
                 return NULL;
         }
     }
@@ -347,12 +347,8 @@ Aura * Aura::Create (SpellEntry const* spellproto, uint8 effMask, WorldObject * 
     return aura;
 }
 
-Aura::Aura(SpellInfo const* spellproto, WorldObject * owner, Unit* caster, Item* castItem, uint64 casterGUID) :
-m_spellInfo(spellproto), m_casterGuid(casterGUID ? casterGUID : caster->GetGUID()),
-m_castItemGuid(castItem ? castItem->GetGUID() : 0), m_applyTime(time(NULL)),
-m_owner(owner), m_timeCla(0), m_updateTargetMapInterval(0),
-m_casterLevel(caster ? caster->getLevel() : m_spellInfo->SpellLevel), m_procCharges(0), m_stackAmount(1),
-m_isRemoved(false), m_isSingleTarget(false), m_isUsingCharges(false)
+Aura::Aura (SpellInfo const* spellproto, uint8 effMask, WorldObject * owner, Unit * caster, int32 *baseAmount, Item * castItem, uint64 casterGUID) :
+        m_spellInfo(spellproto), m_casterGuid(casterGUID ? casterGUID : caster->GetGUID()), m_castItemGuid(castItem ? castItem->GetGUID() : 0), m_applyTime(time(NULL)), m_owner(owner), m_timeCla(0), m_updateTargetMapInterval(0), m_casterLevel(caster ? caster->getLevel() : m_spellInfo->SpellLevel), m_procCharges(0), m_stackAmount(1), m_isRemoved(false), m_isSingleTarget(false)
 {
     if (m_spellInfo->ManaPerSecond)
         m_timeCla = 1 * IN_MILLISECONDS;
@@ -365,9 +361,9 @@ m_isRemoved(false), m_isSingleTarget(false), m_isUsingCharges(false)
         m_maxDuration = caster->CalcSpellDuration(m_spellInfo);
     }
     else
-        m_maxDuration = GetSpellDuration(m_spellInfo);
+        m_maxDuration = m_spellInfo->GetDuration();
 
-    if (IsPassive() && m_spellInfo->DurationIndex == 0)
+    if (IsPassive()/* && m_spellInfo->DurationIndex == 0*/)
         m_maxDuration = -1;
 
     if (!IsPermanent() && modOwner)
@@ -375,10 +371,11 @@ m_isRemoved(false), m_isSingleTarget(false), m_isUsingCharges(false)
 
     m_duration = m_maxDuration;
 
-    m_procCharges = m_spellInfo->procCharges;
+    m_procCharges = m_spellInfo->ProcCharges;
     if (modOwner)
         modOwner->ApplySpellMod(GetId(), SPELLMOD_CHARGES, m_procCharges);
 }
+
 void Aura::_InitEffects (uint8 effMask, Unit * caster, int32 *baseAmount)
 {
     // shouldn't be in constructor - functions in AuraEffect::AuraEffect use polymorphism
@@ -391,10 +388,10 @@ void Aura::_InitEffects (uint8 effMask, Unit * caster, int32 *baseAmount)
     }
 
     // Mixology
-    if (GetSpellProto()->SpellFamilyName == SPELLFAMILY_POTION && caster /*&& caster->IsPlayer()*/
+    if (GetSpellInfo()->SpellFamilyName == SPELLFAMILY_POTION && caster /*&& caster->IsPlayer()*/
     && caster->HasAura(53042))
     {
-        if (sSpellMgr->IsSpellMemberOfSpellGroup(GetSpellProto()->Id, SPELL_GROUP_ELIXIR_BATTLE) || sSpellMgr->IsSpellMemberOfSpellGroup(GetSpellProto()->Id, SPELL_GROUP_ELIXIR_GUARDIAN))
+        if (sSpellMgr->IsSpellMemberOfSpellGroup(GetSpellInfo()->Id, SPELL_GROUP_ELIXIR_BATTLE) || sSpellMgr->IsSpellMemberOfSpellGroup(GetSpellInfo()->Id, SPELL_GROUP_ELIXIR_GUARDIAN))
         {
             m_maxDuration *= 2;
             m_duration = m_maxDuration;
@@ -453,10 +450,10 @@ void Aura::_ApplyForTarget (Unit * target, Unit * caster, AuraApplication * aura
     // set infinity cooldown state for spells
     if (caster && caster->GetTypeId() == TYPEID_PLAYER)
     {
-        if (m_spellProto->Attributes & SPELL_ATTR0_DISABLED_WHILE_ACTIVE)
+        if (m_spellInfo->Attributes & SPELL_ATTR0_DISABLED_WHILE_ACTIVE)
         {
             Item* castItem = m_castItemGuid ? caster->ToPlayer()->GetItemByGuid(m_castItemGuid) : NULL;
-            caster->ToPlayer()->AddSpellAndCategoryCooldowns(m_spellProto, castItem ? castItem->GetEntry() : 0, NULL, true);
+            caster->ToPlayer()->AddSpellAndCategoryCooldowns(m_spellInfo, castItem ? castItem->GetEntry() : 0, NULL, true);
         }
     }
 }
@@ -471,7 +468,7 @@ void Aura::_UnapplyForTarget (Unit * target, Unit * caster, AuraApplication * au
     // TODO: Figure out why this happens.
     if (itr == m_applications.end())
     {
-        sLog->outError("Aura::_UnapplyForTarget, target:%u, caster:%u, spell:%u was not found in owners application map!", target->GetGUIDLow(), caster->GetGUIDLow(), auraApp->GetBase()->GetSpellProto()->Id);
+        sLog->outError("Aura::_UnapplyForTarget, target:%u, caster:%u, spell:%u was not found in owners application map!", target->GetGUIDLow(), caster->GetGUIDLow(), auraApp->GetBase()->GetSpellInfo()->Id);
     }
     else
         m_applications.erase(itr);
@@ -483,9 +480,9 @@ void Aura::_UnapplyForTarget (Unit * target, Unit * caster, AuraApplication * au
     // reset cooldown state for spells
     if (caster && caster->GetTypeId() == TYPEID_PLAYER)
     {
-        if (GetSpellProto()->Attributes & SPELL_ATTR0_DISABLED_WHILE_ACTIVE)
+        if (GetSpellInfo()->Attributes & SPELL_ATTR0_DISABLED_WHILE_ACTIVE)
             // note: item based cooldowns and cooldown spell mods with charges ignored (unknown existed cases)
-            caster->ToPlayer()->SendCooldownEvent(GetSpellProto());
+            caster->ToPlayer()->SendCooldownEvent(GetSpellInfo());
     }
 }
 
@@ -560,7 +557,7 @@ void Aura::UpdateTargetMap (Unit * caster, bool apply)
 
         bool addUnit = true;
         // check target immunities
-        if (itr->first->IsImmunedToSpell(GetSpellProto()) || !CanBeAppliedOn(itr->first))
+        if (itr->first->IsImmunedToSpell(GetSpellInfo()) || !CanBeAppliedOn(itr->first))
             addUnit = false;
 
         if (addUnit)
@@ -699,11 +696,11 @@ void Aura::Update (uint32 diff, Unit * caster)
                 m_timeCla -= diff;
             else if (caster)
             {
-                if (int32 manaPerSecond = m_spellProto->manaPerSecond)
+                if (int32 manaPerSecond = m_spellInfo->ManaPerSecond)
                 {
                     m_timeCla += 1000 - diff;
 
-                    Powers powertype = Powers(m_spellProto->powerType);
+                    Powers powertype = Powers(m_spellInfo->PowerType);
                     if (powertype == POWER_HEALTH)
                     {
                         if (int32(caster->GetHealth()) > manaPerSecond)

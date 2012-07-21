@@ -23,7 +23,8 @@
 #include "gamePCH.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
-#include "DbcStores.h"
+#include "DBCStores.h"
+#include "SpellScaling.h"
 
 SpellImplicitTargetInfo::SpellImplicitTargetInfo(uint32 target)
 {
@@ -80,7 +81,7 @@ void SpellImplicitTargetInfo::InitAreaData()
             case TARGET_UNIT_AREA_ENTRY_SRC:
             case TARGET_UNIT_AREA_PARTY_DST:
             case TARGET_UNIT_AREA_PARTY_SRC:
-            case TARGET_UNIT_TARGET_ALLY_PARTY:
+            case TARGET_UNIT_PARTY_TARGET:
             case TARGET_UNIT_PARTY_CASTER:
             case TARGET_UNIT_CONE_ENEMY:
             case TARGET_UNIT_CONE_ALLY:
@@ -127,16 +128,16 @@ void SpellImplicitTargetInfo::InitTypeData()
             case TARGET_UNIT_TARGET_ANY:
             case TARGET_UNIT_TARGET_ENEMY:
             case TARGET_UNIT_TARGET_PARTY:
-            case TARGET_UNIT_TARGET_PASSENGER:
-            case TARGET_UNIT_TARGET_ALLY_PARTY:
-            case TARGET_UNIT_TARGET_CLASS_RAID:
+            //case TARGET_UNIT_TARGET_PASSENGER:
+            case TARGET_UNIT_PARTY_TARGET:
+            //case TARGET_UNIT_TARGET_CLASS_RAID:
             case TARGET_UNIT_CHAINHEAL:
                 Type[i] = TARGET_TYPE_UNIT_TARGET;
                 break;
             case TARGET_UNIT_NEARBY_ENEMY:
             case TARGET_UNIT_NEARBY_ALLY:
             case TARGET_UNIT_NEARBY_ENTRY:
-            case TARGET_UNIT_NEARBY_PARTY:
+            //case TARGET_UNIT_NEARBY_PARTY:
             case TARGET_UNIT_NEARBY_RAID:
             case TARGET_GAMEOBJECT_NEARBY_ENTRY:
                 Type[i] = TARGET_TYPE_UNIT_NEARBY;
@@ -317,31 +318,49 @@ int32 SpellEffectInfo::CalcValue(Unit const* caster, int32 const* bp, Unit const
     int32 basePoints = bp ? *bp : BasePoints;
     int32 randomPoints = int32(DieSides);
 
-    // base amount modification based on spell lvl vs caster lvl
+    float maxPoints = 0.00f;
+    float comboPointScaling = 0.00f;
     if (caster)
     {
-        int32 level = int32(caster->getLevel());
-        if (level > int32(_spellInfo->MaxLevel) && _spellInfo->MaxLevel > 0)
-            level = int32(_spellInfo->MaxLevel);
-        else if (level < int32(_spellInfo->BaseLevel))
-            level = int32(_spellInfo->BaseLevel);
-        level -= int32(_spellInfo->SpellLevel);
-        basePoints += int32(level * basePointsPerLevel);
+        SpellScaling values(_spellInfo, caster->getLevel());
+        if (values.CanUseScale() && int32(values.min[_effIndex]) != 0)
+        {
+            basePoints = int32(values.min[_effIndex]);
+            maxPoints = values.max[_effIndex];
+            comboPointScaling = values.pts[_effIndex];
+        }
+        // base amount modification based on spell lvl vs caster lvl
+        else
+        {
+            int32 level = int32(caster->getLevel());
+            if (level > int32(_spellInfo->MaxLevel) && _spellInfo->MaxLevel > 0)
+                level = int32(_spellInfo->MaxLevel);
+            else if (level < int32(_spellInfo->BaseLevel))
+                level = int32(_spellInfo->BaseLevel);
+            level -= int32(_spellInfo->SpellLevel);
+            basePoints += int32(level * basePointsPerLevel);
+        }
     }
 
-    // roll in a range <1;EffectDieSides> as of patch 3.3.3
-    switch (randomPoints)
+    if (maxPoints != 0.00f)
+        basePoints = irand(basePoints, int32(maxPoints));
+    else
     {
-        case 0: break;
-        case 1: basePoints += 1; break;                     // range 1..1
-        default:
-            // range can have positive (1..rand) and negative (rand..1) values, so order its for irand
-            int32 randvalue = (randomPoints >= 1)
-                ? irand(1, randomPoints)
-                : irand(randomPoints, 1);
+        // not sure for Cataclysm.
+        // roll in a range <1;EffectDieSides> as of patch 3.3.3
+        switch (randomPoints)
+        {
+            case 0: break;
+            case 1: basePoints += 1; break; // range 1..1
+            default:
+                // range can have positive (1..rand) and negative (rand..1) values, so order its for irand
+                int32 randvalue = (randomPoints >= 1)
+                    ? irand(1, randomPoints)
+                    : irand(randomPoints, 1);
 
-            basePoints += randvalue;
-            break;
+                basePoints += randvalue;
+                break;
+        }
     }
 
     float value = float(basePoints);
@@ -1084,7 +1103,7 @@ SpellCastResult SpellInfo::CheckShapeshift(uint32 form) const
         return SPELL_CAST_OK;
 
     bool actAsShifted = false;
-    SpellShapeshiftEntry const* shapeInfo = NULL;
+    SpellShapeshiftFormEntry const* shapeInfo = NULL;
     if (form > 0)
     {
         shapeInfo = sSpellShapeshiftStore.LookupEntry(form);
@@ -1905,7 +1924,6 @@ bool SpellInfo::_IsPositiveEffect(uint8 effIndex, bool deep) const
                 case SPELL_AURA_PERIODIC_LEECH:
                 case SPELL_AURA_MOD_STALKED:
                 case SPELL_AURA_PERIODIC_DAMAGE_PERCENT:
-                case SPELL_AURA_PREVENT_RESSURECTION:
                     return false;
                 case SPELL_AURA_PERIODIC_DAMAGE:            // used in positive spells also.
                     // part of negative spell if casted at self (prevent cancel)

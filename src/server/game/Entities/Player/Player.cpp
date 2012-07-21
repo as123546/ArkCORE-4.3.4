@@ -18021,8 +18021,8 @@ void Player::_LoadAuras (PreparedQueryResult result, uint32 timediff)
             // prevent wrong values of remaincharges
             if (spellproto->procCharges)
             {
-                if (remaincharges <= 0 || remaincharges > spellproto->procCharges)
-                    remaincharges = spellproto->procCharges;
+                if (remaincharges <= 0 || remaincharges > spellproto->ProcCharges)
+                    remaincharges = spellproto->ProcCharges;
             }
             else
                 remaincharges = 0;
@@ -20360,7 +20360,7 @@ void Player::VehicleSpellInitialize ()
         if (!spellId)
             continue;
 
-        SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellID);
+        SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellId);
         if (!spellInfo)
             continue;
 
@@ -20370,7 +20370,7 @@ void Player::VehicleSpellInitialize ()
             sLog->outDebug(LOG_FILTER_CONDITIONSYS, "VehicleSpellInitialize: conditions not met for Vehicle entry %u spell %u", veh->ToCreature()->GetEntry(), spellId);
             continue;
         }
-        if (IsPassiveSpell(spellId))
+        if (spellInfo->IsPassive())
         {
             veh->CastSpell(veh, spellId, true);
             data << uint16(0) << uint8(0) << uint8(i + 8);
@@ -20430,7 +20430,7 @@ void Player::CharmSpellInitialize ()
     {
         for (uint32 i = 0; i < MAX_SPELL_CHARM; ++i)
         {
-            CharmSpellEntry *cspell = charmInfo->GetCharmSpell(i);
+            CharmSpellInfo *cspell = charmInfo->GetCharmSpell(i);
             if (cspell->GetAction())
                 data << uint32(cspell->packedData);
         }
@@ -25429,7 +25429,7 @@ void Player::ActivateSpec (uint8 spec)
             if (talentInfo->RankID[rank] == 0)
                 continue;
             removeSpell(talentInfo->RankID[rank], true);          // removes the talent, and all dependant, learned, and chained spells..
-            if (const SpellEntry *_spellEntry = sSpellMgr->GetSpellInfo(talentInfo->RankID[rank]))
+            if (const SpellInfo*_spellEntry = sSpellMgr->GetSpellInfo(talentInfo->RankID[rank]))
                 for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)          // search through the SpellEntry for valid trigger spells
                     if (_spellEntry->EffectTriggerSpell[i] > 0 && _spellEntry->Effect[i] == SPELL_EFFECT_LEARN_SPELL)
                         removeSpell(_spellEntry->EffectTriggerSpell[i], true);          // and remove any spells that the talent teaches

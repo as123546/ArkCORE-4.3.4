@@ -63,159 +63,183 @@ DiminishingGroup GetDiminishingReturnsGroupForSpell(SpellInfo const* spellproto,
     if (spellproto->IsPositive())
         return DIMINISHING_NONE;
 
+    // Explicit Diminishing Groups
+    switch (spellproto->SpellFamilyName)
+    {
+    // Event spells
+    case SPELLFAMILY_UNK1:
+        return DIMINISHING_NONE;
+    case SPELLFAMILY_GENERIC:
+        // some generic arena related spells have by some strange reason MECHANIC_TURN
+        if (spellproto->Mechanic == MECHANIC_TURN)
+            return DIMINISHING_NONE;
+        break;
+    case SPELLFAMILY_MAGE:
+    {
+        // Frostbite
+        if (spellproto->SpellFamilyFlags[1] & 0x80000000)
+            return DIMINISHING_TRIGGER_ROOT;
+        //Shattered Barrier: only flag SpellFamilyFlags[0] = 0x00080000 shared
+        //by most frost spells, using id instead
+        if (spellproto->Id == 55080)
+            return DIMINISHING_TRIGGER_ROOT;
+        // Frost Nova / Freeze (Water Elemental)
+        if (spellproto->SpellIconID == 193)
+            return DIMINISHING_CONTROL_ROOT;
+        // Dragon's Breath
+        else if (spellproto->SpellFamilyFlags[0] & 0x800000)
+            return DIMINISHING_KNOCKOUT;
+        // Ring of Frost "Freeze Effect" according to WoWWiki is categorized under "Disorient"
+        // Placed it under Controlled Root due to DIMINISHING_DISORIENT returning a compile error.
+        if (spellproto->Id == 82691)
+            return DIMINISHING_CONTROL_ROOT;
+        break;
+    }
+    case SPELLFAMILY_ROGUE:
+    {
+        // Sap 0x80 Gouge 0x8
+        if (spellproto->SpellFamilyFlags[0] & 0x88)
+            return DIMINISHING_POLYMORPH;
+        // Blind
+        else if (spellproto->SpellFamilyFlags[0] & 0x1000000)
+            return DIMINISHING_FEAR_BLIND;
+        // Cheap Shot
+        else if (spellproto->SpellFamilyFlags[0] & 0x400)
+            return DIMINISHING_CHEAPSHOT_POUNCE;
+        // Kidney Shot
+        else if (spellproto->SpellFamilyFlags[0] & 0x200000)
+            return DIMINISHING_CHEAPSHOT_POUNCE;
+        // Crippling poison - Limit to 10 seconds in PvP (No SpellFamilyFlags)
+        else if (spellproto->SpellIconID == 163)
+            return DIMINISHING_LIMITONLY;
+        break;
+    }
+    case SPELLFAMILY_WARLOCK:
+    {
+        // Death Coil
+        if (spellproto->SpellFamilyFlags[0] & 0x80000)
+            return DIMINISHING_DEATHCOIL;
+        // Curses/etc
+        else if ((spellproto->SpellFamilyFlags[0] & 0x80000000) || (spellproto->SpellFamilyFlags[1] & 0x200))
+            return DIMINISHING_LIMITONLY;
+        // Howl of Terror
+        else if (spellproto->SpellFamilyFlags[1] & 0x8)
+            return DIMINISHING_FEAR_BLIND;
+        // Seduction
+        else if (spellproto->SpellFamilyFlags[1] & 0x10000000)
+            return DIMINISHING_FEAR_BLIND;
+        break;
+    }
+    case SPELLFAMILY_DRUID:
+    {
+        // Pounce
+        if (spellproto->SpellFamilyFlags[0] & 0x20000)
+            return DIMINISHING_CHEAPSHOT_POUNCE;
+        // Cyclone
+        else if (spellproto->SpellFamilyFlags[1] & 0x20)
+            return DIMINISHING_CYCLONE;
+        // Entangling Roots: to force natures grasp proc to be control root
+        else if (spellproto->SpellFamilyFlags[0] & 0x00000200)
+            return DIMINISHING_CONTROL_ROOT;
+        // Faerie Fire
+        else if (spellproto->SpellFamilyFlags[0] & 0x400)
+            return DIMINISHING_LIMITONLY;
+        // Nature's Grasp
+        else if (spellproto->SpellFamilyFlags[0] & 0x00000200)
+            return DIMINISHING_CONTROL_ROOT;
+        break;
+    }
+    case SPELLFAMILY_WARRIOR:
+    {
+        // Hamstring - limit duration to 10s in PvP
+        if (spellproto->SpellFamilyFlags[0] & 0x2)
+            return DIMINISHING_LIMITONLY;
+        // Intimidating Shout
+        else if (spellproto->SpellFamilyFlags[0] & 0x40000)
+            return DIMINISHING_FEAR_BLIND;
+        // Charge Stun
+        else if (spellproto->SpellFamilyFlags[0] & 0x01000000)
+            return DIMINISHING_NONE;
+        break;
+    }
+    case SPELLFAMILY_PALADIN:
+    {
+        // Repentance
+        if (spellproto->SpellFamilyFlags[0] & 0x4)
+            return DIMINISHING_POLYMORPH;
+        // Judgement of Justice - limit duration to 10s in PvP
+        if (spellproto->SpellFamilyFlags[0] & 0x100000)
+            return DIMINISHING_LIMITONLY;
+        // Turn Evil
+        else if ((spellproto->SpellFamilyFlags[1] & 0x804000) && spellproto->SpellIconID == 309)
+            return DIMINISHING_FEAR_BLIND;
+        break;
+    }
+    case SPELLFAMILY_DEATHKNIGHT:
+    {
+        // Hungering Cold (no flags)
+        if (spellproto->SpellIconID == 2797)
+            return DIMINISHING_POLYMORPH;
+        // Mark of Blood
+        else if ((spellproto->SpellFamilyFlags[0] & 0x10000000) && spellproto->SpellIconID == 2285)
+            return DIMINISHING_LIMITONLY;
+        break;
+    }
+    case SPELLFAMILY_HUNTER:
+    {
+        // Hunter's mark
+        if ((spellproto->SpellFamilyFlags[0] & 0x400) && spellproto->SpellIconID == 538)
+            return DIMINISHING_LIMITONLY;
+        // Scatter Shot
+        if ((spellproto->SpellFamilyFlags[0] & 0x40000) && spellproto->SpellIconID == 132)
+            return DIMINISHING_NONE;
+        // Wyvern Sting mechanic is MECHANIC_SLEEP but the diminishing is DIMINISHING_DISORIENT
+        else if ((spellproto->SpellFamilyFlags[1] & 0x1000) && spellproto->SpellIconID == 1721)
+            return DIMINISHING_KNOCKOUT;
+        // Freezing Arrow
+        else if (spellproto->SpellFamilyFlags[0] & 0x8)
+            return DIMINISHING_KNOCKOUT;
+        break;
+    }
+    default:
+        break;
+    }
+
+    // Get by mechanic
+    uint32 mechanic = spellproto->GetAllEffectsMechanicMask();
+    if (mechanic == MECHANIC_NONE)
+        return DIMINISHING_NONE;
+    if (mechanic & ((1 << MECHANIC_STUN) | (1 << MECHANIC_SHACKLE)))
+        return triggered ? DIMINISHING_TRIGGER_STUN : DIMINISHING_CONTROL_STUN;
+    if (mechanic & ((1 << MECHANIC_SLEEP) | (1 << MECHANIC_FREEZE)))
+        return DIMINISHING_FREEZE_SLEEP;
+    if (mechanic & (1 << MECHANIC_POLYMORPH))
+        return DIMINISHING_POLYMORPH;
+    if (mechanic & (1 << MECHANIC_ROOT))
+        return triggered ? DIMINISHING_TRIGGER_ROOT : DIMINISHING_CONTROL_ROOT;
+    if (mechanic & ((1 << MECHANIC_FEAR) | (1 << MECHANIC_TURN)))
+        return DIMINISHING_FEAR_BLIND;
+    if (mechanic & (1 << MECHANIC_CHARM))
+        return DIMINISHING_CHARM;
+    if (mechanic & (1 << MECHANIC_SILENCE))
+        return DIMINISHING_SILENCE;
+    if (mechanic & (1 << MECHANIC_DISARM))
+        return DIMINISHING_DISARM;
+    if (mechanic & (1 << MECHANIC_FREEZE))
+        return DIMINISHING_FREEZE_SLEEP;
+    if (mechanic & ((1 << MECHANIC_KNOCKOUT) | (1 << MECHANIC_SAPPED)))
+        return DIMINISHING_KNOCKOUT;
+    if (mechanic & (1 << MECHANIC_BANISH))
+        return DIMINISHING_BANISH;
+    if (mechanic & (1 << MECHANIC_HORROR))
+        return DIMINISHING_DEATHCOIL;
+
+    // Get by effect
     for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
     {
         if (spellproto->Effects[i].ApplyAuraName == SPELL_AURA_MOD_TAUNT)
             return DIMINISHING_TAUNT;
     }
-
-    // Explicit Diminishing Groups
-    switch (spellproto->SpellFamilyName)
-    {
-        case SPELLFAMILY_GENERIC:
-        {
-            // Pet charge effects (Infernal Awakening, Demon Charge)
-            if (spellproto->SpellVisual[0] == 2816 && spellproto->SpellIconID == 15)
-                return DIMINISHING_CONTROLLED_STUN;
-            // Gnaw
-            else if (spellproto->Id == 47481)
-                return DIMINISHING_CONTROLLED_STUN;
-            break;
-        }
-        // Event spells
-        case SPELLFAMILY_UNK1:
-            return DIMINISHING_NONE;
-        case SPELLFAMILY_MAGE:
-        {
-            // Frostbite
-            if (spellproto->SpellFamilyFlags[1] & 0x80000000)
-                return DIMINISHING_ROOT;
-            // Shattered Barrier
-            else if (spellproto->SpellVisual[0] == 12297)
-                return DIMINISHING_ROOT;
-            // Deep Freeze
-            else if (spellproto->SpellIconID == 2939 && spellproto->SpellVisual[0] == 9963)
-                return DIMINISHING_CONTROLLED_STUN;
-            // Frost Nova / Freeze (Water Elemental)
-            else if (spellproto->SpellIconID == 193)
-                return DIMINISHING_CONTROLLED_ROOT;
-            // Dragon's Breath
-            else if (spellproto->SpellFamilyFlags[0] & 0x800000)
-                return DIMINISHING_DISORIENT;
-            break;
-        }
-        case SPELLFAMILY_WARRIOR:
-        {
-            // Improved Hamstring
-            if (spellproto->AttributesEx3 & 0x80000 && spellproto->SpellIconID == 23)
-                return DIMINISHING_ROOT;
-            // Charge Stun (own diminishing)
-            else if (spellproto->SpellFamilyFlags[0] & 0x01000000)
-                return DIMINISHING_CHARGE;
-            break;
-        }
-        case SPELLFAMILY_WARLOCK:
-        {
-            // Death Coil
-            if (spellproto->SpellFamilyFlags[0] & 0x80000)
-                return DIMINISHING_HORROR;
-            // Seduction
-            else if (spellproto->SpellFamilyFlags[1] & 0x10000000)
-                return DIMINISHING_FEAR;
-            break;
-        }
-        case SPELLFAMILY_PRIEST:
-        {
-            // Psychic Horror
-            if (spellproto->SpellFamilyFlags[2] & 0x2000)
-                return DIMINISHING_HORROR;
-            break;
-        }
-        case SPELLFAMILY_DRUID:
-        {
-            // Pounce
-            if (spellproto->SpellFamilyFlags[0] & 0x20000)
-                return DIMINISHING_OPENING_STUN;
-            // Cyclone
-            else if (spellproto->SpellFamilyFlags[1] & 0x20)
-                return DIMINISHING_CYCLONE;
-            // Entangling Roots
-            // Nature's Grasp
-            else if (spellproto->SpellFamilyFlags[0] & 0x00000200)
-                return DIMINISHING_CONTROLLED_ROOT;
-            break;
-        }
-        case SPELLFAMILY_ROGUE:
-        {
-            // Gouge
-            if (spellproto->SpellFamilyFlags[0] & 0x8)
-                return DIMINISHING_DISORIENT;
-            // Blind
-            else if (spellproto->SpellFamilyFlags[0] & 0x1000000)
-                return DIMINISHING_FEAR;
-            // Cheap Shot
-            else if (spellproto->SpellFamilyFlags[0] & 0x400)
-                return DIMINISHING_OPENING_STUN;
-            break;
-        }
-        case SPELLFAMILY_HUNTER:
-        {
-            // Scatter Shot (own diminishing)
-            if ((spellproto->SpellFamilyFlags[0] & 0x40000) && spellproto->SpellIconID == 132)
-                return DIMINISHING_SCATTER_SHOT;
-            // Entrapment (own diminishing)
-            else if (spellproto->SpellVisual[0] == 7484 && spellproto->SpellIconID == 20)
-                return DIMINISHING_ENTRAPMENT;
-            // Wyvern Sting mechanic is MECHANIC_SLEEP but the diminishing is DIMINISHING_DISORIENT
-            else if ((spellproto->SpellFamilyFlags[1] & 0x1000) && spellproto->SpellIconID == 1721)
-                return DIMINISHING_DISORIENT;
-            // Freezing Arrow
-            else if (spellproto->SpellFamilyFlags[0] & 0x8)
-                return DIMINISHING_DISORIENT;
-            break;
-        }
-        case SPELLFAMILY_PALADIN:
-        {
-            // Turn Evil
-            if ((spellproto->SpellFamilyFlags[1] & 0x804000) && spellproto->SpellIconID == 309)
-                return DIMINISHING_FEAR;
-            break;
-        }
-        case SPELLFAMILY_DEATHKNIGHT:
-        {
-            // Hungering Cold (no flags)
-            if (spellproto->SpellIconID == 2797)
-                return DIMINISHING_DISORIENT;
-            break;
-        }
-        default:
-            break;
-    }
-
-    // Lastly - Set diminishing depending on mechanic
-    uint32 mechanic = spellproto->GetAllEffectsMechanicMask();
-    if (mechanic & (1 << MECHANIC_CHARM))
-        return DIMINISHING_MIND_CONTROL;
-    if (mechanic & (1 << MECHANIC_SILENCE))
-        return DIMINISHING_SILENCE;
-    if (mechanic & (1 << MECHANIC_SLEEP))
-        return DIMINISHING_SLEEP;
-    if (mechanic & ((1 << MECHANIC_SAPPED) | (1 << MECHANIC_POLYMORPH) | (1 << MECHANIC_SHACKLE)))
-        return DIMINISHING_DISORIENT;
-    // Mechanic Knockout, except Blast Wave
-    if (mechanic & (1 << MECHANIC_KNOCKOUT) && spellproto->SpellIconID != 292)
-        return DIMINISHING_DISORIENT;
-    if (mechanic & (1 << MECHANIC_DISARM))
-        return DIMINISHING_DISARM;
-    if (mechanic & (1 << MECHANIC_FEAR))
-        return DIMINISHING_FEAR;
-    if (mechanic & (1 << MECHANIC_STUN))
-        return triggered ? DIMINISHING_STUN : DIMINISHING_CONTROLLED_STUN;
-    if (mechanic & (1 << MECHANIC_BANISH))
-        return DIMINISHING_BANISH;
-    if (mechanic & (1 << MECHANIC_ROOT))
-        return triggered ? DIMINISHING_ROOT : DIMINISHING_CONTROLLED_ROOT;
-
     return DIMINISHING_NONE;
 }
 
@@ -223,16 +247,29 @@ DiminishingReturnsType GetDiminishingReturnsGroupType(DiminishingGroup group)
 {
     switch (group)
     {
-        case DIMINISHING_TAUNT:
-        case DIMINISHING_CONTROLLED_STUN:
-        case DIMINISHING_STUN:
-        case DIMINISHING_OPENING_STUN:
-        case DIMINISHING_CYCLONE:
-        case DIMINISHING_CHARGE:
-            return DRTYPE_ALL;
-        default:
-            return DRTYPE_PLAYER;
+    case DIMINISHING_TAUNT:
+    case DIMINISHING_CONTROL_STUN:
+    case DIMINISHING_TRIGGER_STUN:
+    case DIMINISHING_CHEAPSHOT_POUNCE:
+    case DIMINISHING_CYCLONE:
+        return DRTYPE_ALL;
+    case DIMINISHING_FEAR_BLIND:
+    case DIMINISHING_CONTROL_ROOT:
+    case DIMINISHING_TRIGGER_ROOT:
+    case DIMINISHING_CHARM:
+    case DIMINISHING_POLYMORPH:
+    case DIMINISHING_SILENCE:
+    case DIMINISHING_DISARM:
+    case DIMINISHING_DEATHCOIL:
+    case DIMINISHING_FREEZE_SLEEP:
+    case DIMINISHING_BANISH:
+    case DIMINISHING_KNOCKOUT:
+        return DRTYPE_PLAYER;
+    default:
+        break;
     }
+
+    return DRTYPE_NONE;
 }
 
 DiminishingLevels GetDiminishingReturnsMaxLevel(DiminishingGroup group)
@@ -853,14 +890,6 @@ bool SpellMgr::IsSpellProcEventCanTriggeredBy(SpellProcEventEntry const* spellPr
             return true;
     }
     return false;
-}
-
-SpellProcEntry const* SpellMgr::GetSpellProcEntry(uint32 spellId) const
-{
-    SpellProcMap::const_iterator itr = mSpellProcMap.find(spellId);
-    if (itr != mSpellProcMap.end())
-        return &itr->second;
-    return NULL;
 }
 
 SpellBonusEntry const* SpellMgr::GetSpellBonusData(uint32 spellId) const
