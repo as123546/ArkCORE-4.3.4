@@ -912,7 +912,7 @@ int32 AuraEffect::CalculateAmount (Unit *caster)
 
 void AuraEffect::CalculatePeriodic (Unit *caster, bool create)
 {
-    m_amplitude = m_spellInfo->EffectAmplitude[m_effIndex];
+    m_amplitude = m_spellInfo->Effects[m_effIndex].Amplitude;
 
     // prepare periodics
     switch (GetAuraType())
@@ -971,7 +971,7 @@ void AuraEffect::CalculatePeriodic (Unit *caster, bool create)
         if (caster)
         {
             // Haste modifies periodic time of channeled spells
-            if (IsChanneledSpell(m_spellInfo))
+            if (m_spellInfo->IsChanneled())
             {
                 if (m_spellInfo->AttributesEx5 & SPELL_ATTR5_HASTE_AFFECT_DURATION)
                     caster->ModSpellCastTime(m_spellInfo, m_amplitude);
@@ -1071,7 +1071,7 @@ void AuraEffect::CalculateSpellMod ()
 
             m_spellmod->type = SpellModType(GetAuraType());          // SpellModType value == spell aura types
             m_spellmod->spellId = GetId();
-            m_spellmod->mask = GetSpellInfo()->EffectSpellClassMask[GetEffIndex()];
+            m_spellmod->mask = GetSpellInfo()->Effects[GetEffIndex()].SpellClassMask;
             m_spellmod->charges = GetBase()->GetCharges();
         }
         m_spellmod->value = GetAmount();
@@ -1161,7 +1161,7 @@ void AuraEffect::ApplySpellMod (Unit *target, bool apply)
             Aura *aura = iter->second->GetBase();
             // only passive auras-active auras should have amount set on spellcast and not be affected
             // if aura is casted by others, it will not be affected
-            if ((aura->IsPassive() || aura->GetSpellInfo()->AttributesEx2 & SPELL_ATTR2_ALWAYS_APPLY_MODIFIERS) && aura->GetCasterGUID() == guid && sSpellMgr->IsAffectedByMod(aura->GetSpellInfo(), m_spellmod))
+            if ((aura->IsPassive() || aura->GetSpellInfo()->AttributesEx2 & SPELL_ATTR2_ALWAYS_APPLY_MODIFIERS) && aura->GetCasterGUID() == guid && aura->GetSpellInfo()->IsAffectedBySpellMod(m_spellmod))
             {
                 if (GetMiscValue() == SPELLMOD_ALL_EFFECTS)
                 {
@@ -1367,7 +1367,7 @@ void AuraEffect::UpdatePeriodic (Unit *caster)
 bool AuraEffect::IsPeriodicTickCrit (Unit *target, Unit const *caster) const
 {
     ASSERT(caster);
-    if (caster->isSpellCrit(target, m_spellInfo, GetSpellSchoolMask(m_spellInfo)))
+    if (caster->isSpellCrit(target, m_spellInfo, m_spellInfo->GetSchoolMask()))
         return true;
     else
         return false;
@@ -1405,7 +1405,7 @@ void AuraEffect::PeriodicTick (AuraApplication * aurApp, Unit * caster) const
         }
 
         // Consecrate ticks can miss and will not show up in the combat log
-        if (GetSpellInfo()->Effect[GetEffIndex()] == SPELL_EFFECT_PERSISTENT_AREA_AURA && caster->SpellHitResult(target, GetSpellInfo(), false) != SPELL_MISS_NONE)
+        if (GetSpellInfo()->Effects[GetEffIndex()].Effect == SPELL_EFFECT_PERSISTENT_AREA_AURA && caster->SpellHitResult(target, GetSpellInfo(), false) != SPELL_MISS_NONE)
             break;
 
         // Check for immune (not use charges)
@@ -1445,7 +1445,7 @@ void AuraEffect::PeriodicTick (AuraApplication * aurApp, Unit * caster) const
                 break;
             case 38772:          // Grievous Wound
             {
-                uint32 percent = GetEffIndex() < 2 && GetSpellInfo()->Effect[GetEffIndex()] == SPELL_EFFECT_DUMMY ? caster->CalculateSpellDamage(target, GetSpellInfo(), GetEffIndex() + 1) : 100;
+                uint32 percent = GetEffIndex() < 2 && GetSpellInfo()->Effects[GetEffIndex()].Effect == SPELL_EFFECT_DUMMY ? caster->CalculateSpellDamage(target, GetSpellInfo(), GetEffIndex() + 1) : 100;
                 if (!target->HealthBelowPct(percent))
                 {
                     target->RemoveAurasDueToSpell(GetId());
@@ -1499,7 +1499,7 @@ void AuraEffect::PeriodicTick (AuraApplication * aurApp, Unit * caster) const
             damage += caster->SpellDamageBonus(target, GetSpellInfo(), GetEffIndex(), damage, DOT, GetBase()->GetStackAmount());
 
             // Calculate armor mitigation
-            if (Unit::IsDamageReducedByArmor(GetSpellSchoolMask(GetSpellInfo()), GetSpellInfo(), m_effIndex))
+            if (Unit::IsDamageReducedByArmor(GetSpellInfo()->GetSchoolMask(), GetSpellInfo(), m_effIndex))
             {
                 uint32 damageReductedArmor = caster->CalcArmorReducedDamage(target, damage, GetSpellInfo());
                 cleanDamage.mitigated_damage += damage - damageReductedArmor;
@@ -1553,7 +1553,7 @@ void AuraEffect::PeriodicTick (AuraApplication * aurApp, Unit * caster) const
         caster->ApplyResilience(target, &dmg);
         damage = dmg;
 
-        caster->CalcAbsorbResist(target, GetSpellSchoolMask(GetSpellInfo()), DOT, damage, &absorb, &resist, m_spellInfo);
+        caster->CalcAbsorbResist(target, GetSpellInfo()->GetSchoolMask(), DOT, damage, &absorb, &resist, m_spellInfo);
 
         sLog->outDetail("PeriodicTick: %u (TypeId: %u) attacked %u (TypeId: %u) for %u dmg inflicted by %u abs is %u", GUID_LOPART(GetCasterGUID()), GuidHigh2TypeId(GUID_HIPART(GetCasterGUID())), target->GetGUIDLow(), target->GetTypeId(), damage, GetId(), absorb);
 
@@ -1576,7 +1576,7 @@ void AuraEffect::PeriodicTick (AuraApplication * aurApp, Unit * caster) const
 
         caster->ProcDamageAndSpell(target, procAttacker, procVictim, procEx, damage, BASE_ATTACK, GetSpellInfo());
 
-        caster->DealDamage(target, damage, &cleanDamage, DOT, GetSpellSchoolMask(GetSpellInfo()), GetSpellInfo(), true);
+        caster->DealDamage(target, damage, &cleanDamage, DOT, GetSpellInfo()->GetSchoolMask(), GetSpellInfo(), true);
         break;
     }
     case SPELL_AURA_PERIODIC_LEECH:

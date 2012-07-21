@@ -1769,7 +1769,7 @@ void Aura::HandleAuraSpecificMods (AuraApplication const* aurApp, Unit* caster, 
         }
         break;
     case SPELLFAMILY_DEATHKNIGHT:
-        if (GetSpellSpecific(GetSpellInfo()) == SPELL_SPECIFIC_PRESENCE)
+        if (GetSpellInfo()->GetSpellSpecific() == SPELL_SPECIFIC_PRESENCE)
         {
             caster->SetPower(POWER_RUNIC_POWER, 0);
             AuraEffect *bloodPresenceAura = 0;          // healing by damage done
@@ -1831,7 +1831,7 @@ void Aura::HandleAuraSpecificMods (AuraApplication const* aurApp, Unit* caster, 
                     if (unholyPresenceAura)
                     {
                         // Not listed as any effect, only base points set
-                        int32 basePoints0 = SpellMgr::CalculateSpellEffectAmount(unholyPresenceAura->GetSpellInfo(), 1);
+                        int32 basePoints0 = unholyPresenceAura->GetSpellInfo()->Effects[EFFECT_1].CalcValue();
                         target->CastCustomSpell(target, 63622, &basePoints0, &basePoints0, &basePoints0, true, 0, unholyPresenceAura);
                         target->CastCustomSpell(target, 65095, &basePoints0, NULL, NULL, true, 0, unholyPresenceAura);
                     }
@@ -1874,7 +1874,7 @@ bool Aura::CanBeAppliedOn (Unit *target)
         if (GetOwner() != target)
             return false;
         // not selfcasted single target auras mustn't be applied
-        if (GetCasterGUID() != GetOwner()->GetGUID() && IsSingleTargetSpell(GetSpellInfo()))
+        if (GetCasterGUID() != GetOwner()->GetGUID() && GetSpellInfo()->IsSingleTarget())
             return false;
     }
     else if (GetOwner() != target)
@@ -2297,24 +2297,17 @@ void UnitAura::FillTargetMap (std::map<Unit *, uint8> & targets, Unit * caster)
             continue;
         UnitList targetList;
         // non-area aura
-        if (GetSpellInfo()->Effect[effIndex] == SPELL_EFFECT_APPLY_AURA)
+        if (GetSpellInfo()->Effects[effIndex].Effect == SPELL_EFFECT_APPLY_AURA)
         {
             targetList.push_back(GetUnitOwner());
         }
         else
         {
-            float radius;
-            if (GetSpellInfo()->Effect[effIndex] == SPELL_EFFECT_APPLY_AREA_AURA_ENEMY)
-                radius = GetSpellRadiusForHostile(sSpellRadiusStore.LookupEntry(GetSpellInfo()->EffectRadiusIndex[effIndex]));
-            else
-                radius = GetSpellRadiusForFriend(sSpellRadiusStore.LookupEntry(GetSpellInfo()->EffectRadiusIndex[effIndex]));
-
-            if (modOwner)
-                modOwner->ApplySpellMod(GetId(), SPELLMOD_RADIUS, radius);
+            float radius = GetSpellInfo()->Effects[effIndex].CalcRadius(caster);
 
             if (!GetUnitOwner()->HasUnitState(UNIT_STAT_ISOLATED))
             {
-                switch (GetSpellInfo()->Effect[effIndex])
+                switch(GetSpellInfo()->Effects[effIndex].Effect)
                 {
                 case SPELL_EFFECT_APPLY_AREA_AURA_PARTY:
                     targetList.push_back(GetUnitOwner());

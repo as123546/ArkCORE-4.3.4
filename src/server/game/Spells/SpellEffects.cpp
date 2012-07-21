@@ -460,11 +460,26 @@ void Spell::SpellDamageSchoolDmg (SpellEffIndex effIndex)
                 if (unitTarget->GetGUID() == m_caster->GetGUID() || unitTarget->GetTypeId() != TYPEID_PLAYER)
                     return;
 
-                float radius = GetSpellRadiusForHostile(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[0]));
+                float radius = m_spellInfo->Effects[EFFECT_0].CalcRadius(m_caster);
                 if (!radius)
                     return;
                 float distance = m_caster->GetDistance2d(unitTarget);
-                damage = (distance > radius) ? 0 : int32(SpellMgr::CalculateSpellEffectAmount(m_spellInfo, 0) * ((radius - distance) / radius));
+                damage = (distance > radius) ? 0 : int32(m_spellInfo->Effects[EFFECT_0].CalcValue(m_caster) * ((radius - distance)/radius));
+                break;
+            }
+            // Loken Pulsing Shockwave
+            case 59837:
+            case 52942:
+            {
+                // don't damage self and only players
+                if (unitTarget->GetGUID() == m_caster->GetGUID() || unitTarget->GetTypeId() != TYPEID_PLAYER)
+                    return;
+
+                float radius = m_spellInfo->Effects[EFFECT_0].CalcRadius(m_caster);
+                if (!radius)
+                    return;
+                float distance = m_caster->GetDistance2d(unitTarget);
+                damage = (distance > radius) ? 0 : int32(m_spellInfo->Effects[EFFECT_0].CalcValue(m_caster) * distance);
                 break;
             }
                 // TODO: add spell specific target requirement hook for spells

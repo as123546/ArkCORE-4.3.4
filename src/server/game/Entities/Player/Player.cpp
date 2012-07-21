@@ -8725,7 +8725,7 @@ void Player::CastItemCombatSpell (Unit *target, WeaponAttackType attType, uint32
             }
 
             // not allow proc extra attack spell at extra attack
-            if (m_extraAttacks && IsSpellHaveEffect(spellInfo, SPELL_EFFECT_ADD_EXTRA_ATTACKS))
+            if (m_extraAttacks && spellInfo->HasEffect(SPELL_EFFECT_ADD_EXTRA_ATTACKS))
                 return;
 
             float chance = (float) spellInfo->ProcChance;
@@ -8811,10 +8811,10 @@ void Player::CastItemCombatSpell (Unit *target, WeaponAttackType attType, uint32
 
             if (roll_chance_f(chance))
             {
-                if (IsPositiveSpell(pEnchant->spellid[s]))
-                    CastSpell(this, pEnchant->spellid[s], true, item);
+                if (spellInfo->IsPositive())
+                    CastSpell(this, spellInfo, true, item);
                 else
-                    CastSpell(target, pEnchant->spellid[s], true, item);
+                    CastSpell(target, spellInfo, true, item);
             }
         }
     }
@@ -21455,7 +21455,7 @@ void Player::UpdatePvP (bool state, bool override)
     }
 }
 
-void Player::AddSpellAndCategoryCooldowns (SpellEntry const* spellInfo, uint32 itemId, Spell* spell, bool infinityCooldown)
+void Player::AddSpellAndCategoryCooldowns (SpellInfo const* spellInfo, uint32 itemId, Spell* spell, bool infinityCooldown)
 {
     // init cooldown values
     uint32 cat = 0;
