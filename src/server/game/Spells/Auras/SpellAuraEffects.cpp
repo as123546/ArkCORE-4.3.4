@@ -1596,7 +1596,7 @@ void AuraEffect::PeriodicTick (AuraApplication * aurApp, Unit * caster) const
             return;
         }
 
-        if (GetSpellInfo()->Effect[GetEffIndex()] == SPELL_EFFECT_PERSISTENT_AREA_AURA && caster->SpellHitResult(target, GetSpellInfo(), false) != SPELL_MISS_NONE)
+        if (GetSpellInfo()->Effects[GetEffIndex()].Effect == SPELL_EFFECT_PERSISTENT_AREA_AURA && caster->SpellHitResult(target, GetSpellInfo(), false) != SPELL_MISS_NONE)
             return;
 
         // Check for immune
@@ -1618,7 +1618,7 @@ void AuraEffect::PeriodicTick (AuraApplication * aurApp, Unit * caster) const
             damage = caster->SpellCriticalDamageBonus(m_spellInfo, damage, target);
 
         // Calculate armor mitigation
-        if (Unit::IsDamageReducedByArmor(GetSpellSchoolMask(GetSpellInfo()), GetSpellInfo(), m_effIndex))
+        if (Unit::IsDamageReducedByArmor(GetSpellInfo()->GetSchoolMask(), GetSpellInfo(), m_effIndex))
         {
             uint32 damageReductedArmor = caster->CalcArmorReducedDamage(target, damage, GetSpellInfo());
             cleanDamage.mitigated_damage += damage - damageReductedArmor;
@@ -1629,14 +1629,14 @@ void AuraEffect::PeriodicTick (AuraApplication * aurApp, Unit * caster) const
         caster->ApplyResilience(target, &dmg);
         damage = dmg;
 
-        caster->CalcAbsorbResist(target, GetSpellSchoolMask(GetSpellInfo()), DOT, damage, &absorb, &resist, m_spellInfo);
+        caster->CalcAbsorbResist(target, GetSpellInfo()->GetSchoolMask(), DOT, damage, &absorb, &resist, m_spellInfo);
 
         if (target->GetHealth() < damage)
             damage = uint32(target->GetHealth());
 
         sLog->outDetail("PeriodicTick: %u (TypeId: %u) health leech of %u (TypeId: %u) for %u dmg inflicted by %u abs is %u", GUID_LOPART(GetCasterGUID()), GuidHigh2TypeId(GUID_HIPART(GetCasterGUID())), target->GetGUIDLow(), target->GetTypeId(), damage, GetId(), absorb);
 
-        caster->SendSpellNonMeleeDamageLog(target, GetId(), damage, GetSpellSchoolMask(GetSpellInfo()), absorb, resist, false, 0, crit);
+        caster->SendSpellNonMeleeDamageLog(target, GetId(), damage, GetSpellInfo()->GetSchoolMask(), absorb, resist, false, 0, crit);
 
         // Set trigger flag
         uint32 procAttacker = PROC_FLAG_DONE_PERIODIC;
@@ -1646,7 +1646,7 @@ void AuraEffect::PeriodicTick (AuraApplication * aurApp, Unit * caster) const
         if (damage)
             procVictim |= PROC_FLAG_TAKEN_DAMAGE;
         caster->ProcDamageAndSpell(target, procAttacker, procVictim, procEx, damage, BASE_ATTACK, GetSpellInfo());
-        int32 new_damage = caster->DealDamage(target, damage, &cleanDamage, DOT, GetSpellSchoolMask(GetSpellInfo()), GetSpellInfo(), false);
+        int32 new_damage = caster->DealDamage(target, damage, &cleanDamage, DOT, GetSpellInfo()->GetSchoolMask(), GetSpellInfo(), false);
 
         if (!target->isAlive() && caster->IsNonMeleeSpellCasted(false))
             for (uint32 i = CURRENT_FIRST_NON_MELEE_SPELL; i < CURRENT_MAX_SPELL; ++i)
@@ -1654,7 +1654,7 @@ void AuraEffect::PeriodicTick (AuraApplication * aurApp, Unit * caster) const
                     if (spell->m_spellInfo->Id == GetId())
                         spell->cancel();
 
-        float gainMultiplier = SpellMgr::CalculateSpellEffectValueMultiplier(GetSpellInfo(), GetEffIndex(), caster);
+        float gainMultiplier = GetSpellInfo()->Effects[GetEffIndex()].CalcValueMultiplier(caster);
 
         uint32 heal = uint32(caster->SpellHealingBonus(caster, GetSpellInfo(), GetEffIndex(), uint32(new_damage * gainMultiplier), DOT, GetBase()->GetStackAmount()));
 

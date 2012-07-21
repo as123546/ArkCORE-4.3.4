@@ -2317,7 +2317,8 @@ void UnitAura::FillTargetMap (std::map<Unit *, uint8> & targets, Unit * caster)
                     targetList.push_back(GetUnitOwner());
                     GetUnitOwner()->GetRaidMember(targetList, radius);
                     if (GetSpellInfo()->SpellIconID == 691)
-                        GetUnitOwner()->GetRaidMember(targetList, GetSpellRadiusForFriend(sSpellRadiusStore.LookupEntry(GetSpellInfo()->EffectRadiusIndex[1])));
+                        GetUnitOwner()->GetRaidMember(targetList, GetSpellInfo()->Effects[EFFECT_1].CalcRadius()));
+                                                                  
                     break;
                 case SPELL_EFFECT_APPLY_AREA_AURA_FRIEND:
                 {
@@ -2358,7 +2359,7 @@ void UnitAura::FillTargetMap (std::map<Unit *, uint8> & targets, Unit * caster)
     }
 }
 
-DynObjAura::DynObjAura (SpellEntry const* spellproto, uint8 effMask, WorldObject * owner, Unit * caster, int32 *baseAmount, Item * castItem, uint64 casterGUID) :
+DynObjAura::DynObjAura (SpellInfo const* spellproto, uint8 effMask, WorldObject * owner, Unit * caster, int32 *baseAmount, Item * castItem, uint64 casterGUID) :
         Aura(spellproto, effMask, owner, caster, baseAmount, castItem, casterGUID)
 {
     LoadScripts();
