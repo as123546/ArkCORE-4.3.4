@@ -196,7 +196,6 @@ void SpellImplicitTargetInfo::InitTypeData()
                 break;
             case TARGET_DEST_DYNOBJ_ENEMY:
             case TARGET_DEST_DYNOBJ_ALLY:
-            case TARGET_DEST_DYNOBJ_NONE:
             case TARGET_DEST_DEST:
             case TARGET_DEST_TRAJ:
             case TARGET_DEST_DEST_FRONT_LEFT:
@@ -1106,7 +1105,7 @@ SpellCastResult SpellInfo::CheckShapeshift(uint32 form) const
     SpellShapeshiftFormEntry const* shapeInfo = NULL;
     if (form > 0)
     {
-        shapeInfo = sSpellShapeshiftStore.LookupEntry(form);
+        shapeInfo = sSpellShapeshiftFormStore.LookupEntry(form);
         if (!shapeInfo)
         {
             sLog->outError("GetErrorAtShapeshiftedCast: unknown shapeshift %u", form);

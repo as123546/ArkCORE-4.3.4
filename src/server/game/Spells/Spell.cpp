@@ -77,8 +77,7 @@ bool IsQuestTameSpell (uint32 spellId)
     return spellproto->Effect[0] == SPELL_EFFECT_THREAT && spellproto->Effect[1] == SPELL_EFFECT_APPLY_AURA && spellproto->EffectApplyAuraName[1] == SPELL_AURA_DUMMY;
 }
 
-SpellCastTargets::SpellCastTargets () :
-        m_elevation(0), m_Speed(0)
+SpellCastTargets::SpellCastTargets () : m_elevation(0), m_Speed(0)
 {
     m_unitTarget = NULL;
     m_itemTarget = NULL;
@@ -3164,7 +3163,7 @@ void Spell::prepare (SpellCastTargets const* targets, AuraEffect const * trigger
     m_spellState = SPELL_STATE_PREPARING;
 
     if (triggeredByAura)
-        m_triggeredByAuraSpell = triggeredByAura->GetSpellProto();
+        m_triggeredByAuraSpell = triggeredByAura->GetSpellInfo();
 
     // create and add update event for this spell
     SpellEvent* Event = new SpellEvent(this);
@@ -3494,7 +3493,7 @@ void Spell::cast (bool skipCheck)
     {
         if (!(*i)->IsAffectedOnSpell(m_spellInfo))
             continue;
-        SpellInfo const *auraSpellInfo = (*i)->GetSpellProto();
+        SpellInfo const *auraSpellInfo = (*i)->GetSpellInfo();
         uint32 auraSpellIdx = (*i)->GetEffIndex();
         if (SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(auraSpellInfo->EffectTriggerSpell[auraSpellIdx]))
         {

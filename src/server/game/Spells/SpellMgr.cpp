@@ -444,7 +444,7 @@ bool SpellMgr::IsSpellValid(SpellInfo const *spellInfo, Player *pl, bool msg)
     {
         for (uint8 j = 0; j < MAX_SPELL_REAGENTS; ++j)
         {
-            if (spellInfo->Reagent[j] > 0 && !sObjectMgr->GetItemTemplate(spellInfo->Reagent[j]))
+            if (spellInfo->Reagent[j] > 0 && !ObjectMgr::GetItemPrototype(spellInfo->Reagent[j]))
             {
                 if (msg)
                 {
@@ -2196,7 +2196,7 @@ void SpellMgr::LoadPetLevelupSpellMap()
     sLog->outString();
 }
 
-bool LoadPetDefaultSpells_helper(CreatureTemplate const* cInfo, PetDefaultSpellsEntry& petDefSpells)
+bool LoadPetDefaultSpells_helper(CreatureInfo const* cInfo, PetDefaultSpellsEntry& petDefSpells)
 {
     // skip empty list;
     bool have_spell = false;
@@ -2253,24 +2253,26 @@ void SpellMgr::LoadPetDefaultSpells()
     uint32 countCreature = 0;
     uint32 countData = 0;
 
-    CreatureTemplateContainer const* ctc = sObjectMgr->GetCreatureTemplates();
-    for (CreatureTemplateContainer::const_iterator itr = ctc->begin(); itr != ctc->end(); ++itr)
+    for (uint32 i = 0; i < sCreatureStorage.MaxEntry; ++i)
     {
+        CreatureInfo const* cInfo = sCreatureStorage.LookupEntry<CreatureInfo>(i);
+        if (!cInfo)
+            continue;
 
-        if (!itr->second.PetSpellDataId)
+        if (!cInfo->PetSpellDataId)
             continue;
 
         // for creature with PetSpellDataId get default pet spells from dbc
-        CreatureSpellDataEntry const* spellDataEntry = sCreatureSpellDataStore.LookupEntry(itr->second.PetSpellDataId);
+        CreatureSpellDataEntry const* spellDataEntry = sCreatureSpellDataStore.LookupEntry(cInfo->PetSpellDataId);
         if (!spellDataEntry)
             continue;
 
-        int32 petSpellsId = -int32(itr->second.PetSpellDataId);
+        int32 petSpellsId = -int32(cInfo->PetSpellDataId);
         PetDefaultSpellsEntry petDefSpells;
         for (uint8 j = 0; j < MAX_CREATURE_SPELL_DATA_SLOT; ++j)
             petDefSpells.spellid[j] = spellDataEntry->spellId[j];
 
-        if (LoadPetDefaultSpells_helper(&itr->second, petDefSpells))
+        if (LoadPetDefaultSpells_helper(cInfo, petDefSpells))
         {
             mPetDefaultSpellsMap[petSpellsId] = petDefSpells;
             ++countData;
@@ -2295,7 +2297,7 @@ void SpellMgr::LoadPetDefaultSpells()
             if (spellEntry->Effects[k].Effect == SPELL_EFFECT_SUMMON || spellEntry->Effects[k].Effect == SPELL_EFFECT_SUMMON_PET)
             {
                 uint32 creature_id = spellEntry->Effects[k].MiscValue;
-                CreatureTemplate const* cInfo = sObjectMgr->GetCreatureTemplate(creature_id);
+                CreatureInfo  const* cInfo = sObjectMgr->GetCreatureTemplate(creature_id);
                 if (!cInfo)
                     continue;
 
@@ -2535,7 +2537,7 @@ void SpellMgr::LoadSpellInfoStore()
 
     for (uint32 i = 0; i < sSpellStore.GetNumRows(); ++i)
     {
-        if (SpellEntry const* spellEntry = sSpellMgr->GetSpellInfo(i))
+        if (SpellEntry const* spellEntry = sSpellStore.LookupEntry(i))
             mSpellInfoMap[i] = new SpellInfo(spellEntry);
     }
 

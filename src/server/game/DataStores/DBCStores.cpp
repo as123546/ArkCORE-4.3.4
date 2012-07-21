@@ -113,7 +113,7 @@ DBCStorage<GtChanceToSpellCritEntry> sGtChanceToSpellCritStore(GtChanceToSpellCr
 //DBCStorage <GtOCTRegenMPEntry>            sGtOCTRegenMPStore(GtOCTRegenMPfmt);  -- not used currently
 //DBCStorage <GtRegenHPPerSptEntry>         sGtRegenHPPerSptStore(GtRegenHPPerSptfmt);
 DBCStorage<GtRegenMPPerSptEntry> sGtRegenMPPerSptStore(GtRegenMPPerSptfmt);
-DBCStorage<gtSpellScaling> sGtSpellScalingStore(GtSpellScalingfmt);
+DBCStorage<GtSpellScalingEntry> sGtSpellScalingStore(GtSpellScalingfmt);
 
 DBCStorage<HolidaysEntry> sHolidaysStore(Holidaysfmt);
 
@@ -965,7 +965,7 @@ float GetGtSpellScalingValue (int8 class_, uint8 level)
         return -1.0f;          // shouldn't scale
 
     //They really wants that players reach level 100... in the 5th expansion.
-    const gtSpellScaling * spellscaling = sGtSpellScalingStore.LookupEntry((class_ - 1) * 100 + level - 1);
+    const GtSpellScalingEntry * spellscaling = sGtSpellScalingStore.LookupEntry((class_ - 1) * 100 + level - 1);
     if (spellscaling)
         return spellscaling->coef;
     else
