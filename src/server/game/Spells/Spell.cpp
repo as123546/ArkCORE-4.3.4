@@ -448,7 +448,6 @@ SpellValue::SpellValue(SpellInfo const* proto)
 Spell::Spell (Unit* Caster, SpellInfo const *info, bool triggered, uint64 originalCasterGUID, bool skipCheck) :
         m_spellInfo(sSpellMgr->GetSpellForDifficultyFromSpell(info, Caster)), m_caster(Caster), m_spellValue(new SpellValue(m_spellInfo))
 {
-    m_customAttr = sSpellMgr->GetSpellCustomAttr(m_spellInfo->Id);
     m_customError = SPELL_CUSTOM_ERROR_NONE;
     m_skipCheck = skipCheck;
     m_selfContainer = NULL;
@@ -484,7 +483,7 @@ Spell::Spell (Unit* Caster, SpellInfo const *info, bool triggered, uint64 origin
         break;
     }
 
-    m_spellSchoolMask = info->GetSpellSchoolMask();          // Can be override for some spell (wand shoot for example)
+    m_spellSchoolMask = info->GetSchoolMask();          // Can be override for some spell (wand shoot for example)
 
     if (m_attackType == RANGED_ATTACK)
     {
@@ -539,14 +538,14 @@ Spell::Spell (Unit* Caster, SpellInfo const *info, bool triggered, uint64 origin
     // determine reflection
     m_canReflect = false;
 
-    if (m_spellInfo->DmgClass == SPELL_DAMAGE_CLASS_MAGIC && !IsAreaOfEffectSpell(m_spellInfo) && !(m_spellInfo->AttributesEx2 & SPELL_ATTR2_CANT_REFLECTED))
+    if (m_spellInfo->DmgClass == SPELL_DAMAGE_CLASS_MAGIC && !m_spellInfo->IsAOE() && !(m_spellInfo->AttributesEx2 & SPELL_ATTR2_CANT_REFLECTED))
     {
         for (int j = 0; j < MAX_SPELL_EFFECTS; ++j)
         {
-            if (m_spellInfo->Effect[j] == 0)
+            if (m_spellInfo->Effects[j].Effect == 0)
                 continue;
 
-            if (!IsPositiveTarget(m_spellInfo->Effects[j].TargetA, m_spellInfo->Effects[j].TargetB))
+            if (!m_spellInfo->_IsPositiveTarget(m_spellInfo->Effects[j].TargetA, m_spellInfo->Effects[j].TargetB))
                 m_canReflect = true;
             else
                 m_canReflect = (m_spellInfo->AttributesEx & SPELL_ATTR1_NEGATIVE) ? true : false;
