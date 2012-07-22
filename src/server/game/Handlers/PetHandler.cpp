@@ -37,6 +37,7 @@
 #include "Pet.h"
 #include "World.h"
 #include "Group.h"
+#include "SpellInfo.h"
 
 void WorldSession::HandleDismissCritter (WorldPacket &recv_data)
 {
@@ -99,7 +100,7 @@ void WorldSession::HandlePetAction (WorldPacket & recv_data)
 
     if (!pet->isAlive())
     {
-        SpellEntry const* spell = (flag == ACT_ENABLED || flag == ACT_PASSIVE) ? sSpellStore.LookupEntry(spellid) : NULL;
+        SpellInfo const* spell = (flag == ACT_ENABLED || flag == ACT_PASSIVE) ? sSpellMgr->GetSpellInfo(spellid) : NULL;
         if (!spell)
             return;
         if (!(spell->Attributes & SPELL_ATTR0_CASTABLE_WHILE_DEAD))
@@ -305,7 +306,7 @@ void WorldSession::HandlePetActionHelper (Unit *pet, uint64 guid1, uint32 spelli
             unit_target = ObjectAccessor::GetUnit(*_player, guid2);
 
         // do not cast unknown spells
-        SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellid);
+        SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellid);
         if (!spellInfo)
         {
             sLog->outError("WORLD: unknown PET spell id %i", spellid);
@@ -318,12 +319,12 @@ void WorldSession::HandlePetActionHelper (Unit *pet, uint64 guid1, uint32 spelli
 
         for (uint32 i = 0; i < MAX_SPELL_EFFECTS; ++i)
         {
-            if (spellInfo->EffectImplicitTargetA[i] == TARGET_UNIT_AREA_ENEMY_SRC || spellInfo->EffectImplicitTargetA[i] == TARGET_UNIT_AREA_ENEMY_DST || spellInfo->EffectImplicitTargetA[i] == TARGET_DEST_DYNOBJ_ENEMY)
+            if (spellInfo->Effects[i].TargetA == TARGET_UNIT_AREA_ENEMY_SRC || spellInfo->Effects[i].TargetA == TARGET_UNIT_AREA_ENEMY_DST || spellInfo->Effects[i].TargetA == TARGET_DEST_DYNOBJ_ENEMY)
                 return;
         }
 
         // do not cast not learned spells
-        if (!pet->HasSpell(spellid) || IsPassiveSpell(spellid))
+        if (!pet->HasSpell(spellid) || spellInfo->IsPassive())
             return;
 
         //  Clear the flags as if owner clicked 'attack'. AI will reset them
@@ -569,21 +570,28 @@ void WorldSession::HandlePetSetAction (WorldPacket & recv_data)
         //if it's act for spell (en/disable/cast) and there is a spell given (0 = remove spell) which pet doesn't know, don't add
         if (!((act_state == ACT_ENABLED || act_state == ACT_DISABLED || act_state == ACT_PASSIVE) && spell_id && !pet->HasSpell(spell_id)))
         {
-            //sign for autocast
-            if (act_state == ACT_ENABLED && spell_id)
+            if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell_id))
             {
-                if (pet->GetTypeId() == TYPEID_UNIT && pet->ToCreature()->isPet())
-                    ((Pet*) pet)->ToggleAutocast(spell_id, true);
-                else
-                    charmInfo->ToggleCreatureAutocast(spell_id, true);
-            }
-            //sign for no/turn off autocast
-            else if (act_state == ACT_DISABLED && spell_id)
-            {
-                if (pet->GetTypeId() == TYPEID_UNIT && pet->ToCreature()->isPet())
-                    ((Pet*) pet)->ToggleAutocast(spell_id, false);
-                else
-                    charmInfo->ToggleCreatureAutocast(spell_id, false);
+                //sign for autocast
+                if (act_state == ACT_ENABLED)
+                {
+                    if (pet->GetTypeId() == TYPEID_UNIT && pet->ToCreature()->isPet())
+                        ((Pet*)pet)->ToggleAutocast(spellInfo, true);
+                    else
+                        for (Unit::ControlList::iterator itr = GetPlayer()->m_Controlled.begin(); itr != GetPlayer()->m_Controlled.end(); ++itr)
+                            if ((*itr)->GetEntry() == pet->GetEntry())
+                                (*itr)->GetCharmInfo()->ToggleCreatureAutocast(spellInfo, true);
+                }
+                //sign for no/turn off autocast
+                else if (act_state == ACT_DISABLED)
+                {
+                    if (pet->GetTypeId() == TYPEID_UNIT && pet->ToCreature()->isPet())
+                        ((Pet*)pet)->ToggleAutocast(spellInfo, false);
+                    else
+                        for (Unit::ControlList::iterator itr = GetPlayer()->m_Controlled.begin(); itr != GetPlayer()->m_Controlled.end(); ++itr)
+                            if ((*itr)->GetEntry() == pet->GetEntry())
+                                (*itr)->GetCharmInfo()->ToggleCreatureAutocast(spellInfo, false);
+                }
             }
 
             charmInfo->SetActionBar(position[i], spell_id, ActiveStates(act_state));
@@ -713,8 +721,9 @@ void WorldSession::HandlePetSpellAutocastOpcode (WorldPacket& recvPacket)
         return;
     }
 
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellid);
     // do not add not learned spells/ passive spells
-    if (!pet->HasSpell(spellid) || IsAutocastableSpell(spellid))
+    if (!pet->HasSpell(spellid) || spellInfo->IsAutocastable())
         return;
 
     CharmInfo *charmInfo = pet->GetCharmInfo();
@@ -725,11 +734,11 @@ void WorldSession::HandlePetSpellAutocastOpcode (WorldPacket& recvPacket)
     }
 
     if (pet->isPet())
-        ((Pet*) pet)->ToggleAutocast(spellid, state);
+        ((Pet*) pet)->ToggleAutocast(spellInfo, state);
     else
-        pet->GetCharmInfo()->ToggleCreatureAutocast(spellid, state);
+        pet->GetCharmInfo()->ToggleCreatureAutocast(spellInfo, state);
 
-    charmInfo->SetSpellAutocast(spellid, state);
+    charmInfo->SetSpellAutocast(spellInfo, state);
 }
 
 void WorldSession::HandlePetCastSpellOpcode (WorldPacket& recvPacket)
@@ -757,7 +766,7 @@ void WorldSession::HandlePetCastSpellOpcode (WorldPacket& recvPacket)
         return;
     }
 
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellId);
     if (!spellInfo)
     {
         sLog->outError("WORLD: unknown PET spell id %i", spellId);
@@ -772,7 +781,7 @@ void WorldSession::HandlePetCastSpellOpcode (WorldPacket& recvPacket)
         }
 
     // do not cast not learned spells
-    if (!caster->HasSpell(spellId) || IsPassiveSpell(spellId))
+    if (!caster->HasSpell(spellId) || spellInfo->IsPassive())
         return;
 
     SpellCastTargets targets;

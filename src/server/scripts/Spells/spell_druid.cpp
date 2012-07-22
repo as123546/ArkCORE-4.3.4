@@ -51,9 +51,9 @@ class spell_dru_glyph_of_starfire : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spellEntry*/)
             {
-                if (!sSpellStore.LookupEntry(DRUID_INCREASED_MOONFIRE_DURATION))
+                if (!sSpellMgr->GetSpellInfo(DRUID_INCREASED_MOONFIRE_DURATION))
                     return false;
-                if (!sSpellStore.LookupEntry(DRUID_NATURES_SPLENDOR))
+                if (!sSpellMgr->GetSpellInfo(DRUID_NATURES_SPLENDOR))
                     return false;
                 return true;
             }
@@ -67,7 +67,7 @@ class spell_dru_glyph_of_starfire : public SpellScriptLoader
                         Aura* aura = aurEff->GetBase();
 
                         uint32 countMin = aura->GetMaxDuration();
-                        uint32 countMax = GetSpellMaxDuration(aura->GetSpellProto()) + 9000;
+                        uint32 countMax = aura->GetSpellInfo()->GetMaxDuration() + 9000;
                         if (caster->HasAura(DRUID_INCREASED_MOONFIRE_DURATION))
                             countMax += 3000;
                         if (caster->HasAura(DRUID_NATURES_SPLENDOR))
@@ -107,7 +107,7 @@ class spell_dru_savage_defense : public SpellScriptLoader
 
             bool Load()
             {
-                absorbPct = SpellMgr::CalculateSpellEffectAmount(GetSpellProto(), EFFECT_0, GetCaster());
+                absorbPct = GetSpellInfo()->Effects[EFFECT_0].CalcValue(GetCaster());
                 return true;
             }
 
@@ -242,7 +242,7 @@ class spell_dru_ferocious_bite : public SpellScriptLoader
 
                     int32 damage = GetHitDamage();
                     float ap = caster->GetTotalAttackPowerValue(BASE_ATTACK);
-                    float multiple = ap / 410 + SpellMgr::CalculateSpellEffectAmount(GetSpellInfo(), EFFECT_1);
+                    float multiple = ap / 410 + GetSpellInfo()->Effects[EFFECT_1].CalcValue(GetCaster());
                     int32 energy = -(caster->ModifyPower(POWER_ENERGY, -30));
                     damage += int32(energy * multiple);
                     damage += int32(CalculatePctN(caster->ToPlayer()->GetComboPoints() * ap, 7));
@@ -355,7 +355,7 @@ class spell_druid_wild_mushroom : public SpellScriptLoader
                 if (Player* player = GetCaster()->ToPlayer())
                 {
                     PreventHitDefaultEffect(effIndex);
-                    const SpellEntry* spell = GetSpellInfo();
+                    const SpellInfo* spell = GetSpellInfo();
 
                     std::list<Creature*> list;
                     player->GetCreatureListWithEntryInGrid(list, DRUID_NPC_WILD_MUSHROOM, 500.0f);
@@ -369,13 +369,13 @@ class spell_druid_wild_mushroom : public SpellScriptLoader
                         list.remove((*i));
                     }
 
-                    if ((int32)list.size() >= spell->EffectBasePoints[0]) // Max 3
+                    if ((int32)list.size() >= spell->Effects[0].BasePoints) // Max 3
                         list.front()->ToTempSummon()->UnSummon();
 
                     Position pos;
                     GetTargetDest()->GetPosition(&pos);
-                    const SummonPropertiesEntry* properties = sSummonPropertiesStore.LookupEntry(spell->EffectMiscValueB[effIndex]);
-                    TempSummon* summon = player->SummonCreature(spell->EffectMiscValue[0], pos, TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, GetSpellDuration(spell));
+                    const SummonPropertiesEntry* properties = sSummonPropertiesStore.LookupEntry(spell->Effects[effIndex].MiscValueB);
+                    TempSummon* summon = player->SummonCreature(spell->Effects[0].MiscValue, pos, TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, spell->GetDuration());
                     if (!summon)
                         return;
                     summon->SetUInt64Value(UNIT_FIELD_SUMMONEDBY, player->GetGUID());
@@ -413,8 +413,6 @@ class spell_druid_wild_mushroom_detonate : public SpellScriptLoader
 
             bool Load()
             {
-                spellRange = GetSpellRangeStore()->LookupEntry(GetSpellInfo()->rangeIndex)->maxRangeFriend;
-
                 Player* player = GetCaster()->ToPlayer();
                 if (!player)
                     return false;
@@ -432,9 +430,6 @@ class spell_druid_wild_mushroom_detonate : public SpellScriptLoader
                     }
                 }
                 mushroomList = summonList;
-
-                if (!spellRange)
-                    return false;
 
                 return true;
             }

@@ -69,7 +69,6 @@
 #define SPELL_SHRED_ARMOR               43243
 
 #define MOB_TOTEM                       24224
-#define SPELL_LIGHTNING                 43301
 
 enum PhaseHalazzi {
     PHASE_NONE = 0,
@@ -91,10 +90,6 @@ public:
         boss_halazziAI(Creature *c) :
                 ScriptedAI(c) {
             pInstance = c->GetInstanceScript();
-            // need to find out what controls totem's spell cooldown
-            SpellEntry *TempSpell = GET_SPELL(SPELL_LIGHTNING);
-            if (TempSpell && TempSpell->CastingTimeIndex != 5)
-                TempSpell->CastingTimeIndex = 5; // 2000 ms casting time
         }
 
         InstanceScript *pInstance;

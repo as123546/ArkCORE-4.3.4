@@ -985,7 +985,7 @@ bool ChatHandler::isValidChatMessage (const char* message)
 
     ItemPrototype const* linkedItem = NULL;
     Quest const* linkedQuest = NULL;
-    SpellEntry const *linkedSpell = NULL;
+    SpellInfo const *linkedSpell = NULL;
     AchievementEntry const* linkedAchievement = NULL;
     ItemRandomPropertiesEntry const* itemProperty = NULL;
     ItemRandomSuffixEntry const* itemSuffix = NULL;
@@ -1202,7 +1202,7 @@ bool ChatHandler::isValidChatMessage (const char* message)
 
                 // read spell entry
                 reader.getline(buffer, 256, ':');
-                linkedSpell = sSpellStore.LookupEntry(atoi(buffer));
+                linkedSpell = sSpellMgr->GetSpellInfo(atoi(buffer));
                 if (!linkedSpell)
                     return false;
 
@@ -1226,7 +1226,7 @@ bool ChatHandler::isValidChatMessage (const char* message)
                 if (!talentInfo)
                     return false;
 
-                linkedSpell = sSpellStore.LookupEntry(talentInfo->RankID[0]);
+                linkedSpell = sSpellMgr->GetSpellInfo(talentInfo->RankID[0]);
                 if (!linkedSpell)
                     return false;
 
@@ -1253,7 +1253,7 @@ bool ChatHandler::isValidChatMessage (const char* message)
                     spellid += c - '0';
                     c = reader.peek();
                 }
-                linkedSpell = sSpellStore.LookupEntry(spellid);
+                linkedSpell = sSpellMgr->GetSpellInfo(spellid);
                 if (!linkedSpell)
                     return false;
             }
@@ -1272,7 +1272,7 @@ bool ChatHandler::isValidChatMessage (const char* message)
                     spellid += c - '0';
                     c = reader.peek();
                 }
-                linkedSpell = sSpellStore.LookupEntry(spellid);
+                linkedSpell = sSpellMgr->GetSpellInfo(spellid);
                 if (!linkedSpell)
                     return false;
             }
@@ -1315,7 +1315,7 @@ bool ChatHandler::isValidChatMessage (const char* message)
                 if (!glyph)
                     return false;
 
-                linkedSpell = sSpellStore.LookupEntry(glyph->SpellId);
+                linkedSpell = sSpellMgr->GetSpellInfo(glyph->SpellId);
 
                 if (!linkedSpell)
                     return false;

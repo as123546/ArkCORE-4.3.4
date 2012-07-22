@@ -1753,7 +1753,7 @@ class npc_gunship_cannon : public CreatureScript
                 DoCast(me, SPELL_HEAT_DRAIN, true);
             }
 
-            void SpellHit(Unit* /*caster*/, SpellEntry const* spellEntry)
+            void SpellHit(Unit* /*caster*/, SpellInfo const* spellEntry)
             {
                 if (spellEntry->Id == SPELL_BELOW_ZERO)
                     me->GetVehicleKit()->RemoveAllPassengers();
@@ -3192,11 +3192,11 @@ class spell_gb_burning_pitch : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spellInfo*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_BURNING_PITCH_SIEGE_DMG_A))
+                if (!sSpellMgr->GetSpellInfo(SPELL_BURNING_PITCH_SIEGE_DMG_A))
                     return false;
-                if (!sSpellStore.LookupEntry(SPELL_BURNING_PITCH_SIEGE_DMG_H))
+                if (!sSpellMgr->GetSpellInfo(SPELL_BURNING_PITCH_SIEGE_DMG_H))
                     return false;
-                if (!sSpellStore.LookupEntry(SPELL_BURNING_PITCH_AOE_DAMAGE))
+                if (!sSpellMgr->GetSpellInfo(SPELL_BURNING_PITCH_AOE_DAMAGE))
                     return false;
                 return true;
             }

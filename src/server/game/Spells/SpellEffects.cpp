@@ -460,11 +460,26 @@ void Spell::SpellDamageSchoolDmg (SpellEffIndex effIndex)
                 if (unitTarget->GetGUID() == m_caster->GetGUID() || unitTarget->GetTypeId() != TYPEID_PLAYER)
                     return;
 
-                float radius = GetSpellRadiusForHostile(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[0]));
+                float radius = m_spellInfo->Effects[EFFECT_0].CalcRadius(m_caster);
                 if (!radius)
                     return;
                 float distance = m_caster->GetDistance2d(unitTarget);
-                damage = (distance > radius) ? 0 : int32(SpellMgr::CalculateSpellEffectAmount(m_spellInfo, 0) * ((radius - distance) / radius));
+                damage = (distance > radius) ? 0 : int32(m_spellInfo->Effects[EFFECT_0].CalcValue(m_caster) * ((radius - distance)/radius));
+                break;
+            }
+            // Loken Pulsing Shockwave
+            case 59837:
+            case 52942:
+            {
+                // don't damage self and only players
+                if (unitTarget->GetGUID() == m_caster->GetGUID() || unitTarget->GetTypeId() != TYPEID_PLAYER)
+                    return;
+
+                float radius = m_spellInfo->Effects[EFFECT_0].CalcRadius(m_caster);
+                if (!radius)
+                    return;
+                float distance = m_caster->GetDistance2d(unitTarget);
+                damage = (distance > radius) ? 0 : int32(m_spellInfo->Effects[EFFECT_0].CalcValue(m_caster) * distance);
                 break;
             }
                 // TODO: add spell specific target requirement hook for spells
@@ -1006,7 +1021,7 @@ void Spell::SpellDamageSchoolDmg (SpellEffIndex effIndex)
         {
             // Deep Freeze should deal damage to permanently stun-immune targets.
             if (m_spellInfo->Id == 71757)
-                if (unitTarget->GetTypeId() != TYPEID_UNIT || !(unitTarget->IsImmunedToSpellEffect(sSpellStore.LookupEntry(44572), 0)))
+                if (unitTarget->GetTypeId() != TYPEID_UNIT || !(unitTarget->IsImmunedToSpellEffect(sSpellMgr->GetSpellInfo(44572), 0)))
                     return;
             // FrostBolt
             if (m_spellInfo->Id == 116)
@@ -1289,7 +1304,7 @@ void Spell::EffectDummy (SpellEffIndex effIndex)
             damage = 12000;          // maybe wrong value
             damage /= count;
 
-            SpellEntry const *spellInfo = sSpellStore.LookupEntry(42784);
+            SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(42784);
 
             // now deal the damage
             for (std::list<TargetInfo>::iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
@@ -2262,7 +2277,7 @@ void Spell::EffectDummy (SpellEffIndex effIndex)
     //spells triggered by dummy effect should not miss
     if (spell_id)
     {
-        SpellEntry const *spellInfo = sSpellStore.LookupEntry(spell_id);
+        SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spell_id);
 
         if (!spellInfo)
         {
@@ -2303,7 +2318,7 @@ void Spell::EffectTriggerSpellWithValue (SpellEffIndex effIndex)
     uint32 triggered_spell_id = m_spellInfo->EffectTriggerSpell[effIndex];
 
     // normal case
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(triggered_spell_id);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(triggered_spell_id);
 
     if (!spellInfo)
     {
@@ -2320,7 +2335,7 @@ void Spell::EffectTriggerSpellWithValue (SpellEffIndex effIndex)
 void Spell::EffectTriggerRitualOfSummoning (SpellEffIndex effIndex)
 {
     uint32 triggered_spell_id = m_spellInfo->EffectTriggerSpell[effIndex];
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(triggered_spell_id);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(triggered_spell_id);
 
     if (!spellInfo)
     {
@@ -2341,7 +2356,7 @@ void Spell::EffectForceCast (SpellEffIndex effIndex)
     uint32 triggered_spell_id = m_spellInfo->EffectTriggerSpell[effIndex];
 
     // normal case
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(triggered_spell_id);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(triggered_spell_id);
 
     if (!spellInfo)
     {
@@ -2392,7 +2407,7 @@ void Spell::EffectForceCastWithValue (SpellEffIndex effIndex)
     uint32 triggered_spell_id = m_spellInfo->EffectTriggerSpell[effIndex];
 
     // normal case
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(triggered_spell_id);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(triggered_spell_id);
 
     if (!spellInfo)
     {
@@ -2471,7 +2486,7 @@ void Spell::EffectTriggerSpell (SpellEffIndex effIndex)
     case 29284:
     {
         // Brittle Armor
-        SpellEntry const* spell = sSpellStore.LookupEntry(24575);
+        SpellEntry const* spell = sSpellMgr->GetSpellInfo(24575);
         if (!spell)
             return;
 
@@ -2483,7 +2498,7 @@ void Spell::EffectTriggerSpell (SpellEffIndex effIndex)
     case 29286:
     {
         // Mercurial Shield
-        SpellEntry const* spell = sSpellStore.LookupEntry(26464);
+        SpellEntry const* spell = sSpellMgr->GetSpellInfo(26464);
         if (!spell)
             return;
 
@@ -2545,7 +2560,7 @@ void Spell::EffectTriggerSpell (SpellEffIndex effIndex)
     }
 
     // normal case
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(triggered_spell_id);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(triggered_spell_id);
     if (!spellInfo)
     {
         sLog->outError("EffectTriggerSpell of spell %u: triggering unknown spell id %i", m_spellInfo->Id, triggered_spell_id);
@@ -2569,7 +2584,7 @@ void Spell::EffectTriggerMissileSpell (SpellEffIndex effIndex)
     uint32 triggered_spell_id = m_spellInfo->EffectTriggerSpell[effIndex];
 
     // normal case
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(triggered_spell_id);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(triggered_spell_id);
 
     if (!spellInfo)
     {
@@ -3512,7 +3527,7 @@ void Spell::EffectEnergize (SpellEffIndex effIndex)
             sSpellMgr->GetSetOfSpellsInSpellGroup(SPELL_GROUP_ELIXIR_BATTLE, avalibleElixirs);
         for (std::set<uint32>::iterator itr = avalibleElixirs.begin(); itr != avalibleElixirs.end();)
         {
-            SpellEntry const *spellInfo = sSpellStore.LookupEntry(*itr);
+            SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(*itr);
             if (spellInfo->spellLevel < m_spellInfo->spellLevel || spellInfo->spellLevel > unitTarget->getLevel())
                 avalibleElixirs.erase(itr++);
             else if (sSpellMgr->IsSpellMemberOfSpellGroup(*itr, SPELL_GROUP_ELIXIR_SHATTRATH))
@@ -4014,7 +4029,7 @@ void Spell::EffectSummonType (SpellEffIndex effIndex)
 
         if (m_spellInfo->EffectBasePoints[effIndex])
         {
-            SpellEntry const *spellProto = sSpellStore.LookupEntry(SpellMgr::CalculateSpellEffectAmount(m_spellInfo, effIndex));
+            SpellInfo const *spellProto = sSpellMgr->GetSpellInfo(SpellMgr::CalculateSpellEffectAmount(m_spellInfo, effIndex));
             if (spellProto)
                 m_caster->CastSpell(summon, spellProto, true);
         }
@@ -4505,7 +4520,7 @@ void Spell::EffectEnchantItemTmp (SpellEffIndex effIndex)
             return;
         }
 
-        SpellEntry const *spellInfo = sSpellStore.LookupEntry(spell_id);
+        SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spell_id);
         if (!spellInfo)
         {
             sLog->outError("Spell::EffectEnchantItemTmp: unknown spell id %i", spell_id);
@@ -4752,7 +4767,7 @@ void Spell::EffectLearnPetSpell (SpellEffIndex effIndex)
     if (!pet->isAlive())
         return;
 
-    SpellEntry const *learn_spellproto = sSpellStore.LookupEntry(m_spellInfo->EffectTriggerSpell[effIndex]);
+    SpellInfo const *learn_spellproto = sSpellMgr->GetSpellInfo(m_spellInfo->EffectTriggerSpell[effIndex]);
     if (!learn_spellproto)
         return;
 
@@ -5037,13 +5052,13 @@ void Spell::SpellDamageWeaponDmg (SpellEffIndex effIndex)
 
             // Marked for Death 1, 2
             if (m_caster->HasAuraEffect(53241, 0, 0))
-                if (roll_chance_i(sSpellStore.LookupEntry(53241)->EffectBasePoints[0]))
+                if (roll_chance_i(sSpellMgr->GetSpellInfo(53241)->EffectBasePoints[0]))
                 {
                     m_caster->CastSpell(m_caster->ToPlayer()->GetSelectedUnit(), 88691, true);
                     break;
                 }
             if (m_caster->HasAuraEffect(53243, 0, 0))
-                if (roll_chance_i(sSpellStore.LookupEntry(53243)->EffectBasePoints[0]))
+                if (roll_chance_i(sSpellMgr->GetSpellInfo(53243)->EffectBasePoints[0]))
                 {
                     m_caster->CastSpell(m_caster->ToPlayer()->GetSelectedUnit(), 88691, true);
                     break;
@@ -6454,7 +6469,7 @@ void Spell::EffectScriptEffect (SpellEffIndex effIndex)
                     if (AuraEffect * aureff = aura->GetEffect(2))
                         if (aureff->GetAuraType() == SPELL_AURA_DUMMY)
                         {
-                            if (sSpellStore.LookupEntry(aureff->GetAmount()))
+                            if (sSpellMgr->GetSpellInfo(aureff->GetAmount()))
                                 spellId = aureff->GetAmount();
                             break;
                         }
@@ -6821,7 +6836,7 @@ void Spell::EffectStuck (SpellEffIndex /*effIndex*/)
     // pTarget->TeleportTo(pTarget->m_homebindMapId, pTarget->m_homebindX, pTarget->m_homebindY, pTarget->m_homebindZ, pTarget->GetOrientation(),  (unitTarget == m_caster ? TELE_TO_SPELL : 0));
 
     // Stuck spell trigger Hearthstone cooldown
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(8690);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(8690);
     if (!spellInfo)
         return;
     Spell spell(pTarget, spellInfo, true, 0);
@@ -7553,7 +7568,7 @@ void Spell::EffectDestroyAllTotems (SpellEffIndex /*effIndex*/)
         if (totem && totem->isTotem())
         {
             uint32 spell_id = totem->GetUInt32Value(UNIT_CREATED_BY_SPELL);
-            SpellEntry const* spellInfo = sSpellStore.LookupEntry(spell_id);
+            SpellEntry const* spellInfo = sSpellMgr->GetSpellInfo(spell_id);
             if (spellInfo)
             {
                 mana += spellInfo->manaCost;
@@ -8403,7 +8418,7 @@ void Spell::EffectCastButtons (SpellEffIndex effIndex)
         if (p_caster->HasSpellCooldown(spell_id))
             continue;
 
-        SpellEntry const *spellInfo = sSpellStore.LookupEntry(spell_id);
+        SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spell_id);
         uint32 cost = CalculatePowerCost(spellInfo, m_caster, GetSpellSchoolMask(spellInfo));
 
         if (m_caster->GetPower(POWER_MANA) < cost)

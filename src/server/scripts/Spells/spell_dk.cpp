@@ -61,9 +61,9 @@ public:
             DK_SPELL_NECROTIC_STRIKE = 73975,
         };
 
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
-            return sSpellStore.LookupEntry(DK_SPELL_NECROTIC_STRIKE);
+            return sSpellMgr->GetSpellInfo(DK_SPELL_NECROTIC_STRIKE);
         }
 
         void HandleAfterHit ()
@@ -115,7 +115,7 @@ public:
 
         bool Load ()
         {
-            absorbPct = SpellMgr::CalculateSpellEffectAmount(GetSpellProto(), EFFECT_0, GetCaster());
+            absorbPct = GetSpellInfo()->Effects[EFFECT_0].CalcValue(GetCaster());
             return true;
         }
 
@@ -160,20 +160,20 @@ public:
         uint32 absorbPct, hpPct;
         bool Load ()
         {
-            absorbPct = SpellMgr::CalculateSpellEffectAmount(GetSpellProto(), EFFECT_0, GetCaster());
+            absorbPct = GetSpellInfo()->Effects[EFFECT_0].CalcValue(GetCaster());
             if (GetCaster()->HasSpell(49224))
                 absorbPct += 8;
             if (GetCaster()->HasSpell(49610))
                 absorbPct += 16;
             if (GetCaster()->HasSpell(49611))
                 absorbPct += 25;
-            hpPct = SpellMgr::CalculateSpellEffectAmount(GetSpellProto(), EFFECT_1, GetCaster());
+            hpPct = GetSpellInfo()->Effects[EFFECT_1].CalcValue(GetCaster());
             return true;
         }
 
-        bool Validate (SpellEntry const* /*spellEntry*/)
+        bool Validate (SpellInfo const* /*spellEntry*/)
         {
-            return sSpellStore.LookupEntry(DK_SPELL_RUNIC_POWER_ENERGIZE);
+            return sSpellMgr->GetSpellInfo(DK_SPELL_RUNIC_POWER_ENERGIZE);
         }
 
         void CalculateAmount (AuraEffect const* /*aurEff*/, int32 & amount, bool & /*canBeRecalculated*/)
@@ -228,19 +228,19 @@ public:
 
         bool Load ()
         {
-            absorbPct = SpellMgr::CalculateSpellEffectAmount(GetSpellProto(), EFFECT_0, GetCaster());
+            absorbPct = GetSpellInfo()->Effects[EFFECT_0].CalcValue(GetCaster());
             return true;
         }
 
-        bool Validate (SpellEntry const* /*spellEntry*/)
+        bool Validate (SpellInfo const* /*spellEntry*/)
         {
-            return sSpellStore.LookupEntry(DK_SPELL_ANTI_MAGIC_SHELL_TALENT);
+            return sSpellMgr->GetSpellInfo(DK_SPELL_ANTI_MAGIC_SHELL_TALENT);
         }
 
         void CalculateAmount (AuraEffect const* /*aurEff*/, int32 & amount, bool & /*canBeRecalculated*/)
         {
-            SpellEntry const* talentSpell = sSpellStore.LookupEntry(DK_SPELL_ANTI_MAGIC_SHELL_TALENT);
-            amount = SpellMgr::CalculateSpellEffectAmount(talentSpell, EFFECT_0, GetCaster());
+            SpellInfo const* talentSpell = sSpellMgr->GetSpellInfo(DK_SPELL_ANTI_MAGIC_SHELL_TALENT);
+            amount = talentSpell->Effects[EFFECT_0].CalcValue(GetCaster());
             Unit* caster = GetCaster();
             if (!caster)
                 return;
@@ -376,7 +376,7 @@ public:
 
         bool Validate (SpellEntry const* /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(DK_SPELL_SCOURGE_STRIKE_TRIGGERED))
+            if (!sSpellMgr->GetSpellInfo(DK_SPELL_SCOURGE_STRIKE_TRIGGERED))
                 return false;
             return true;
         }
@@ -419,7 +419,7 @@ public:
 
         bool Validate (SpellEntry const* /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(DK_SPELL_BLOOD_BOIL_TRIGGERED))
+            if (!sSpellMgr->GetSpellInfo(DK_SPELL_BLOOD_BOIL_TRIGGERED))
                 return false;
             return true;
         }
@@ -467,9 +467,9 @@ public:
         PrepareAuraScript(spell_dk_improved_blood_presence_AuraScript)
         bool Validate (SpellEntry const* /*entry*/)
         {
-            if (!sSpellStore.LookupEntry(DK_SPELL_BLOOD_PRESENCE))
+            if (!sSpellMgr->GetSpellInfo(DK_SPELL_BLOOD_PRESENCE))
                 return false;
-            if (!sSpellStore.LookupEntry(DK_SPELL_IMPROVED_BLOOD_PRESENCE_TRIGGERED))
+            if (!sSpellMgr->GetSpellInfo(DK_SPELL_IMPROVED_BLOOD_PRESENCE_TRIGGERED))
                 return false;
             return true;
         }
@@ -518,9 +518,9 @@ public:
         PrepareAuraScript(spell_dk_improved_unholy_presence_AuraScript)
         bool Validate (SpellEntry const* /*entry*/)
         {
-            if (!sSpellStore.LookupEntry(DK_SPELL_UNHOLY_PRESENCE))
+            if (!sSpellMgr->GetSpellInfo(DK_SPELL_UNHOLY_PRESENCE))
                 return false;
-            if (!sSpellStore.LookupEntry(DK_SPELL_IMPROVED_UNHOLY_PRESENCE_TRIGGERED))
+            if (!sSpellMgr->GetSpellInfo(DK_SPELL_IMPROVED_UNHOLY_PRESENCE_TRIGGERED))
                 return false;
             return true;
         }
@@ -531,7 +531,7 @@ public:
             if (target->HasAura(DK_SPELL_UNHOLY_PRESENCE) && !target->HasAura(DK_SPELL_IMPROVED_UNHOLY_PRESENCE_TRIGGERED))
             {
                 // Not listed as any effect, only base points set in dbc
-                int32 basePoints0 = SpellMgr::CalculateSpellEffectAmount(GetSpellProto(), EFFECT_0, GetCaster());
+                int32 basePoints0 = GetSpellInfo()->Effects[EFFECT_0].CalcValue(GetCaster());
                 target->CastCustomSpell(target, DK_SPELL_IMPROVED_UNHOLY_PRESENCE_TRIGGERED, &basePoints0, &basePoints0, &basePoints0, true, 0, aurEff);
             }
         }

@@ -409,8 +409,8 @@ public:
 
     class spell_mount_check_AuraScript: public AuraScript {
         PrepareAuraScript(spell_mount_check_AuraScript)
-        bool Validate(SpellEntry const * /*spellEntry*/) {
-            if (!sSpellStore.LookupEntry(SPELL_MOUNTING_CHECK))
+        bool Validate(SpellInfo const * /*spellEntry*/) {
+            if (!sSpellMgr->GetSpellInfo(SPELL_MOUNTING_CHECK))
                 return false;
             return true;
         }
@@ -452,10 +452,10 @@ public:
 
     class spell_voljin_war_drums_SpellScript: public SpellScript {
         PrepareSpellScript(spell_voljin_war_drums_SpellScript)
-        bool Validate(SpellEntry const * /*spellEntry*/) {
-            if (!sSpellStore.LookupEntry(SPELL_MOTIVATE_1))
+        bool Validate(SpellInfo const * /*spellEntry*/) {
+            if (!sSpellMgr->GetSpellInfo(SPELL_MOTIVATE_1))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_MOTIVATE_2))
+            if (!sSpellMgr->GetSpellInfo(SPELL_MOTIVATE_2))
                 return false;
             return true;
         }

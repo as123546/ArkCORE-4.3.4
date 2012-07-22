@@ -32,7 +32,7 @@ class WorldObject;
 class Unit;
 class Creature;
 class Player;
-struct SpellEntry;
+class SpellInfo;
 
 #define TIME_INTERVAL_LOOK   5000
 #define VISIBILITY_RANGE    10000
@@ -139,12 +139,12 @@ public:
     }
 
     // Called when hit by a spell
-    virtual void SpellHit(Unit*, const SpellEntry*)
+    virtual void SpellHit(Unit*, const SpellInfo*)
     {
     }
 
     // Called when spell hits a target
-    virtual void SpellHitTarget(Unit* /*target*/, const SpellEntry*)
+    virtual void SpellHitTarget(Unit* /*target*/, const SpellInfo*)
     {
     }
 

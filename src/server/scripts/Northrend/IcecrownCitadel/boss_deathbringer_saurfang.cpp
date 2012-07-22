@@ -1064,9 +1064,9 @@ class spell_deathbringer_blood_link : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spellInfo*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_BLOOD_LINK_POWER))
+                if (!sSpellMgr->GetSpellInfo(SPELL_BLOOD_LINK_POWER))
                     return false;
-                if (!sSpellStore.LookupEntry(SPELL_BLOOD_POWER))
+                if (!sSpellMgr->GetSpellInfo(SPELL_BLOOD_POWER))
                     return false;
                 return true;
             }
@@ -1102,7 +1102,7 @@ class spell_deathbringer_blood_link_aura : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spellInfo*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_MARK_OF_THE_FALLEN_CHAMPION))
+                if (!sSpellMgr->GetSpellInfo(SPELL_MARK_OF_THE_FALLEN_CHAMPION))
                     return false;
                 return true;
             }
@@ -1194,7 +1194,7 @@ class spell_deathbringer_rune_of_blood : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spellInfo*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_BLOOD_LINK_DUMMY))
+                if (!sSpellMgr->GetSpellInfo(SPELL_BLOOD_LINK_DUMMY))
                     return false;
                 return true;
             }
@@ -1229,7 +1229,7 @@ class spell_deathbringer_blood_nova : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spellInfo*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_BLOOD_LINK_DUMMY))
+                if (!sSpellMgr->GetSpellInfo(SPELL_BLOOD_LINK_DUMMY))
                     return false;
                 return true;
             }

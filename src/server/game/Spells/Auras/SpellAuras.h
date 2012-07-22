@@ -26,9 +26,10 @@
 #define ARKCORE_SPELLAURAS_H
 
 #include "SpellAuraDefines.h"
+#include "SpellInfo.h"
 
 class Unit;
-struct SpellEntry;
+class SpellInfo;
 struct SpellModifier;
 struct ProcTriggerSpell;
 
@@ -127,20 +128,20 @@ class Aura
 public:
     typedef std::map<uint64, AuraApplication *> ApplicationMap;
 
-    static Aura * TryCreate (SpellEntry const* spellproto, uint8 effMask, WorldObject * owner, Unit * caster, int32 *baseAmount = NULL, Item * castItem = NULL, uint64 casterGUID = 0);
-    static Aura * TryCreate (SpellEntry const* spellproto, WorldObject * owner, Unit * caster, int32 *baseAmount = NULL, Item * castItem = NULL, uint64 casterGUID = 0);
-    static Aura * Create (SpellEntry const* spellproto, uint8 effMask, WorldObject * owner, Unit * caster, int32 *baseAmount = NULL, Item * castItem = NULL, uint64 casterGUID = 0);
-    explicit Aura (SpellEntry const* spellproto, uint8 effMask, WorldObject * owner, Unit * caster, int32 *baseAmount, Item * castItem, uint64 casterGUID);
+    static Aura * TryCreate (SpellInfo const* spellproto, uint8 effMask, WorldObject * owner, Unit * caster, int32 *baseAmount = NULL, Item * castItem = NULL, uint64 casterGUID = 0);
+    static Aura * TryCreate (SpellInfo const* spellproto, WorldObject * owner, Unit * caster, int32 *baseAmount = NULL, Item * castItem = NULL, uint64 casterGUID = 0);
+    static Aura * Create (SpellInfo const* spellproto, uint8 effMask, WorldObject * owner, Unit * caster, int32 *baseAmount = NULL, Item * castItem = NULL, uint64 casterGUID = 0);
+    explicit Aura (SpellInfo const* spellproto, uint8 effMask, WorldObject * owner, Unit * caster, int32 *baseAmount, Item * castItem, uint64 casterGUID);
     void _InitEffects (uint8 effMask, Unit * caster, int32 *baseAmount);
     ~Aura ();
 
-    SpellEntry const* GetSpellProto () const
+    SpellInfo const* GetSpellInfo () const
     {
-        return m_spellProto;
+        return m_spellInfo;
     }
     uint32 GetId () const
     {
-        return GetSpellProto()->Id;
+        return GetSpellInfo()->Id;
     }
 
     uint64 GetCastItemGUID () const
@@ -242,7 +243,7 @@ public:
     bool IsDeathPersistent () const;
     bool IsRemovedOnShapeLost (Unit * target) const
     {
-        return (GetCasterGUID() == target->GetGUID() && m_spellProto->Stances && !(m_spellProto->AttributesEx2 & SPELL_ATTR2_NOT_NEED_SHAPESHIFT) && !(m_spellProto->Attributes & SPELL_ATTR0_NOT_SHAPESHIFT));
+        return (GetCasterGUID() == target->GetGUID() && m_spellInfo->Stances && !(m_spellInfo->AttributesEx2 & SPELL_ATTR2_NOT_NEED_SHAPESHIFT) && !(m_spellInfo->Attributes & SPELL_ATTR0_NOT_SHAPESHIFT));
     }
     bool CanBeSaved () const;
     bool IsRemoved () const
@@ -260,6 +261,7 @@ public:
         m_isSingleTarget = val;
     }
     void UnregisterSingleTarget ();
+    int32 CalcDispelChance(Unit* auraTarget, bool offensive) const;
 
     void SetLoadedState (int32 maxduration, int32 duration, int32 charges, uint8 stackamount, uint8 recalculateMask, int32 * amount);
 
@@ -313,6 +315,7 @@ public:
     void HandleAuraSpecificMods (AuraApplication const* aurApp, Unit* caster, bool apply, bool onReapply);
     bool CanBeAppliedOn (Unit *target);
     bool CheckAreaTarget (Unit *target);
+    bool CanStackWith(Aura const* existingAura) const;
 
     // AuraScript
     void LoadScripts ();
@@ -331,8 +334,7 @@ public:
 private:
     void _DeleteRemovedApplications ();
 protected:
-    SpellEntry const * const m_spellProto;
-    SpellEffectEntry const* m_spellEffect;
+    SpellInfo const * const m_spellInfo;
 
     uint64 const m_casterGuid;
     uint64 const m_castItemGuid;          // it is NOT safe to keep a pointer to the item because it may get deleted
@@ -360,9 +362,9 @@ private:
 
 class UnitAura: public Aura
 {
-    friend Aura * Aura::Create (SpellEntry const* spellproto, uint8 effMask, WorldObject * owner, Unit * caster, int32 *baseAmount, Item * castItem, uint64 casterGUID);
+    friend Aura * Aura::Create (SpellInfo const* spellproto, uint8 effMask, WorldObject * owner, Unit * caster, int32 *baseAmount, Item * castItem, uint64 casterGUID);
 protected:
-    explicit UnitAura (SpellEntry const* spellproto, uint8 effMask, WorldObject * owner, Unit * caster, int32 *baseAmount, Item * castItem, uint64 casterGUID);
+    explicit UnitAura (SpellInfo const* spellproto, uint8 effMask, WorldObject * owner, Unit * caster, int32 *baseAmount, Item * castItem, uint64 casterGUID);
 public:
     void _ApplyForTarget (Unit * target, Unit * caster, AuraApplication * aurApp);
     void _UnapplyForTarget (Unit * target, Unit * caster, AuraApplication * aurApp);
@@ -387,9 +389,9 @@ private:
 
 class DynObjAura: public Aura
 {
-    friend Aura * Aura::Create (SpellEntry const* spellproto, uint8 effMask, WorldObject * owner, Unit * caster, int32 *baseAmount, Item * castItem, uint64 casterGUID);
+    friend Aura * Aura::Create (SpellInfo const* spellproto, uint8 effMask, WorldObject * owner, Unit * caster, int32 *baseAmount, Item * castItem, uint64 casterGUID);
 protected:
-    explicit DynObjAura (SpellEntry const* spellproto, uint8 effMask, WorldObject * owner, Unit * caster, int32 *baseAmount, Item * castItem, uint64 casterGUID);
+    explicit DynObjAura (SpellInfo const* spellproto, uint8 effMask, WorldObject * owner, Unit * caster, int32 *baseAmount, Item * castItem, uint64 casterGUID);
 public:
     void Remove (AuraRemoveMode removeMode = AURA_REMOVE_BY_DEFAULT);
 

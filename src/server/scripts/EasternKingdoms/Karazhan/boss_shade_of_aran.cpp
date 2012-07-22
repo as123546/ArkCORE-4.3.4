@@ -469,11 +469,11 @@ public:
                 DrinkInturrupted = true;
         }
 
-        void SpellHit(Unit* /*pAttacker*/, const SpellEntry* Spell) {
+        void SpellHit(Unit* /*pAttacker*/, const SpellInfo* Spell) {
             //We only care about interrupt effects and only if they are durring a spell currently being casted
-            if ((Spell->Effect[0] != SPELL_EFFECT_INTERRUPT_CAST
-                    && Spell->Effect[1] != SPELL_EFFECT_INTERRUPT_CAST
-                    && Spell->Effect[2] != SPELL_EFFECT_INTERRUPT_CAST)
+            if ((Spell->Effects[0].Effect != SPELL_EFFECT_INTERRUPT_CAST
+                    && Spell->Effects[1].Effect != SPELL_EFFECT_INTERRUPT_CAST
+                    && Spell->Effects[2].Effect != SPELL_EFFECT_INTERRUPT_CAST)
                     || !me->IsNonMeleeSpellCasted(false))
                 return;
 

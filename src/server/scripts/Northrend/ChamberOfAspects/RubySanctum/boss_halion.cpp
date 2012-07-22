@@ -1247,7 +1247,7 @@ class spell_halion_fiery_combustion : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_MARK_OF_COMBUSTION))
+                if (!sSpellMgr->GetSpellInfo(SPELL_MARK_OF_COMBUSTION))
                     return false;
                 return true;
             }
@@ -1303,7 +1303,7 @@ class spell_halion_soul_consumption : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_MARK_OF_CONSUMPTION))
+                if (!sSpellMgr->GetSpellInfo(SPELL_MARK_OF_CONSUMPTION))
                     return false;
                 return true;
             }
@@ -1359,9 +1359,9 @@ class spell_halion_mark_of_combustion : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_FIERY_COMBUSTION_SUMMON))
+                if (!sSpellMgr->GetSpellInfo(SPELL_FIERY_COMBUSTION_SUMMON))
                     return false;
-                if (!sSpellStore.LookupEntry(SPELL_FIERY_COMBUSTION_EXPLOSION))
+                if (!sSpellMgr->GetSpellInfo(SPELL_FIERY_COMBUSTION_EXPLOSION))
                     return false;
                 return true;
             }
@@ -1381,7 +1381,7 @@ class spell_halion_mark_of_combustion : public SpellScriptLoader
                 if (Creature* controller = ObjectAccessor::GetCreature(*GetTarget(), instance->GetData64(DATA_HALION_CONTROLLER)))
                     CAST_AI(controllerAI, controller->AI())->PushStacksForPlayer(GetTarget()->GetGUID(), stacks);
 
-                if (const SpellEntry* spell = sSpellStore.LookupEntry(SPELL_FIERY_COMBUSTION_SUMMON))
+                if (SpellInfo const* spell = sSpellMgr->GetSpellInfo(SPELL_FIERY_COMBUSTION_SUMMON))
                     GetTarget()->CastSpell(GetTarget(), spell, true);
             }
 
@@ -1408,9 +1408,9 @@ class spell_halion_mark_of_consumption : public SpellScriptLoader
 
             bool Validate(SpellEntry const* /*spell*/)
             {
-                if (!sSpellStore.LookupEntry(SPELL_SOUL_CONSUMPTION_SUMMON))
+                if (!sSpellMgr->GetSpellInfo(SPELL_SOUL_CONSUMPTION_SUMMON))
                     return false;
-                if (!sSpellStore.LookupEntry(SPELL_SOUL_CONSUMPTION_EXPLOSION))
+                if (!sSpellMgr->GetSpellInfo(SPELL_SOUL_CONSUMPTION_EXPLOSION))
                     return false;
                 return true;
             }
@@ -1430,7 +1430,7 @@ class spell_halion_mark_of_consumption : public SpellScriptLoader
                 if (Creature* controller = ObjectAccessor::GetCreature(*GetTarget(), instance->GetData64(DATA_HALION_CONTROLLER)))
                     CAST_AI(controllerAI, controller->AI())->PushStacksForPlayer(GetTarget()->GetGUID(), stacks);
 
-                if (const SpellEntry* spell = sSpellStore.LookupEntry(SPELL_SOUL_CONSUMPTION_SUMMON))
+                if (SpellInfo const* spell = sSpellMgr->GetSpellInfo(SPELL_SOUL_CONSUMPTION_SUMMON))
                     GetTarget()->CastSpell(GetTarget(), spell, true);
             }
 
@@ -1459,9 +1459,9 @@ class spell_halion_combustion_consumption_summon : public SpellScriptLoader
             {
                 PreventHitDefaultEffect(effIndex);
                 Unit* caster = GetCaster();
-                uint32 entry = uint32(GetSpellInfo()->EffectMiscValue[effIndex]);
-                SummonPropertiesEntry const* properties = sSummonPropertiesStore.LookupEntry(uint32(GetSpellInfo()->EffectMiscValueB[effIndex]));
-                uint32 duration = uint32(GetSpellDuration(GetSpellInfo()));
+                uint32 entry = uint32(GetSpellInfo()->Effects[effIndex].MiscValue);
+                SummonPropertiesEntry const* properties = sSummonPropertiesStore.LookupEntry(uint32(GetSpellInfo()->Effects[effIndex].MiscValueB));
+                uint32 duration = uint32(GetSpellInfo()->GetDuration());
 
                 InstanceScript* instance = caster->GetInstanceScript();
                 if (!instance)

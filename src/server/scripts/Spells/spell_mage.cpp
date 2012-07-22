@@ -64,12 +64,10 @@ public:
             const SpellCooldowns& cm = caster->ToPlayer()->GetSpellCooldownMap();
             for (SpellCooldowns::const_iterator itr = cm.begin(); itr != cm.end();)
             {
-                SpellEntry const *spellInfo = sSpellStore.LookupEntry(itr->first);
+                SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(itr->first);
 
-                if (spellInfo->SpellFamilyName == SPELLFAMILY_MAGE && (GetSpellSchoolMask(spellInfo) & SPELL_SCHOOL_MASK_FROST) && spellInfo->Id != SPELL_MAGE_COLD_SNAP && GetSpellRecoveryTime(spellInfo) > 0)
-                {
+                if (spellInfo->SpellFamilyName == SPELLFAMILY_MAGE && (spellInfo->GetSchoolMask() & SPELL_SCHOOL_MASK_FROST) && spellInfo->Id != SPELL_MAGE_COLD_SNAP && spellInfo->GetRecoveryTime() > 0)
                     caster->ToPlayer()->RemoveSpellCooldown((itr++)->first, true);
-                }
                 else
                     ++itr;
             }
@@ -101,11 +99,11 @@ public:
         PrepareSpellScript(spell_mage_polymorph_cast_visual_SpellScript)
         static const uint32 spell_list[6];
 
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
             // check if spell ids exist in dbc
             for (int i = 0; i < 6; i++)
-                if (!sSpellStore.LookupEntry(spell_list[i]))
+                if (!sSpellMgr->GetSpellInfo(spell_list[i]))
                     return false;
             return true;
         }
@@ -152,9 +150,9 @@ public:
             SPELL_MAGE_INCANTERS_ABSORBTION_TRIGGERED = 44413, SPELL_MAGE_INCANTERS_ABSORBTION_R1 = 44394,
         };
 
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
-            return sSpellStore.LookupEntry(SPELL_MAGE_INCANTERS_ABSORBTION_TRIGGERED) && sSpellStore.LookupEntry(SPELL_MAGE_INCANTERS_ABSORBTION_R1);
+            return sSpellMgr->GetSpellInfo(SPELL_MAGE_INCANTERS_ABSORBTION_TRIGGERED) && sSpellMgr->GetSpellInfo(SPELL_MAGE_INCANTERS_ABSORBTION_R1);
         }
 
         void Trigger (AuraEffect * aurEff, DamageInfo & dmgInfo, uint32 & absorbAmount)
@@ -196,7 +194,7 @@ public:
         PrepareSpellScript(spell_mage_blast_wave_SpellScript)
         bool Validate (SpellEntry const* spellEntry)
         {
-            if (!sSpellStore.LookupEntry(SPELL_MAGE_GLYPH_OF_BLAST_WAVE))
+            if (!sSpellMgr->GetSpellInfo(SPELL_MAGE_GLYPH_OF_BLAST_WAVE))
                 return false;
             return true;
         }
@@ -235,11 +233,11 @@ public:
         PrepareSpellScript(spell_mage_summon_water_elemental_SpellScript)
         bool Validate (SpellEntry const* spellEntry)
         {
-            if (!sSpellStore.LookupEntry(SPELL_MAGE_GLYPH_OF_ETERNAL_WATER))
+            if (!sSpellMgr->GetSpellInfo(SPELL_MAGE_GLYPH_OF_ETERNAL_WATER))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_MAGE_SUMMON_WATER_ELEMENTAL_TEMPORARY))
+            if (!sSpellMgr->GetSpellInfo(SPELL_MAGE_SUMMON_WATER_ELEMENTAL_TEMPORARY))
                 return false;
-            if (!sSpellStore.LookupEntry(SPELL_MAGE_SUMMON_WATER_ELEMENTAL_PERMANENT))
+            if (!sSpellMgr->GetSpellInfo(SPELL_MAGE_SUMMON_WATER_ELEMENTAL_PERMANENT))
                 return false;
             return true;
         }

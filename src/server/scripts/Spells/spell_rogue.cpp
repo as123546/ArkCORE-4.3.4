@@ -56,14 +56,14 @@ public:
             ROG_SPELL_CHEAT_DEATH_COOLDOWN = 31231,
         };
 
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
-            return sSpellStore.LookupEntry(ROG_SPELL_CHEAT_DEATH_COOLDOWN);
+            return sSpellMgr->GetSpellInfo(ROG_SPELL_CHEAT_DEATH_COOLDOWN);
         }
 
         bool Load ()
         {
-            absorbChance = SpellMgr::CalculateSpellEffectAmount(GetSpellProto(), EFFECT_0);
+            absorbChance = GetSpellInfo()->Effects[EFFECT_0].CalcValue();
             return GetUnitOwner()->ToPlayer();
         }
 
@@ -127,7 +127,7 @@ public:
 
         bool Load ()
         {
-            absorbPct = SpellMgr::CalculateSpellEffectAmount(GetSpellProto(), EFFECT_0, GetCaster());
+            absorbPct = GetSpellInfo()->Effects[EFFECT_0].CalcValue(GetCaster());
             return true;
         }
 
@@ -168,9 +168,9 @@ public:
     class spell_rog_preparation_SpellScript: public SpellScript
     {
         PrepareSpellScript(spell_rog_preparation_SpellScript)
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(ROGUE_SPELL_GLYPH_OF_PREPARATION))
+            if (!sSpellMgr->GetSpellInfo(ROGUE_SPELL_GLYPH_OF_PREPARATION))
                 return false;
             return true;
         }
@@ -185,7 +185,7 @@ public:
             const SpellCooldowns& cm = caster->ToPlayer()->GetSpellCooldownMap();
             for (SpellCooldowns::const_iterator itr = cm.begin(); itr != cm.end();)
             {
-                SpellEntry const *spellInfo = sSpellStore.LookupEntry(itr->first);
+                SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(itr->first);
 
                 if (spellInfo->SpellFamilyName == SPELLFAMILY_ROGUE)
                 {
@@ -235,9 +235,9 @@ public:
     class spell_rog_prey_on_the_weak_AuraScript: public AuraScript
     {
         PrepareAuraScript(spell_rog_prey_on_the_weak_AuraScript)
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(ROGUE_SPELL_PREY_ON_THE_WEAK))
+            if (!sSpellMgr->GetSpellInfo(ROGUE_SPELL_PREY_ON_THE_WEAK))
                 return false;
             return true;
         }
@@ -250,7 +250,7 @@ public:
             {
                 if (!pTarget->HasAura(ROGUE_SPELL_PREY_ON_THE_WEAK))
                 {
-                    int32 bp = SpellMgr::CalculateSpellEffectAmount(GetSpellProto(), 0);
+                    int32 bp = GetSpellInfo()->Effects[EFFECT_0].CalcValue();
                     pTarget->CastCustomSpell(pTarget, ROGUE_SPELL_PREY_ON_THE_WEAK, &bp, 0, 0, true);
                 }
             }
@@ -281,9 +281,9 @@ public:
     class spell_rog_shiv_SpellScript: public SpellScript
     {
         PrepareSpellScript(spell_rog_shiv_SpellScript)
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(ROGUE_SPELL_SHIV_TRIGGERED))
+            if (!sSpellMgr->GetSpellInfo(ROGUE_SPELL_SHIV_TRIGGERED))
                 return false;
             return true;
         }
@@ -378,7 +378,7 @@ public:
                     if (pEnchant->type[s] != ITEM_ENCHANTMENT_TYPE_COMBAT_SPELL)
                         continue;
 
-                    SpellEntry const *spellInfo = sSpellStore.LookupEntry(pEnchant->spellid[s]);
+                    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(pEnchant->spellid[s]);
 
                     if (!spellInfo)
                     {
@@ -394,7 +394,7 @@ public:
                     if (spellInfo->SpellFamilyFlags.IsEqual(0x10000, 0x80000, 0))
                         continue;
 
-                    if (IsPositiveSpell(pEnchant->spellid[s]))
+                    if (spellInfo->IsPositive())
                         player->CastSpell(player, pEnchant->spellid[s], true, item);
                     else
                         player->CastSpell(target, pEnchant->spellid[s], true, item);

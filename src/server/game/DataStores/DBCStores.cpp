@@ -113,7 +113,7 @@ DBCStorage<GtChanceToSpellCritEntry> sGtChanceToSpellCritStore(GtChanceToSpellCr
 //DBCStorage <GtOCTRegenMPEntry>            sGtOCTRegenMPStore(GtOCTRegenMPfmt);  -- not used currently
 //DBCStorage <GtRegenHPPerSptEntry>         sGtRegenHPPerSptStore(GtRegenHPPerSptfmt);
 DBCStorage<GtRegenMPPerSptEntry> sGtRegenMPPerSptStore(GtRegenMPPerSptfmt);
-DBCStorage<gtSpellScaling> sGtSpellScalingStore(GtSpellScalingfmt);
+DBCStorage<GtSpellScalingEntry> sGtSpellScalingStore(GtSpellScalingfmt);
 
 DBCStorage<HolidaysEntry> sHolidaysStore(Holidaysfmt);
 
@@ -174,7 +174,6 @@ DBCStorage<SoundEntriesEntry> sSoundEntriesStore(SoundEntriesfmt);
 DBCStorage<SpellItemEnchantmentEntry> sSpellItemEnchantmentStore(SpellItemEnchantmentfmt);
 DBCStorage<SpellItemEnchantmentConditionEntry> sSpellItemEnchantmentConditionStore(SpellItemEnchantmentConditionfmt);
 DBCStorage<SpellEntry> sSpellStore(True_SpellEntryfmt);
-DBCStorage<SpellEntry_n> sTrueSpellStore(SpellEntryfmt);
 SpellCategoryStore sSpellCategoryStore;
 PetFamilySpellsStore sPetFamilySpellsStore;
 
@@ -455,7 +454,7 @@ void LoadDBCStores (const std::string& dataPath)
     LoadDBC(availableDbcLocales, bad_dbc_files, sSpellShapeshiftStore, dbcPath, "SpellShapeshift.dbc"/*, &CustomSpellShapeshiftEntryfmt, &CustomSpellShapeshiftEntryIndex*/);
     LoadDBC(availableDbcLocales, bad_dbc_files, sSpellTargetRestrictionsStore, dbcPath, "SpellTargetRestrictions.dbc"/*, &CustomSpellTargetRestrictionsEntryfmt, &CustomSpellTargetRestrictionsEntryIndex*/);
     LoadDBC(availableDbcLocales, bad_dbc_files, sSpellTotemsStore, dbcPath, "SpellTotems.dbc"/*, &CustomSpellTotemsEntryfmt, &CustomSpellTotemsEntryIndex*/);
-    LoadDBC(availableDbcLocales, bad_dbc_files, sTrueSpellStore, dbcPath, "Spell.dbc"/*, &CustomSpellEntryfmt, &CustomSpellEntryIndex*/);
+    LoadDBC(availableDbcLocales, bad_dbc_files, sSpellStore, dbcPath, "Spell.dbc"/*, &CustomSpellEntryfmt, &CustomSpellEntryIndex*/);
 
     for (uint32 i = 1; i < sSpellEffectStore.GetNumRows(); ++i)
     {
@@ -463,37 +462,22 @@ void LoadDBCStores (const std::string& dataPath)
             sSpellEffectMap[spellEffect->EffectSpellId].effects[spellEffect->EffectIndex] = spellEffect;
     }
 
-    sSpellStore.Clear();
-    sSpellStore.nCount = sTrueSpellStore.nCount;
-    sSpellStore.fieldCount = strlen(sSpellStore.fmt);
-    sSpellStore.indexTable = new SpellEntry*[sSpellStore.nCount];
-    for (uint32 i = 0; i < sTrueSpellStore.GetNumRows(); ++i)
+    for (uint32 i = 1; i < sSpellStore.GetNumRows(); ++i)
     {
-        SpellEntry_n* spell = sTrueSpellStore.LookupEntryNoConst(i);
-        if (spell)
-        {
-            SpellEntry *newspell = new SpellEntry(spell);
-            sSpellStore.SetEntry(i, newspell);
-
-            if (newspell->Category)
-                sSpellCategoryStore[newspell->Category].insert(i);
-        }
-        else
-        {
-            sSpellStore.indexTable[i] = NULL;
-        }
+        SpellEntry const* spell = sSpellStore.LookupEntry(i);
+        if (spell && spell->SpellCategoriesId)
+            sSpellCategoryStore[spell->SpellCategoriesId].insert(i);
     }
 
     for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
     {
         SkillLineAbilityEntry const *skillLine = sSkillLineAbilityStore.LookupEntry(j);
-
         if (!skillLine)
             continue;
 
         SpellEntry const* spellInfo = sSpellStore.LookupEntry(skillLine->spellId);
 
-        if (spellInfo && IsPassiveSpell(spellInfo->Id))
+        if (spellInfo && spellInfo->Attributes & SPELL_ATTR0_PASSIVE)
         {
             for (uint32 i = 1; i < sCreatureFamilyStore.GetNumRows(); ++i)
             {
@@ -503,7 +487,7 @@ void LoadDBCStores (const std::string& dataPath)
 
                 if (skillLine->skillId != cFamily->skillLine[0] && skillLine->skillId != cFamily->skillLine[1])
                     continue;
-                if (spellInfo->spellLevel)
+                if (spellInfo->SpellLevelsId)
                     continue;
 
                 if (skillLine->learnOnGetSkill != ABILITY_LEARNED_ON_GET_RACE_OR_CLASS_SKILL)
@@ -540,7 +524,7 @@ void LoadDBCStores (const std::string& dataPath)
         memset(newEntry.SpellID, 0, 4 * sizeof(uint32));
         for (int x = 0; x < MAX_DIFFICULTY; ++x)
         {
-            if (spellDiff->SpellID[x] <= 0 || !sSpellStore.LookupEntry(spellDiff->SpellID[x]))
+            if (spellDiff->SpellID[x] <= 0 || !sSpellMgr->GetSpellInfo(spellDiff->SpellID[x]))
             {
                 if (spellDiff->SpellID[x] > 0)          //don't show error if spell is <= 0, not all modes have spells and there are unknown negative values
                     sLog->outDebug(LOG_FILTER_NETWORKIO, "spelldifficulty_dbc: spell %i at field id:%u at spellid%i does not exist in SpellStore (spell.dbc), loaded as 0", spellDiff->SpellID[x], spellDiff->ID, x);
@@ -623,11 +607,10 @@ void LoadDBCStores (const std::string& dataPath)
     // include existed nodes that have at least single not spell base (scripted) path
     {
         std::set<uint32> spellPaths;
-        for (uint32 i = 1; i < sSpellStore.GetNumRows(); ++i)
-            if (SpellEntry const* sInfo = sSpellStore.LookupEntry(i))
-                for (int j = 0; j < MAX_SPELL_EFFECTS; ++j)
-                    if (sInfo->Effect[j] == SPELL_EFFECT_SEND_TAXI)
-                        spellPaths.insert(sInfo->EffectMiscValue[j]);
+        for (uint32 i = 1; i < sSpellEffectStore.GetNumRows(); ++i)
+            if (SpellEffectEntry const* sInfo = sSpellEffectStore.LookupEntry (i))
+                if (sInfo->Effect == SPELL_EFFECT_SEND_TAXI)
+                    spellPaths.insert(sInfo->EffectMiscValue);
 
         ASSERT(((sTaxiNodesStore.GetNumRows()-1)/32) < TaxiMaskSize && "TaxiMaskSize needs to be increased");
         memset(sTaxiNodesMask, 0, sizeof(sTaxiNodesMask));
@@ -720,7 +703,7 @@ void LoadDBCStores (const std::string& dataPath)
     !sGemPropertiesStore.LookupEntry(1858) ||          // last gem property added in 4.0.6a
     !sItemExtendedCostStore.LookupEntry(3400) ||          // last item extended cost added in 4.0.6a
     !sMapStore.LookupEntry(767) ||          // last map added in 4.0.6a
-    !sSpellStore.LookupEntry(96539))          // last added spell in 4.0.6a
+    !sSpellMgr->GetSpellInfo(96539))          // last added spell in 4.0.6a
 
     {
         sLog->outError("\nYou have _outdated_ DBC files. Please extract correct versions from current using client.");
@@ -982,43 +965,9 @@ float GetGtSpellScalingValue (int8 class_, uint8 level)
         return -1.0f;          // shouldn't scale
 
     //They really wants that players reach level 100... in the 5th expansion.
-    const gtSpellScaling * spellscaling = sGtSpellScalingStore.LookupEntry((class_ - 1) * 100 + level - 1);
+    const GtSpellScalingEntry * spellscaling = sGtSpellScalingStore.LookupEntry((class_ - 1) * 100 + level - 1);
     if (spellscaling)
         return spellscaling->coef;
     else
         return -1.0f;
-}
-
-// script support functions
-DBCStorage<SoundEntriesEntry> const* GetSoundEntriesStore ()
-{
-    return &sSoundEntriesStore;
-}
-DBCStorage<SpellEntry> const* GetSpellStore ()
-{
-    return &sSpellStore;
-}
-DBCStorage<SpellRangeEntry> const* GetSpellRangeStore ()
-{
-    return &sSpellRangeStore;
-}
-DBCStorage<FactionEntry> const* GetFactionStore ()
-{
-    return &sFactionStore;
-}
-DBCStorage<CreatureDisplayInfoEntry> const* GetCreatureDisplayStore ()
-{
-    return &sCreatureDisplayInfoStore;
-}
-DBCStorage<EmotesEntry> const* GetEmotesStore ()
-{
-    return &sEmotesStore;
-}
-DBCStorage<EmotesTextEntry> const* GetEmotesTextStore ()
-{
-    return &sEmotesTextStore;
-}
-DBCStorage<AchievementEntry> const* GetAchievementStore ()
-{
-    return &sAchievementStore;
 }

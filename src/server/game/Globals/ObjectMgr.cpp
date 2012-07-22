@@ -29,6 +29,7 @@
 #include "MapManager.h"
 #include "ObjectMgr.h"
 #include "SpellMgr.h"
+#include "SpellInfo.h"
 #include "UpdateMask.h"
 #include "World.h"
 #include "Group.h"
@@ -830,7 +831,7 @@ void ObjectMgr::CheckCreatureTemplate (CreatureInfo const* cInfo)
 
     for (uint8 j = 0; j < CREATURE_MAX_SPELLS; ++j)
     {
-        if (cInfo->spells[j] && !sSpellStore.LookupEntry(cInfo->spells[j]))
+        if (cInfo->spells[j] && !sSpellMgr->GetSpellInfo(cInfo->spells[j]))
         {
             sLog->outErrorDb("Creature (Entry: %u) has non-existing Spell%d (%u), set to 0.", cInfo->Entry, j + 1, cInfo->spells[j]);
             const_cast<CreatureInfo*>(cInfo)->spells[j] = 0;
@@ -942,7 +943,7 @@ void ObjectMgr::ConvertCreatureAddonAuras (CreatureDataAddon* addon, char const*
             sLog->outErrorDb("Creature (%s: %u) has wrong effect for spell %u in `auras` field in `%s`.", guidEntryStr, addon->guidOrEntry, cAura.spell_id, table);
             continue;
         }
-        SpellEntry const *AdditionalSpellInfo = sSpellStore.LookupEntry(cAura.spell_id);
+        SpellInfo const *AdditionalSpellInfo = sSpellMgr->GetSpellInfo(cAura.spell_id);
         if (!AdditionalSpellInfo)
         {
             sLog->outErrorDb("Creature (%s: %u) has wrong spell %u defined in `auras` field in `%s`.", guidEntryStr, addon->guidOrEntry, cAura.spell_id, table);
@@ -952,12 +953,12 @@ void ObjectMgr::ConvertCreatureAddonAuras (CreatureDataAddon* addon, char const*
         {
             if ((1 << eff) & cAura.effectMask)
             {
-                if (!AdditionalSpellInfo->Effect[eff] || !AdditionalSpellInfo->EffectApplyAuraName[eff])
+                if (!AdditionalSpellInfo->Effects[eff].Effect || !AdditionalSpellInfo->Effects[eff].ApplyAuraName)
                 {
                     sLog->outErrorDb("Creature (%s: %u) has not aura effect %u of spell %u defined in `auras` field in `%s`.", guidEntryStr, addon->guidOrEntry, eff, cAura.spell_id, table);
                     continue;
                 }
-                else if (AdditionalSpellInfo->Effect[eff] == SPELL_EFFECT_PERSISTENT_AREA_AURA)
+                else if (AdditionalSpellInfo->Effects[eff].Effect == SPELL_EFFECT_PERSISTENT_AREA_AURA)
                 {
                     sLog->outErrorDb("Creature (%s: %u) has persistent area aura effect %u of spell %u defined in `auras` field in `%s`.", guidEntryStr, addon->guidOrEntry, eff, cAura.spell_id, table);
                     continue;
@@ -2283,7 +2284,7 @@ void ObjectMgr::LoadItemPrototypes ()
             }
         }
 
-        if (proto->RequiredSpell && !sSpellStore.LookupEntry(proto->RequiredSpell))
+        if (proto->RequiredSpell && !sSpellMgr->GetSpellInfo(proto->RequiredSpell))
         {
             sLog->outErrorDb("Item (Entry: %u) have wrong (non-existed) spell in RequiredSpell (%u)", i, proto->RequiredSpell);
             const_cast<ItemPrototype*>(proto)->RequiredSpell = 0;
@@ -2376,7 +2377,7 @@ void ObjectMgr::LoadItemPrototypes ()
             }
             else if (proto->Spells[1].SpellId != -1)
             {
-                SpellEntry const* spellInfo = sSpellStore.LookupEntry(proto->Spells[1].SpellId);
+                SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(proto->Spells[1].SpellId);
                 if (!spellInfo && !sDisableMgr->IsDisabledFor(DISABLE_TYPE_SPELL, proto->Spells[1].SpellId, NULL))
                 {
                     sLog->outErrorDb("Item (Entry: %u) has wrong (not existing) spell in spellid_%d (%d)", i, 1 + 1, proto->Spells[1].SpellId);
@@ -2424,7 +2425,7 @@ void ObjectMgr::LoadItemPrototypes ()
 
                 if (proto->Spells[j].SpellId && proto->Spells[j].SpellId != -1)
                 {
-                    SpellEntry const* spellInfo = sSpellStore.LookupEntry(proto->Spells[j].SpellId);
+                    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(proto->Spells[j].SpellId);
                     if (!spellInfo && !sDisableMgr->IsDisabledFor(DISABLE_TYPE_SPELL, proto->Spells[j].SpellId, NULL))
                     {
                         sLog->outErrorDb("Item (Entry: %u) has wrong (not existing) spell in spellid_%d (%d)", i, j + 1, proto->Spells[j].SpellId);
@@ -4148,7 +4149,7 @@ void ObjectMgr::LoadQuests ()
 
         if (qinfo->SrcSpell)
         {
-            SpellEntry const* spellInfo = sSpellStore.LookupEntry(qinfo->SrcSpell);
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(qinfo->SrcSpell);
             if (!spellInfo)
             {
                 sLog->outErrorDb("Quest %u has `SrcSpell` = %u but spell %u doesn't exist, quest can't be done.", qinfo->GetQuestId(), qinfo->SrcSpell, qinfo->SrcSpell);
@@ -4213,7 +4214,7 @@ void ObjectMgr::LoadQuests ()
             uint32 id = qinfo->ReqSpell[j];
             if (id)
             {
-                SpellEntry const* spellInfo = sSpellStore.LookupEntry(id);
+                SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(id);
                 if (!spellInfo)
                 {
                     sLog->outErrorDb("Quest %u has `ReqSpellCast%d` = %u but spell %u does not exist, quest can't be done.", qinfo->GetQuestId(), j + 1, id, id);
@@ -4225,7 +4226,7 @@ void ObjectMgr::LoadQuests ()
                     bool found = false;
                     for (uint8 k = 0; k < MAX_SPELL_EFFECTS; ++k)
                     {
-                        if ((spellInfo->Effect[k] == SPELL_EFFECT_QUEST_COMPLETE && uint32(spellInfo->EffectMiscValue[k]) == qinfo->QuestId) || spellInfo->Effect[k] == SPELL_EFFECT_SEND_EVENT)
+                        if ((spellInfo->Effects[k].Effect == SPELL_EFFECT_QUEST_COMPLETE && uint32(spellInfo->Effects[k].MiscValue) == qinfo->QuestId) || spellInfo->Effects[k].Effect == SPELL_EFFECT_SEND_EVENT)
                         {
                             found = true;
                             break;
@@ -4357,7 +4358,7 @@ void ObjectMgr::LoadQuests ()
 
         if (qinfo->RewSpell)
         {
-            SpellEntry const* spellInfo = sSpellStore.LookupEntry(qinfo->RewSpell);
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(qinfo->RewSpell);
 
             if (!spellInfo)
             {
@@ -4380,7 +4381,7 @@ void ObjectMgr::LoadQuests ()
 
         if (qinfo->RewSpellCast > 0)
         {
-            SpellEntry const* spellInfo = sSpellStore.LookupEntry(qinfo->RewSpellCast);
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(qinfo->RewSpellCast);
 
             if (!spellInfo)
             {
@@ -4403,7 +4404,7 @@ void ObjectMgr::LoadQuests ()
 
         if (qinfo->RewSpellHiddenCast > 0)
         {
-            SpellEntry const* spellInfo = sSpellStore.LookupEntry(qinfo->RewSpellHiddenCast);
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(qinfo->RewSpellHiddenCast);
 
             if (!spellInfo)
             {
@@ -4491,16 +4492,16 @@ void ObjectMgr::LoadQuests ()
     // check QUEST_SPECIAL_FLAG_EXPLORATION_OR_EVENT for spell with SPELL_EFFECT_QUEST_COMPLETE
     for (uint32 i = 0; i < sSpellStore.GetNumRows(); ++i)
     {
-        SpellEntry const *spellInfo = sSpellStore.LookupEntry(i);
+        SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(i);
         if (!spellInfo)
             continue;
 
         for (uint8 j = 0; j < MAX_SPELL_EFFECTS; ++j)
         {
-            if (spellInfo->Effect[j] != SPELL_EFFECT_QUEST_COMPLETE)
+            if (spellInfo->Effects[j].Effect != SPELL_EFFECT_QUEST_COMPLETE)
                 continue;
 
-            uint32 quest_id = spellInfo->EffectMiscValue[j];
+            uint32 quest_id = spellInfo->Effects[j].MiscValue;
 
             Quest const *quest = GetQuestTemplate(quest_id);
 
@@ -4802,7 +4803,7 @@ void ObjectMgr::LoadScripts (ScriptsType type)
 
         case SCRIPT_COMMAND_REMOVE_AURA:
         {
-            if (!sSpellStore.LookupEntry(tmp.RemoveAura.SpellID))
+            if (!sSpellMgr->GetSpellInfo(tmp.RemoveAura.SpellID))
             {
                 sLog->outErrorDb("Table `%s` using non-existent spell (id: %u) in SCRIPT_COMMAND_REMOVE_AURA for script id %u", tableName.c_str(), tmp.RemoveAura.SpellID, tmp.id);
                 continue;
@@ -4817,7 +4818,7 @@ void ObjectMgr::LoadScripts (ScriptsType type)
 
         case SCRIPT_COMMAND_CAST_SPELL:
         {
-            if (!sSpellStore.LookupEntry(tmp.CastSpell.SpellID))
+            if (!sSpellMgr->GetSpellInfo(tmp.CastSpell.SpellID))
             {
                 sLog->outErrorDb("Table `%s` using non-existent spell (id: %u) in SCRIPT_COMMAND_CAST_SPELL for script id %u", tableName.c_str(), tmp.CastSpell.SpellID, tmp.id);
                 continue;
@@ -4917,7 +4918,7 @@ void ObjectMgr::LoadSpellScripts ()
     for (ScriptMapMap::const_iterator itr = sSpellScripts.begin(); itr != sSpellScripts.end(); ++itr)
     {
         uint32 spellId = uint32(itr->first) & 0x00FFFFFF;
-        SpellEntry const* spellInfo = sSpellStore.LookupEntry(spellId);
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
 
         if (!spellInfo)
         {
@@ -4927,7 +4928,7 @@ void ObjectMgr::LoadSpellScripts ()
 
         uint8 i = (uint8) ((uint32(itr->first) >> 24) & 0x000000FF);
         //check for correct spellEffect
-        if (!spellInfo->Effect[i] || (spellInfo->Effect[i] != SPELL_EFFECT_SCRIPT_EFFECT && spellInfo->Effect[i] != SPELL_EFFECT_DUMMY))
+        if (!spellInfo->Effects[i].Effect || (spellInfo->Effects[i].Effect != SPELL_EFFECT_SCRIPT_EFFECT && spellInfo->Effects[i].Effect != SPELL_EFFECT_DUMMY))
             sLog->outErrorDb("Table `spell_scripts` - spell %u effect %u is not SPELL_EFFECT_SCRIPT_EFFECT or SPELL_EFFECT_DUMMY", spellId, i);
     }
 }
@@ -4947,15 +4948,15 @@ void ObjectMgr::LoadEventScripts ()
     // Load all possible script entries from spells
     for (uint32 i = 1; i < sSpellStore.GetNumRows(); ++i)
     {
-        SpellEntry const * spell = sSpellStore.LookupEntry(i);
+        SpellInfo const * spell = sSpellMgr->GetSpellInfo(i);
         if (spell)
         {
             for (uint8 j = 0; j < MAX_SPELL_EFFECTS; ++j)
             {
-                if (spell->Effect[j] == SPELL_EFFECT_SEND_EVENT)
+                if (spell->Effects[j].Effect == SPELL_EFFECT_SEND_EVENT)
                 {
-                    if (spell->EffectMiscValue[j])
-                        evt_scripts.insert(spell->EffectMiscValue[j]);
+                    if (spell->Effects[j].MiscValue)
+                        evt_scripts.insert(spell->Effects[j].MiscValue);
                 }
             }
         }
@@ -5041,7 +5042,7 @@ void ObjectMgr::LoadSpellScriptNames ()
             spellId = -spellId;
         }
 
-        SpellEntry const* spellEntry = sSpellStore.LookupEntry(spellId);
+        SpellInfo const* spellEntry = sSpellMgr->GetSpellInfo(spellId);
         if (!spellEntry)
         {
             sLog->outErrorDb("Scriptname:`%s` spell (spell_id:%d) does not exist in `Spell.dbc`.", scriptName, fields[0].GetInt32());
@@ -5081,7 +5082,7 @@ void ObjectMgr::ValidateSpellScripts ()
 
     for (SpellScriptsMap::iterator itr = mSpellScripts.begin(); itr != mSpellScripts.end();)
     {
-        SpellEntry const * spellEntry = sSpellStore.LookupEntry(itr->first);
+        SpellInfo const * spellEntry = sSpellMgr->GetSpellInfo(itr->first);
         std::vector < std::pair<SpellScriptLoader *, SpellScriptsMap::iterator> > SpellScriptLoaders;
         sScriptMgr->CreateSpellScriptLoaders(itr->first, SpellScriptLoaders);
         itr = mSpellScripts.upper_bound(itr->first);
@@ -5331,7 +5332,7 @@ void ObjectMgr::LoadInstanceEncounters ()
             break;
         }
         case ENCOUNTER_CREDIT_CAST_SPELL:
-            if (!sSpellStore.LookupEntry(creditEntry))
+            if (!sSpellMgr->GetSpellInfo(creditEntry))
             {
                 sLog->outErrorDb("Table `instance_encounters` has an invalid spell (entry %u) linked to the encounter %u (%s), skipped!", creditEntry, entry, dungeonEncounter->encounterName);
                 continue;
@@ -6560,7 +6561,7 @@ inline void CheckGOLinkedTrapId (GameObjectInfo const* goInfo, uint32 dataN, uin
 
 inline void CheckGOSpellId (GameObjectInfo const* goInfo, uint32 dataN, uint32 N)
 {
-    if (sSpellStore.LookupEntry(dataN))
+    if (sSpellMgr->GetSpellInfo(dataN))
         return;
 
     sLog->outErrorDb("Gameobject (Entry: %u GoType: %u) have data%d=%u but Spell (Entry %u) not exist.", goInfo->id, goInfo->type, N, dataN, dataN);
@@ -7316,8 +7317,8 @@ void ObjectMgr::LoadNPCSpellClickSpells ()
             const_cast<CreatureInfo*>(cInfo)->npcflag |= UNIT_NPC_FLAG_SPELLCLICK;
 
         uint32 spellid = fields[1].GetUInt32();
-        SpellEntry const *spellinfo = sSpellStore.LookupEntry(spellid);
-        if (!spellinfo)
+        SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellid);
+        if (!spellInfo)
         {
             sLog->outErrorDb("Table npc_spellclick_spells references unknown spellid %u. Skipping entry.", spellid);
             continue;
@@ -7326,7 +7327,7 @@ void ObjectMgr::LoadNPCSpellClickSpells ()
         uint32 auraRequired = fields[6].GetUInt32();
         if (auraRequired)
         {
-            SpellEntry const *aurReqInfo = sSpellStore.LookupEntry(auraRequired);
+            SpellInfo const *aurReqInfo = sSpellMgr->GetSpellInfo(auraRequired);
             if (!aurReqInfo)
             {
                 sLog->outErrorDb("Table npc_spellclick_spells references unknown aura required %u. Skipping entry.", auraRequired);
@@ -7337,7 +7338,7 @@ void ObjectMgr::LoadNPCSpellClickSpells ()
         uint32 auraForbidden = fields[7].GetUInt32();
         if (auraForbidden)
         {
-            SpellEntry const *aurForInfo = sSpellStore.LookupEntry(auraForbidden);
+            SpellInfo const *aurForInfo = sSpellMgr->GetSpellInfo(auraForbidden);
             if (!aurForInfo)
             {
                 sLog->outErrorDb("Table npc_spellclick_spells references unknown aura forbidden %u. Skipping entry.", auraForbidden);
@@ -8283,14 +8284,14 @@ void ObjectMgr::AddSpellToTrainer (uint32 entry, uint32 spell, uint32 spellCost,
         return;
     }
 
-    SpellEntry const *spellinfo = sSpellStore.LookupEntry(spell);
-    if (!spellinfo)
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spell);
+    if (!spellInfo)
     {
         sLog->outErrorDb("Table `npc_trainer` contains an entry (Entry: %u) for a non-existing spell (Spell: %u), ignoring", entry, spell);
         return;
     }
 
-    if (!SpellMgr::IsSpellValid(spellinfo))
+    if (!SpellMgr::IsSpellValid(spellInfo))
     {
         sLog->outErrorDb("Table `npc_trainer` contains an entry (Entry: %u) for a broken spell (Spell: %u), ignoring", entry, spell);
         return;
@@ -8313,27 +8314,32 @@ void ObjectMgr::AddSpellToTrainer (uint32 entry, uint32 spell, uint32 spellCost,
     trainerSpell.KillCredit = KillCredit;
 
     if (!trainerSpell.reqLevel)
-        trainerSpell.reqLevel = spellinfo->spellLevel;
+        trainerSpell.reqLevel = spellInfo->SpellLevel;
 
     // calculate learned spell for profession case when stored cast-spell
     trainerSpell.learnedSpell[0] = spell;
     for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
     {
-        if (spellinfo->Effect[i] != SPELL_EFFECT_LEARN_SPELL)
+        if (spellInfo->Effects[i].Effect != SPELL_EFFECT_LEARN_SPELL)
             continue;
         if (trainerSpell.learnedSpell[0] == spell)
             trainerSpell.learnedSpell[0] = 0;
         // player must be able to cast spell on himself
-        if (spellinfo->EffectImplicitTargetA[i] != 0 && spellinfo->EffectImplicitTargetA[i] != TARGET_UNIT_TARGET_ALLY && spellinfo->EffectImplicitTargetA[i] != TARGET_UNIT_TARGET_ANY && spellinfo->EffectImplicitTargetA[i] != TARGET_UNIT_CASTER)
+        if (spellInfo->Effects[i].TargetA != 0 && spellInfo->Effects[i].TargetA != TARGET_UNIT_TARGET_ALLY
+            && spellInfo->Effects[i].TargetA != TARGET_UNIT_TARGET_ANY && spellInfo->Effects[i].TargetA != TARGET_UNIT_CASTER)
         {
             sLog->outErrorDb("Table `npc_trainer` has spell %u for trainer entry %u with learn effect which has incorrect target type, ignoring learn effect!", spell, entry);
             continue;
         }
 
-        trainerSpell.learnedSpell[i] = spellinfo->EffectTriggerSpell[i];
+        trainerSpell.learnedSpell[i] = spellInfo->Effects[i].TriggerSpell;
 
-        if (trainerSpell.learnedSpell[i] && SpellMgr::IsProfessionSpell(trainerSpell.learnedSpell[i]))
-            data.trainerType = 2;
+        if (trainerSpell.learnedSpell[i])
+        {
+            SpellInfo const* learnedSpellInfo = sSpellMgr->GetSpellInfo(trainerSpell.learnedSpell[i]);
+            if (learnedSpellInfo && learnedSpellInfo->IsProfession())
+                data.trainerType = 2;
+        }
     }
 
     return;
@@ -9031,9 +9037,9 @@ void ObjectMgr::LoadFactionChangeSpells ()
         uint32 alliance = fields[0].GetUInt32();
         uint32 horde = fields[1].GetUInt32();
 
-        if (!sSpellStore.LookupEntry(alliance))
+        if (!sSpellMgr->GetSpellInfo(alliance))
             sLog->outErrorDb("Spell %u referenced in `player_factionchange_spells` does not exist, pair skipped!", alliance);
-        else if (!sSpellStore.LookupEntry(horde))
+        else if (!sSpellMgr->GetSpellInfo(horde))
             sLog->outErrorDb("Spell %u referenced in `player_factionchange_spells` does not exist, pair skipped!", horde);
         else
             factionchange_spells[alliance] = horde;

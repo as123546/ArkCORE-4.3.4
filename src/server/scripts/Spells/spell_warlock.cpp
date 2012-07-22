@@ -52,9 +52,9 @@ public:
     {
         PrepareAuraScript(spell_warl_demonic_pact_AuraScript);
 
-        bool Validate(SpellEntry const * /*spellEntry*/)
+        bool Validate(SpellInfo const * /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(WARLOCK_DEMONIC_PACT_SPELL))
+            if (!sSpellMgr->GetSpellInfo(WARLOCK_DEMONIC_PACT_SPELL))
                 return false;
 
             return true;
@@ -138,17 +138,17 @@ public:
     class spell_warl_demonic_empowerment_SpellScript: public SpellScript
     {
         PrepareSpellScript(spell_warl_demonic_empowerment_SpellScript)
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(WARLOCK_DEMONIC_EMPOWERMENT_SUCCUBUS))
+            if (!sSpellMgr->GetSpellInfo(WARLOCK_DEMONIC_EMPOWERMENT_SUCCUBUS))
                 return false;
-            if (!sSpellStore.LookupEntry(WARLOCK_DEMONIC_EMPOWERMENT_VOIDWALKER))
+            if (!sSpellMgr->GetSpellInfo(WARLOCK_DEMONIC_EMPOWERMENT_VOIDWALKER))
                 return false;
-            if (!sSpellStore.LookupEntry(WARLOCK_DEMONIC_EMPOWERMENT_FELGUARD))
+            if (!sSpellMgr->GetSpellInfo(WARLOCK_DEMONIC_EMPOWERMENT_FELGUARD))
                 return false;
-            if (!sSpellStore.LookupEntry(WARLOCK_DEMONIC_EMPOWERMENT_FELHUNTER))
+            if (!sSpellMgr->GetSpellInfo(WARLOCK_DEMONIC_EMPOWERMENT_FELHUNTER))
                 return false;
-            if (!sSpellStore.LookupEntry(WARLOCK_DEMONIC_EMPOWERMENT_IMP))
+            if (!sSpellMgr->GetSpellInfo(WARLOCK_DEMONIC_EMPOWERMENT_IMP))
                 return false;
             return true;
         }
@@ -167,7 +167,7 @@ public:
                         break;
                     case CREATURE_FAMILY_VOIDWALKER:
                     {
-                        SpellEntry const* spellInfo = sSpellStore.LookupEntry(WARLOCK_DEMONIC_EMPOWERMENT_VOIDWALKER);
+                        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(WARLOCK_DEMONIC_EMPOWERMENT_VOIDWALKER);
                         int32 hp = int32(targetCreature->CountPctFromMaxHealth(GetCaster()->CalculateSpellDamage(targetCreature, spellInfo, 0)));
                         targetCreature->CastCustomSpell(targetCreature, WARLOCK_DEMONIC_EMPOWERMENT_VOIDWALKER, &hp, NULL, NULL, true);
                         //unitTarget->CastSpell(unitTarget, 54441, true);
@@ -295,9 +295,9 @@ uint32 const spell_warl_create_healthstone::spell_warl_create_healthstone_SpellS
             // Pandemic
             if (AuraEffect* aurEff = GetCaster()->GetAuraEffect(SPELL_AURA_ADD_FLAT_MODIFIER, SPELLFAMILY_WARLOCK, 4554, 1))
             {
-                SpellEntry const* spellproto = aurEff->GetSpellProto();
+                SpellInfo const* spellproto = aurEff->GetSpellInfo();
                 if (GetTarget()->HealthBelowPct(25))
-                    if (roll_chance_i(spellproto->EffectBasePoints[0]))
+                    if (roll_chance_i(spellproto->Effects[0].BasePoints))
                         if (AuraEffect* aur = GetTarget()->GetAuraEffect(SPELL_AURA_PERIODIC_DAMAGE, SPELLFAMILY_WARLOCK, 0, 0x100, 0, GetCaster()->GetGUID()))
                            aur->GetBase()->RefreshDuration();
             }
@@ -370,7 +370,7 @@ public:
     {
         PrepareSpellScript(spell_warl_immolate_SpellScript)
 
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
             return true;
         }
@@ -447,9 +447,9 @@ public:
     class spell_warl_shadow_bite_SpellScript: public SpellScript
     {
         PrepareSpellScript(spell_warl_shadow_bite_SpellScript)
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
-            if (!sSpellStore.LookupEntry(WARLOCK_FELHUNTER_SHADOWBITE_R1))
+            if (!sSpellMgr->GetSpellInfo(WARLOCK_FELHUNTER_SHADOWBITE_R1))
                 return false;
             return true;
         }

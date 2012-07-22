@@ -61,14 +61,14 @@ public:
             PRI_SPELL_GUARDIAN_SPIRIT_HEAL = 48153,
         };
 
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
-            return sSpellStore.LookupEntry(PRI_SPELL_GUARDIAN_SPIRIT_HEAL);
+            return sSpellMgr->GetSpellInfo(PRI_SPELL_GUARDIAN_SPIRIT_HEAL);
         }
 
         bool Load ()
         {
-            healPct = SpellMgr::CalculateSpellEffectAmount(GetSpellProto(), EFFECT_1);
+            healPct = GetSpellInfo()->Effects[EFFECT_1].CalcValue();
             return true;
         }
 
@@ -115,7 +115,7 @@ public:
     class spell_pri_mana_burn_SpellScript: public SpellScript
     {
         PrepareSpellScript(spell_pri_mana_burn_SpellScript)
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
             return true;
         }
@@ -214,9 +214,9 @@ public:
     class spell_pri_penance_SpellScript: public SpellScript
     {
         PrepareSpellScript(spell_pri_penance_SpellScript)
-        bool Validate (SpellEntry const * spellEntry)
+        bool Validate (SpellInfo const * spellEntry)
         {
-            if (!sSpellStore.LookupEntry(PRIEST_SPELL_PENANCE_R1))
+            if (!sSpellMgr->GetSpellInfo(PRIEST_SPELL_PENANCE_R1))
                 return false;
             // can't use other spell than this penance due to spell_ranks dependency
             if (sSpellMgr->GetFirstSpellInChain(PRIEST_SPELL_PENANCE_R1) != sSpellMgr->GetFirstSpellInChain(spellEntry->Id))
@@ -280,9 +280,9 @@ public:
             SPELL_PRI_REFLECTIVE_SHIELD_TRIGGERED = 33619, SPELL_PRI_REFLECTIVE_SHIELD_R1 = 33201,
         };
 
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
-            return sSpellStore.LookupEntry(SPELL_PRI_REFLECTIVE_SHIELD_TRIGGERED) && sSpellStore.LookupEntry(SPELL_PRI_REFLECTIVE_SHIELD_R1);
+            return sSpellMgr->GetSpellInfo(SPELL_PRI_REFLECTIVE_SHIELD_TRIGGERED) && sSpellMgr->GetSpellInfo(SPELL_PRI_REFLECTIVE_SHIELD_R1);
         }
 
         void Trigger (AuraEffect * aurEff, DamageInfo & dmgInfo, uint32 & absorbAmount)
@@ -324,7 +324,7 @@ public:
     {
         PrepareSpellScript(spell_priest_flash_heal_SpellScript)
 
-        bool Validate (SpellEntry const * /*spellEntry*/)
+        bool Validate (SpellInfo const * /*spellEntry*/)
         {
             return true;
         }

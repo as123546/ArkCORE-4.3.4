@@ -1246,7 +1246,7 @@ void ChatHandler::HandleLearnSkillRecipesHelper (Player* player, uint32 skill_id
         if (skillLine->classmask && (skillLine->classmask & classmask) == 0)
             continue;
 
-        SpellEntry const* spellInfo = sSpellStore.LookupEntry(skillLine->spellId);
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(skillLine->spellId);
         if (!spellInfo || !SpellMgr::IsSpellValid(spellInfo, player, false))
             continue;
 
@@ -1607,7 +1607,7 @@ bool ChatHandler::HandlePetLearnCommand (const char* args)
 
     uint32 spellId = extractSpellIdFromLink((char*) args);
 
-    if (!spellId || !sSpellStore.LookupEntry(spellId))
+    if (!spellId || !sSpellMgr->GetSpellInfo(spellId))
         return false;
 
     // Check if pet already has it
@@ -1619,7 +1619,7 @@ bool ChatHandler::HandlePetLearnCommand (const char* args)
     }
 
     // Check if spell is valid
-    SpellEntry const* spellInfo = sSpellStore.LookupEntry(spellId);
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
     if (!spellInfo || !SpellMgr::IsSpellValid(spellInfo))
     {
         PSendSysMessage(LANG_COMMAND_SPELL_BROKEN, spellId);

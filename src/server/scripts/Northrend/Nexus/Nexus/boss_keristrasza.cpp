@@ -120,7 +120,7 @@ public:
 
             if (pInstance)
             {
-                AchievementEntry const *achievIntenseCold = GetAchievementStore()->LookupEntry(ACHIEV_INTENSE_COLD);
+                AchievementEntry const *achievIntenseCold = sAchievementStore.LookupEntry(ACHIEV_INTENSE_COLD);
                 if (achievIntenseCold && IsHeroic())
                 {
                     for (std::set<uint64>::const_iterator itr = lIntenseColdPlayers.begin(); itr != lIntenseColdPlayers.end(); ++itr)

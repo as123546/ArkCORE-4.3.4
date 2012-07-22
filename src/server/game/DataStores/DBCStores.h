@@ -115,7 +115,7 @@ extern DBCStorage<GtChanceToSpellCritEntry> sGtChanceToSpellCritStore;
 //extern DBCStorage <GtOCTRegenMPEntry>            sGtOCTRegenMPStore; -- not used currently
 //extern DBCStorage <GtRegenHPPerSptEntry>         sGtRegenHPPerSptStore;
 extern DBCStorage<GtRegenMPPerSptEntry> sGtRegenMPPerSptStore;
-extern DBCStorage<gtSpellScaling> sGtSpellScalingStore;
+extern DBCStorage<GtSpellScalingEntry> sGtSpellScalingStore;
 extern DBCStorage<HolidaysEntry> sHolidaysStore;
 extern DBCStorage<ItemArmorQualityEntry> sItemArmorQualityStore;
 extern DBCStorage<ItemArmorShieldEntry> sItemArmorShieldStore;
@@ -169,7 +169,6 @@ extern DBCStorage<SpellRangeEntry> sSpellRangeStore;
 extern DBCStorage<SpellRuneCostEntry> sSpellRuneCostStore;
 extern DBCStorage<SpellShapeshiftFormEntry> sSpellShapeshiftFormStore;
 extern DBCStorage<SpellEntry> sSpellStore;
-extern DBCStorage<SpellEntry_n> sTrueSpellStore;
 extern DBCStorage<SpellAuraOptionsEntry> sSpellAuraOptionsStore;
 extern DBCStorage<SpellAuraRestrictionsEntry> sSpellAuraRestrictionsStore;
 extern DBCStorage<SpellCastingRequirementsEntry> sSpellCastingRequirementsStore;
@@ -210,14 +209,4 @@ extern DBCStorage<WorldMapOverlayEntry> sWorldMapOverlayStore;
 extern DBCStorage<WorldSafeLocsEntry> sWorldSafeLocsStore;
 
 void LoadDBCStores (const std::string& dataPath);
-
-// script support functions
-DBCStorage<SoundEntriesEntry> const* GetSoundEntriesStore ();
-DBCStorage<SpellEntry> const* GetSpellStore ();
-DBCStorage<SpellRangeEntry> const* GetSpellRangeStore ();
-DBCStorage<FactionEntry> const* GetFactionStore ();
-DBCStorage<CreatureDisplayInfoEntry> const* GetCreatureDisplayStore ();
-DBCStorage<EmotesEntry> const* GetEmotesStore ();
-DBCStorage<EmotesTextEntry> const* GetEmotesTextStore ();
-DBCStorage<AchievementEntry> const* GetAchievementStore ();
 #endif

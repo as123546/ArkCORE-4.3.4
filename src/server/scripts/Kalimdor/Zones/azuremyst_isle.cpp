@@ -119,7 +119,7 @@ public:
             }
         }
 
-        void SpellHit(Unit *Caster, const SpellEntry *Spell) {
+        void SpellHit(Unit *Caster, const SpellInfo *Spell) {
             if (Spell->SpellFamilyFlags[2] & 0x080000000) {
                 me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE);
                 me->SetStandState(UNIT_STAND_STATE_STAND);

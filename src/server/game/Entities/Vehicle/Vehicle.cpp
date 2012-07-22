@@ -31,6 +31,8 @@
 #include "ScriptMgr.h"
 #include "CreatureAI.h"
 #include "ZoneScript.h"
+#include "SpellMgr.h"
+#include "SpellInfo.h"
 
 Vehicle::Vehicle (Unit *unit, VehicleEntry const *vehInfo) : me(unit), m_vehicleInfo(vehInfo), m_usableSeatNum(0), m_bonusHP(0)
 {
@@ -108,14 +110,14 @@ void Vehicle::Install ()
                 if (!pCreature->m_spells[i])
                     continue;
 
-                SpellEntry const *spellInfo = sSpellStore.LookupEntry(pCreature->m_spells[i]);
+                SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(pCreature->m_spells[i]);
                 if (!spellInfo)
                     continue;
 
-                if (spellInfo->powerType == POWER_MANA)
+                if (spellInfo->PowerType == POWER_MANA)
                     break;
 
-                if (spellInfo->powerType == POWER_ENERGY)
+                if (spellInfo->PowerType == POWER_ENERGY)
                 {
                     me->setPowerType(POWER_ENERGY);
                     me->SetMaxPower(POWER_ENERGY, 100);

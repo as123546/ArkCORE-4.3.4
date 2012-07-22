@@ -338,9 +338,9 @@ public:
         PrepareSpellScript(spell_cyclon_windsSpellScript)
         ;
 
-        bool Validate (SpellEntry const * spellEntry)
+        bool Validate (SpellInfo const * spellEntry)
         {
-            if (!sSpellStore.LookupEntry(spellEntry->Id))
+            if (!sSpellMgr->GetSpellInfo(spellEntry->Id))
                 return false;
             return true;
         }

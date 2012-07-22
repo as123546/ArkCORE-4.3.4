@@ -68,7 +68,7 @@ class icecrown_citadel_teleport : public GameObjectScript
         {
             player->PlayerTalkClass->ClearMenus();
             player->CLOSE_GOSSIP_MENU();
-            SpellEntry const* spell = sSpellStore.LookupEntry(action);
+            SpellInfo const* spell = sSpellMgr->GetSpellInfo(action);
             if (!spell)
                 return false;
 
@@ -94,7 +94,7 @@ class at_frozen_throne_teleport : public AreaTriggerScript
         {
             if (player->isInCombat())
             {
-                if (SpellEntry const* spell = sSpellStore.LookupEntry(FROZEN_THRONE_TELEPORT))
+                if (SpellInfo const* spell = sSpellMgr->GetSpellInfo(FROZEN_THRONE_TELEPORT))
                     Spell::SendCastResult(player, spell, 0, SPELL_FAILED_AFFECTING_COMBAT);
                 return true;
             }

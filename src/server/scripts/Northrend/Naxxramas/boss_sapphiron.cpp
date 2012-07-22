@@ -151,7 +151,7 @@ public:
             CheckPlayersFrostResist();
             if (CanTheHundredClub) {
                 AchievementEntry const *AchievTheHundredClub =
-                        GetAchievementStore()->LookupEntry(
+                        sAchievementStore.LookupEntry(
                                 ACHIEVEMENT_THE_HUNDRED_CLUB);
                 if (AchievTheHundredClub) {
                     if (pMap && pMap->IsDungeon()) {

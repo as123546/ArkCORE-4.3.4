@@ -42,6 +42,9 @@
 #include "WorldSession.h"
 #include "Group.h"
 
+// for template
+#include "SpellMgr.h"
+
 #include<string>
 #include<vector>
 
@@ -1305,8 +1308,8 @@ public:
         SetByteValue(PLAYER_BYTES_2, 2, count);
     }
     bool HasItemCount (uint32 item, uint32 count, bool inBankAlso = false) const;
-    bool HasItemFitToSpellRequirements (SpellEntry const* spellInfo, Item const* ignoreItem = NULL);
-    bool CanNoReagentCast (SpellEntry const* spellInfo) const;
+    bool HasItemFitToSpellRequirements (SpellInfo const* spellInfo, Item const* ignoreItem = NULL);
+    bool CanNoReagentCast (SpellInfo const* spellInfo) const;
     bool HasItemOrGemWithIdEquipped (uint32 item, uint32 count, uint8 except_slot = NULL_SLOT) const;
     bool HasItemOrGemWithLimitCategoryEquipped (uint32 limitCategory, uint32 count, uint8 except_slot = NULL_SLOT) const;
     uint8 CanTakeMoreSimilarItems (Item* pItem) const
@@ -1832,7 +1835,7 @@ public:
     bool HasActiveSpell(uint32 spell) const;          // show in spellbook
     TrainerSpellState GetTrainerSpellState(TrainerSpell const* trainer_spell) const;
     bool IsSpellFitByClassAndRace(uint32 spell_id) const;
-    bool IsNeedCastPassiveSpellAtLearn(SpellEntry const* spellInfo) const;
+    bool IsNeedCastPassiveSpellAtLearn(SpellInfo const* spellInfo) const;
 
     void SendProficiency(ItemClass itemClass, uint32 itemSubclassMask);
     void SendInitialSpells();
@@ -1915,7 +1918,7 @@ public:
     {   return m_spellCooldowns;}
 
     void AddSpellMod(SpellModifier* mod, bool apply);
-    bool IsAffectedBySpellmod(SpellEntry const *spellInfo, SpellModifier *mod, Spell * spell = NULL);
+    bool IsAffectedBySpellmod(SpellInfo const *spellInfo, SpellModifier *mod, Spell * spell = NULL);
     template <class T> T ApplySpellMod(uint32 spellId, SpellModOp op, T &basevalue, Spell * spell = NULL);
     void RemoveSpellMods(Spell * spell);
     void RestoreSpellMods(Spell *spell, uint32 ownerAuraId=0);
@@ -1935,9 +1938,9 @@ public:
         time_t t = time(NULL);
         return uint32(itr != m_spellCooldowns.end() && itr->second.end > t ? itr->second.end - t : 0);
     }
-    void AddSpellAndCategoryCooldowns(SpellEntry const* spellInfo, uint32 itemId, Spell* spell = NULL, bool infinityCooldown = false);
+    void AddSpellAndCategoryCooldowns(SpellInfo const* spellInfo, uint32 itemId, Spell* spell = NULL, bool infinityCooldown = false);
     void AddSpellCooldown(uint32 spell_id, uint32 itemid, time_t end_time);
-    void SendCooldownEvent(SpellEntry const *spellInfo, uint32 itemId = 0, Spell* spell = NULL);
+    void SendCooldownEvent(SpellInfo const *spellInfo, uint32 itemId = 0, Spell* spell = NULL);
     void ProhibitSpellScholl(SpellSchoolMask idSchoolMask, uint32 unTimeMs);
     void RemoveSpellCooldown(uint32 spell_id, bool update = false);
     void RemoveSpellCategoryCooldown(uint32 cat, bool update = false);
@@ -1954,9 +1957,9 @@ public:
     void UpdatePotionCooldown(Spell* spell = NULL);
 
     // global cooldown
-    void AddGlobalCooldown(SpellEntry const *spellInfo, Spell *spell);
-    bool HasGlobalCooldown(SpellEntry const *spellInfo) const;
-    void RemoveGlobalCooldown(SpellEntry const *spellInfo);
+    void AddGlobalCooldown(SpellInfo const *spellInfo, Spell *spell);
+    bool HasGlobalCooldown(SpellInfo const *spellInfo) const;
+    void RemoveGlobalCooldown(SpellInfo const *spellInfo);
 
     void setResurrectRequestData(uint64 guid, uint32 mapId, float X, float Y, float Z, uint32 health, uint32 mana)
     {
@@ -2380,7 +2383,7 @@ public:
     void InitDataForForm(bool reapplyMods = false);
 
     void ApplyItemEquipSpell(Item *item, bool apply, bool form_change = false);
-    void ApplyEquipSpell(SpellEntry const* spellInfo, Item* item, bool apply, bool form_change = false);
+    void ApplyEquipSpell(SpellInfo const* spellInfo, Item* item, bool apply, bool form_change = false);
     void UpdateEquipSpellsAtFormChange();
     void CastItemCombatSpell(Unit *target, WeaponAttackType attType, uint32 procVictim, uint32 procEx);
     void CastItemUseSpell(Item *item, SpellCastTargets const& targets, uint8 cast_count);
@@ -3284,7 +3287,7 @@ void RemoveItemsSetItem (Player*player, ItemPrototype const *proto);
 // "the bodies of template functions must be made available in a header file"
 template<class T> T Player::ApplySpellMod (uint32 spellId, SpellModOp op, T &basevalue, Spell * spell)
 {
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
+    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellId);
     if (!spellInfo)
         return 0;
     float totalmul = 1.0f;

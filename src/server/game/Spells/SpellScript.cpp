@@ -28,7 +28,7 @@
 #include "SpellAuras.h"
 #include "SpellScript.h"
 
-bool _SpellScript::_Validate (SpellEntry const * entry)
+bool _SpellScript::_Validate (SpellInfo const * entry)
 {
     if (!Validate(entry))
     {
@@ -66,7 +66,7 @@ _SpellScript::EffectHook::EffectHook (uint8 _effIndex)
     effIndex = _effIndex;
 }
 
-uint8 _SpellScript::EffectHook::GetAffectedEffectsMask (SpellEntry const * spellEntry)
+uint8 _SpellScript::EffectHook::GetAffectedEffectsMask (SpellInfo const * spellEntry)
 {
     uint8 mask = 0;
     if ((effIndex == EFFECT_ALL) || (effIndex == EFFECT_FIRST_FOUND))
@@ -87,7 +87,7 @@ uint8 _SpellScript::EffectHook::GetAffectedEffectsMask (SpellEntry const * spell
     return mask;
 }
 
-bool _SpellScript::EffectHook::IsEffectAffected (SpellEntry const * spellEntry, uint8 effIndex)
+bool _SpellScript::EffectHook::IsEffectAffected (SpellInfo const * spellEntry, uint8 effIndex)
 {
     return GetAffectedEffectsMask(spellEntry) & 1 << effIndex;
 }
@@ -110,7 +110,7 @@ std::string _SpellScript::EffectHook::EffIndexToString ()
     return "Invalid Value";
 }
 
-bool _SpellScript::EffectNameCheck::Check (SpellEntry const * spellEntry, uint8 effIndex)
+bool _SpellScript::EffectNameCheck::Check (SpellInfo const * spellEntry, uint8 effIndex)
 {
     if (!spellEntry->Effect[effIndex] && !effName)
         return true;
@@ -132,7 +132,7 @@ std::string _SpellScript::EffectNameCheck::ToString ()
     }
 }
 
-bool _SpellScript::EffectAuraNameCheck::Check (SpellEntry const * spellEntry, uint8 effIndex)
+bool _SpellScript::EffectAuraNameCheck::Check (SpellInfo const * spellEntry, uint8 effIndex)
 {
     if (!spellEntry->EffectApplyAuraName[effIndex] && !effAurName)
         return true;
@@ -175,7 +175,7 @@ std::string SpellScript::EffectHandler::ToString ()
     return "Index: " + EffIndexToString() + " Name: " + _SpellScript::EffectNameCheck::ToString();
 }
 
-bool SpellScript::EffectHandler::CheckEffect (SpellEntry const * spellEntry, uint8 effIndex)
+bool SpellScript::EffectHandler::CheckEffect (SpellInfo const * spellEntry, uint8 effIndex)
 {
     return _SpellScript::EffectNameCheck::Check(spellEntry, effIndex);
 }
@@ -208,7 +208,7 @@ std::string SpellScript::UnitTargetHandler::ToString ()
     return oss.str();
 }
 
-bool SpellScript::UnitTargetHandler::CheckEffect (SpellEntry const * spellEntry, uint8 effIndex)
+bool SpellScript::UnitTargetHandler::CheckEffect (SpellInfo const * spellEntry, uint8 effIndex)
 {
     if (!targetType)
         return false;
@@ -220,7 +220,7 @@ void SpellScript::UnitTargetHandler::Call (SpellScript * spellScript, std::list<
     (spellScript->*pUnitTargetHandlerScript)(unitTargets);
 }
 
-bool SpellScript::_Validate (SpellEntry const * entry)
+bool SpellScript::_Validate (SpellInfo const * entry)
 {
     for (std::list<EffectHandler>::iterator itr = OnEffect.begin(); itr != OnEffect.end(); ++itr)
         if (!(*itr).GetAffectedEffectsMask(entry))
@@ -288,7 +288,7 @@ Unit * SpellScript::GetOriginalCaster ()
     return m_spell->GetOriginalCaster();
 }
 
-SpellEntry const * SpellScript::GetSpellInfo ()
+SpellInfo const * SpellScript::GetSpellInfo ()
 {
     return m_spell->GetSpellInfo();
 }
@@ -514,7 +514,7 @@ SpellValue const* SpellScript::GetSpellValue ()
     return m_spell->m_spellValue;
 }
 
-bool AuraScript::_Validate (SpellEntry const * entry)
+bool AuraScript::_Validate (SpellInfo const * entry)
 {
     for (std::list<EffectApplyHandler>::iterator itr = OnEffectApply.begin(); itr != OnEffectApply.end(); ++itr)
         if (!(*itr).GetAffectedEffectsMask(entry))
@@ -584,7 +584,7 @@ AuraScript::EffectBase::EffectBase (uint8 _effIndex, uint16 _effName) :
 {
 }
 
-bool AuraScript::EffectBase::CheckEffect (SpellEntry const * spellEntry, uint8 effIndex)
+bool AuraScript::EffectBase::CheckEffect (SpellInfo const * spellEntry, uint8 effIndex)
 {
     return _SpellScript::EffectAuraNameCheck::Check(spellEntry, effIndex);
 }
@@ -745,9 +745,9 @@ void AuraScript::PreventDefaultAction ()
     }
 }
 
-SpellEntry const* AuraScript::GetSpellProto () const
+SpellInfo const* AuraScript::GetSpellInfo () const
 {
-    return m_aura->GetSpellProto();
+    return m_aura->GetSpellInfo();
 }
 
 uint32 AuraScript::GetId () const
