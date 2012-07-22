@@ -793,7 +793,7 @@ void Spell::SpellDamageSchoolDmg (SpellEffIndex effIndex)
             {
                 // converts each extra point of energy into ($f1+$AP/410) additional damage
                 float ap = m_caster->GetTotalAttackPowerValue(BASE_ATTACK);
-                float multiple = ap / 410 + m_spellInfo->EffectDamageMultiplier[effIndex];
+                float multiple = ap / 410 + m_spellInfo->Effects[effIndex].DamageMultiplier;
                 int32 energy = -(m_caster->ModifyPower(POWER_ENERGY, -30));
                 damage += int32(energy * multiple);
                 damage += int32(m_caster->ToPlayer()->GetComboPoints() * ap * 7 / 100);
@@ -877,9 +877,9 @@ void Spell::SpellDamageSchoolDmg (SpellEffIndex effIndex)
                         Unit::AuraEffectList const& auraList = m_caster->ToPlayer()->GetAuraEffectsByType(SPELL_AURA_MOD_AURA_DURATION_BY_DISPEL_NOT_STACK);
                         for (Unit::AuraEffectList::const_iterator iter = auraList.begin(); iter != auraList.end(); ++iter)
                         {
-                            if ((*iter)->GetSpellProto()->SpellFamilyName == SPELLFAMILY_ROGUE && (*iter)->GetSpellProto()->SpellIconID == 1960)
+                            if ((*iter)->GetSpellInfo()->SpellFamilyName == SPELLFAMILY_ROGUE && (*iter)->GetSpellInfo()->SpellIconID == 1960)
                             {
-                                uint32 chance = SpellMgr::CalculateSpellEffectAmount((*iter)->GetSpellProto(), 2, m_caster);
+                                uint32 chance = (*iter)->GetSpellInfo()->Effects[EFFECT_2].CalcValue(m_caster);
 
                                 if (chance && roll_chance_i(chance))
                                     needConsume = false;
@@ -1579,15 +1579,15 @@ void Spell::EffectDummy (SpellEffIndex effIndex)
                                             }
                                         }
                         }
-                        if (target && target->GetBase()->IsWithinDist2d(&m_targets.m_dstPos, GetSpellRadius(m_spellInfo, effIndex, false) * 2))          // now we use *2 because the location of the seat is not correct
-                            passenger->EnterVehicle(target, 0);
-                        else
-                        {
-                            passenger->ExitVehicle();
-                            float x, y, z;
-                            m_targets.m_dstPos.GetPosition(x, y, z);
-                            passenger->GetMotionMaster()->MoveJump(x, y, z, m_targets.GetSpeedXY(), m_targets.GetSpeedZ());
-                        }
+                        //if (target && target->GetBase()->IsWithinDist2d(&m_targets.m_dstPos, GetSpellRadius(m_spellInfo, effIndex, false) * 2))          // now we use *2 because the location of the seat is not correct
+                        //    passenger->EnterVehicle(target, 0);
+                        //else
+                        //{
+                        //    passenger->ExitVehicle();
+                        //    float x, y, z;
+                        //    m_targets.m_dstPos.GetPosition(x, y, z);
+                        //    passenger->GetMotionMaster()->MoveJump(x, y, z, m_targets.GetSpeedXY(), m_targets.GetSpeedZ());
+                        //}
                     }
             }
             return;
@@ -2150,7 +2150,7 @@ void Spell::EffectDummy (SpellEffIndex effIndex)
 
             // Improved Death Strike
             if (AuraEffect const * aurEff = m_caster->GetAuraEffect(SPELL_AURA_ADD_PCT_MODIFIER, SPELLFAMILY_DEATHKNIGHT, 2751, 0))
-                bp = int32(bp * (m_caster->CalculateSpellDamage(m_caster, aurEff->GetSpellProto(), 2) + 100.0f) / 100.0f);
+                bp = int32(bp * (m_caster->CalculateSpellDamage(m_caster, aurEff->GetSpellInfo(), 2) + 100.0f) / 100.0f);
 
             if (m_caster->ToPlayer()->HasAuraType(SPELL_AURA_MASTERY))
             {
@@ -2456,7 +2456,7 @@ void Spell::EffectTriggerSpell (SpellEffIndex effIndex)
     case 29284:
     {
         // Brittle Armor
-        SpellEntry const* spell = sSpellMgr->GetSpellInfo(24575);
+        SpellInfo const* spell = sSpellMgr->GetSpellInfo(24575);
         if (!spell)
             return;
 
@@ -2468,7 +2468,7 @@ void Spell::EffectTriggerSpell (SpellEffIndex effIndex)
     case 29286:
     {
         // Mercurial Shield
-        SpellEntry const* spell = sSpellMgr->GetSpellInfo(26464);
+        SpellInfo const* spell = sSpellMgr->GetSpellInfo(26464);
         if (!spell)
             return;
 
@@ -2490,7 +2490,7 @@ void Spell::EffectTriggerSpell (SpellEffIndex effIndex)
         for (Unit::AuraApplicationMap::iterator iter = Auras.begin(); iter != Auras.end();)
         {
             // remove all harmful spells on you...
-            SpellEntry const* spell = iter->second->GetBase()->GetSpellProto();
+            SpellInfo const* spell = iter->second->GetBase()->GetSpellInfo();
             if ((spell->DmgClass == SPELL_DAMAGE_CLASS_MAGIC          // only affect magic spells
             || ((1 << spell->Dispel) & dispelMask))
             // ignore positive and passive auras
@@ -3053,7 +3053,7 @@ void Spell::SpellDamageHeal (SpellEffIndex effIndex)
             AuraEffect *targetAura = NULL;
             for (Unit::AuraEffectList::const_iterator i = RejorRegr.begin(); i != RejorRegr.end(); ++i)
             {
-                if ((*i)->GetSpellProto()->SpellFamilyName == SPELLFAMILY_DRUID && (*i)->GetSpellProto()->SpellFamilyFlags[0] & 0x50)
+                if ((*i)->GetSpellInfo()->SpellFamilyName == SPELLFAMILY_DRUID && (*i)->GetSpellInfo()->SpellFamilyFlags[0] & 0x50)
                 {
                     if (!targetAura || (*i)->GetBase()->GetDuration() < targetAura->GetBase()->GetDuration())
                         targetAura = *i;
@@ -3068,17 +3068,17 @@ void Spell::SpellDamageHeal (SpellEffIndex effIndex)
 
             int32 tickheal = targetAura->GetAmount();
             if (Unit* auraCaster = targetAura->GetCaster())
-                tickheal = auraCaster->SpellHealingBonus(unitTarget, targetAura->GetSpellProto(), effIndex, tickheal, DOT);
-            //int32 tickheal = targetAura->GetSpellProto()->EffectBasePoints[idx] + 1;
+                tickheal = auraCaster->SpellHealingBonus(unitTarget, targetAura->GetSpellInfo(), effIndex, tickheal, DOT);
+            //int32 tickheal = targetAura->GetSpellInfo()->EffectBasePoints[idx] + 1;
             //It is said that talent bonus should not be included
 
             int32 tickcount = 0;
             // Rejuvenation
-            if (targetAura->GetSpellProto()->SpellFamilyFlags[0] & 0x10)
+            if (targetAura->GetSpellInfo()->SpellFamilyFlags[0] & 0x10)
                 tickcount = 4;
             // Regrowth
             else
-                // if (targetAura->GetSpellProto()->SpellFamilyFlags[0] & 0x40)
+                // if (targetAura->GetSpellInfo()->SpellFamilyFlags[0] & 0x40)
                 tickcount = 6;
 
             addhealth += tickheal * tickcount;
@@ -4067,11 +4067,11 @@ void Spell::EffectDispel (SpellEffIndex effIndex)
         if (aura->IsPassive())
             continue;
 
-        if ((1 << aura->GetSpellProto()->Dispel) & dispelMask)
+        if ((1 << aura->GetSpellInfo()->Dispel) & dispelMask)
         {
-            if (aura->GetSpellProto()->Dispel == DISPEL_MAGIC || aura->GetSpellProto()->Dispel == DISPEL_POISON)
+            if (aura->GetSpellInfo()->Dispel == DISPEL_MAGIC || aura->GetSpellInfo()->Dispel == DISPEL_POISON)
             {
-                bool positive = aurApp->IsPositive() ? (!(aura->GetSpellProto()->AttributesEx & SPELL_ATTR1_NEGATIVE)) : false;
+                bool positive = aurApp->IsPositive() ? (!(aura->GetSpellInfo()->AttributesEx & SPELL_ATTR1_NEGATIVE)) : false;
 
                 // do not remove positive auras if friendly target
                 //               negative auras if non-friendly target
@@ -4082,7 +4082,7 @@ void Spell::EffectDispel (SpellEffIndex effIndex)
             // The charges / stack amounts don't count towards the total number of auras that can be dispelled.
             // Ie: A dispel on a target with 5 stacks of Winters Chill and a Polymorph has 1 / (1 + 1) -> 50% chance to dispell
             // Polymorph instead of 1 / (5 + 1) -> 16%.
-            bool dispel_charges = aura->GetSpellProto()->AttributesEx7 & SPELL_ATTR7_DISPEL_CHARGES;
+            bool dispel_charges = aura->GetSpellInfo()->AttributesEx7 & SPELL_ATTR7_DISPEL_CHARGES;
             uint8 charges = dispel_charges ? aura->GetCharges() : aura->GetStackAmount();
             if (charges > 0)
                 dispel_list.push_back(std::make_pair(aura, charges));
@@ -4916,7 +4916,7 @@ void Spell::SpellDamageWeaponDmg (SpellEffIndex effIndex)
                 Unit::AuraApplicationMap const& auras = unitTarget->GetAppliedAuras();
                 for (Unit::AuraApplicationMap::const_iterator itr = auras.begin(); itr != auras.end(); ++itr)
                 {
-                    if (itr->second->GetBase()->GetSpellProto()->Dispel == DISPEL_POISON)
+                    if (itr->second->GetBase()->GetSpellInfo()->Dispel == DISPEL_POISON)
                     {
                         found = true;
                         break;
@@ -5067,7 +5067,7 @@ void Spell::SpellDamageWeaponDmg (SpellEffIndex effIndex)
         {
             // Glyph of Death Strike
             if (AuraEffect const * aurEff = m_caster->GetAuraEffect(59336, EFFECT_0))
-                if (uint32 runic = std::min < uint32 > (m_caster->GetPower(POWER_RUNIC_POWER), SpellMgr::CalculateSpellEffectAmount(aurEff->GetSpellProto(), EFFECT_1)))
+                if (uint32 runic = std::min < uint32 > (m_caster->GetPower(POWER_RUNIC_POWER), SpellMgr::CalculateSpellEffectAmount(aurEff->GetSpellInfo(), EFFECT_1)))
                     totalDamagePercentMod *= ((runic * 0.4f) + 100.0f) / 100.0f;
             break;
         }
@@ -6434,7 +6434,7 @@ void Spell::EffectScriptEffect (SpellEffIndex effIndex)
             for (Unit::AuraApplicationMap::iterator iter = sealAuras.begin(); iter != sealAuras.end();)
             {
                 Aura * aura = iter->second->GetBase();
-                if (IsSealSpell(aura->GetSpellProto()))
+                if (IsSealSpell(aura->GetSpellInfo()))
                 {
                     if (AuraEffect * aureff = aura->GetEffect(2))
                         if (aureff->GetAuraType() == SPELL_AURA_DUMMY)
@@ -7488,7 +7488,7 @@ void Spell::EffectDispelMechanic (SpellEffIndex effIndex)
             continue;
         bool success = false;
         GetDispelChance(aura->GetCaster(), unitTarget, aura->GetId(), !unitTarget->IsFriendlyTo(m_caster), &success);
-        if ((GetAllSpellMechanicMask(aura->GetSpellProto()) & (1 << mechanic)) && success)
+        if ((GetAllSpellMechanicMask(aura->GetSpellInfo()) & (1 << mechanic)) && success)
             dispel_list.push(std::make_pair(aura->GetId(), aura->GetCasterGUID()));
     }
 
@@ -7861,16 +7861,16 @@ void Spell::EffectStealBeneficialBuff (SpellEffIndex effIndex)
         if (!aurApp)
             continue;
 
-        if ((1 << aura->GetSpellProto()->Dispel) & dispelMask)
+        if ((1 << aura->GetSpellInfo()->Dispel) & dispelMask)
         {
             // Need check for passive? this
-            if (!aurApp->IsPositive() || aura->IsPassive() || aura->GetSpellProto()->AttributesEx4 & SPELL_ATTR4_NOT_STEALABLE)
+            if (!aurApp->IsPositive() || aura->IsPassive() || aura->GetSpellInfo()->AttributesEx4 & SPELL_ATTR4_NOT_STEALABLE)
                 continue;
 
             // The charges / stack amounts don't count towards the total number of auras that can be dispelled.
             // Ie: A dispel on a target with 5 stacks of Winters Chill and a Polymorph has 1 / (1 + 1) -> 50% chance to dispell
             // Polymorph instead of 1 / (5 + 1) -> 16%.
-            bool dispel_charges = aura->GetSpellProto()->AttributesEx7 & SPELL_ATTR7_DISPEL_CHARGES;
+            bool dispel_charges = aura->GetSpellInfo()->AttributesEx7 & SPELL_ATTR7_DISPEL_CHARGES;
             uint8 charges = dispel_charges ? aura->GetCharges() : aura->GetStackAmount();
             if (charges > 0)
                 steal_list.push_back(std::make_pair(aura, charges));

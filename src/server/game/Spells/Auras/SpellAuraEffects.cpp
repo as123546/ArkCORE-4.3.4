@@ -7352,42 +7352,42 @@ void AuraEffect::HandleAuraSetVehicle (AuraApplication const * aurApp, uint8 mod
 }
 void AuraEffect::HandleAuraReplaceSpell (AuraApplication const * aurApp, uint8 mode, bool apply) const
 {
-       if (!(mode & (AURA_EFFECT_HANDLE_CHANGE_AMOUNT_MASK | AURA_EFFECT_HANDLE_STAT)))
-        return;
+   //    if (!(mode & (AURA_EFFECT_HANDLE_CHANGE_AMOUNT_MASK | AURA_EFFECT_HANDLE_STAT)))
+   //     return;
 
-   Player * target = aurApp->GetTarget()->ToPlayer();
+   //Player * target = aurApp->GetTarget()->ToPlayer();
 
-    if (!target || !target->IsInWorld())
-        return;
+   // if (!target || !target->IsInWorld())
+   //     return;
 
-   uint32 overrideId = GetAmount();
+   //uint32 overrideId = GetAmount();
 
-    ActionBarSpellOverride const* spellOverride = sSpellMgr->GetActionBarSpellOverride(overrideId);
+   // ActionBarSpellOverride const* spellOverride = sSpellMgr->GetActionBarSpellOverride(overrideId);
 
-    if(!spellOverride)
-        return;
+   // if(!spellOverride)
+   //     return;
 
-    uint32 aura = spellOverride->aura;
-    uint32 affSpell = spellOverride->affSpell;
+   // uint32 aura = spellOverride->aura;
+   // uint32 affSpell = spellOverride->affSpell;
 
-    //Check Aura
-    if(aura > 0 && !target->HasAura(aura))
-        return;
+   // //Check Aura
+   // if(aura > 0 && !target->HasAura(aura))
+   //     return;
 
-    if (apply)
-    {
-        target->AddTemporarySpell(overrideId);
-        WorldPacket data(SMSG_SUPERCEDED_SPELL, 4 + 4);
-        data << uint32(affSpell);
-        data << uint32(overrideId);
-        target->GetSession()->SendPacket(&data);
-    }
-    else
-    {
-        target->RemoveTemporarySpell(overrideId);
-        WorldPacket data(SMSG_SUPERCEDED_SPELL, 4 + 4);
-        data << uint32(overrideId);
-        data << uint32(affSpell);
-        target->GetSession()->SendPacket(&data);
-    }
+   // if (apply)
+   // {
+   //     target->AddTemporarySpell(overrideId);
+   //     WorldPacket data(SMSG_SUPERCEDED_SPELL, 4 + 4);
+   //     data << uint32(affSpell);
+   //     data << uint32(overrideId);
+   //     target->GetSession()->SendPacket(&data);
+   // }
+   // else
+   // {
+   //     target->RemoveTemporarySpell(overrideId);
+   //     WorldPacket data(SMSG_SUPERCEDED_SPELL, 4 + 4);
+   //     data << uint32(overrideId);
+   //     data << uint32(affSpell);
+   //     target->GetSession()->SendPacket(&data);
+   // }
 }

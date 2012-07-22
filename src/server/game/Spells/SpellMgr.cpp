@@ -1787,11 +1787,6 @@ void SpellMgr::LoadSpellProcs()
                 sLog->outErrorDb("`spell_proc` table entry for spellId %u has negative value in `ratePerMinute` field", spellId);
                 procEntry.ratePerMinute = 0;
             }
-            if (cooldown < 0)
-            {
-                sLog->outErrorDb("`spell_proc` table entry for spellId %u has negative value in `cooldown` field", spellId);
-                procEntry.cooldown = 0;
-            }
             if (procEntry.chance == 0 && procEntry.ratePerMinute == 0)
                 sLog->outErrorDb("`spell_proc` table entry for spellId %u doesn't have `chance` and `ratePerMinute` values defined, proc will not be triggered", spellId);
             if (procEntry.charges > 99)

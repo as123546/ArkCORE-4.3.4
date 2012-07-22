@@ -1600,7 +1600,7 @@ void Spell::DoTriggersOnSpellHit (Unit *unit)
                 m_caster->CastSpell(unit, i->first, true);
                 sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "Spell %d triggered spell %d by SPELL_AURA_ADD_TARGET_TRIGGER aura", m_spellInfo->Id, i->first->Id);
             }
-            if (GetSpellDuration(i->first) == -1)
+            if (i->first->GetDuration() == -1)
             {
                 if (Aura * triggeredAur = unit->GetAura(i->first->Id, m_caster->GetGUID()))
                 {
@@ -1616,15 +1616,12 @@ void Spell::DoTriggersOnSpellHit (Unit *unit)
         }
     }
 
-    if (m_customAttr & SPELL_ATTR0_CU_LINK_HIT)
-    {
-        if (const std::vector<int32> *spell_triggered = sSpellMgr->GetSpellLinked(m_spellInfo->Id + SPELL_LINK_HIT))
-            for (std::vector<int32>::const_iterator i = spell_triggered->begin(); i != spell_triggered->end(); ++i)
-                if (*i < 0)
-                    unit->RemoveAurasDueToSpell(-(*i));
-                else
-                    unit->CastSpell(unit, *i, true, 0, 0, m_caster->GetGUID());
-    }
+    if (std::vector<int32> const* spellTriggered = sSpellMgr->GetSpellLinked(m_spellInfo->Id + SPELL_LINK_HIT))
+        for (std::vector<int32>::const_iterator i = spellTriggered->begin(); i != spellTriggered->end(); ++i)
+            if (*i < 0)
+                unit->RemoveAurasDueToSpell(-(*i));
+            else
+                unit->CastSpell(unit, *i, true, 0, 0, m_caster->GetGUID());
 }
 
 void Spell::DoAllEffectOnTarget (GOTargetInfo *target)
@@ -1687,7 +1684,7 @@ bool Spell::UpdateChanneledTargetList ()
     uint8 channelTargetEffectMask = m_channelTargetEffectMask;
     uint8 channelAuraMask = 0;
     for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
-        if (m_spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AURA)
+        if (m_spellInfo->Effects[i].Effect == SPELL_EFFECT_APPLY_AURA)
             channelAuraMask |= 1 << i;
 
     channelAuraMask &= channelTargetEffectMask;
@@ -1695,7 +1692,7 @@ bool Spell::UpdateChanneledTargetList ()
     float range = 0;
     if (channelAuraMask)
     {
-        range = GetSpellMaxRange(m_spellInfo, IsPositiveSpell(m_spellInfo->Id));
+        range = m_spellInfo->GetMaxRange(m_spellInfo->IsPositive());
         if (Player * modOwner = m_caster->GetSpellModOwner())
             modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_RANGE, range, this);
     }
