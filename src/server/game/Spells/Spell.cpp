@@ -74,10 +74,10 @@ bool IsQuestTameSpell (uint32 spellId)
     if (!spellproto)
         return false;
 
-    return spellproto->Effect[0] == SPELL_EFFECT_THREAT && spellproto->Effect[1] == SPELL_EFFECT_APPLY_AURA && spellproto->EffectApplyAuraName[1] == SPELL_AURA_DUMMY;
+    return spellproto->Effects[0].Effect == SPELL_EFFECT_THREAT && spellproto->Effects[1].Effect == SPELL_EFFECT_APPLY_AURA && spellproto->Effects[1].ApplyAuraName == SPELL_AURA_DUMMY;
 }
 
-SpellCastTargets::SpellCastTargets () : m_elevation(0), m_Speed(0)
+SpellCastTargets::SpellCastTargets () : m_elevation(0)
 {
     m_unitTarget = NULL;
     m_itemTarget = NULL;
@@ -317,7 +317,6 @@ void SpellCastTargets::OutDebug ()
     {
         sLog->outString("TARGET_FLAG_STRING: %s", m_strTarget.c_str());
     }
-    sLog->outString("Speed: %f", m_Speed);
     sLog->outString("elevation: %f", m_elevation);
 }
 
@@ -621,10 +620,10 @@ void Spell::SelectSpellTargets ()
     {
         // not call for empty effect.
         // Also some spells use not used effect targets for store targets for dummy effect in triggered spells
-        if (!m_spellInfo->Effect[i])
+        if (!m_spellInfo->Effects[i].Effect)
             continue;
 
-        uint32 effectTargetType = EffectTargetType[m_spellInfo->Effects[i].Effect];
+        uint32 effectTargetType = m_spellInfo->Effects[i].GetRequiredTargetType();
 
         // is it possible that areaaura is not applied to caster?
         if (effectTargetType == SPELL_REQUIRE_NONE)
@@ -773,7 +772,7 @@ void Spell::SelectSpellTargets ()
                  AddItemTarget(m_targets.getItemTarget(), i);
                  break;*/
             case SPELL_EFFECT_APPLY_AURA:
-                switch (m_spellInfo->EffectApplyAuraName[i])
+                switch (m_spellInfo->Effects[i].ApplyAuraName)
                 {
                 case SPELL_AURA_ADD_FLAT_MODIFIER:          // some spell mods auras have 0 target modes instead expected TARGET_UNIT_CASTER(1) (and present for other ranks for same spell for example)
                 case SPELL_AURA_ADD_PCT_MODIFIER:
@@ -1140,7 +1139,7 @@ void Spell::DoAllEffectOnTarget (TargetInfo *target)
         // create far target mask
         for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
         {
-            if (IsFarUnitTargetEffect(m_spellInfo->Effects[i].Effect))
+            if (m_spellInfo->Effects[i].IsFarUnitTargetEffect())
                 if ((1 << i) & mask)
                     farMask |= (1 << i);
         }
@@ -1241,7 +1240,7 @@ void Spell::DoAllEffectOnTarget (TargetInfo *target)
         {
             for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
                 // If at least one effect negative spell is negative hit
-                if (mask & (1 << i) && !m_spellInfo->IsPositive(i))
+                if (mask & (1 << i) && !m_spellInfo->IsPositive())
                 {
                     positive = false;
                     break;
@@ -1351,7 +1350,7 @@ void Spell::DoAllEffectOnTarget (TargetInfo *target)
             caster->ProcDamageAndSpell(unit, procAttacker, procVictim, procEx, 0, m_attackType, m_spellInfo, m_triggeredByAuraSpell);
 
         // Failed Pickpocket, reveal rogue
-        if (missInfo == SPELL_MISS_RESIST && m_customAttr & SPELL_ATTR0_CU_PICKPOCKET && unitTarget->GetTypeId() == TYPEID_UNIT)
+        if (missInfo == SPELL_MISS_RESIST && m_spellInfo->AttributesCu & SPELL_ATTR0_CU_PICKPOCKET && unitTarget->GetTypeId() == TYPEID_UNIT)
         {
             m_caster->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_TALK);
             if (unitTarget->ToCreature()->IsAIEnabled)
@@ -1371,7 +1370,7 @@ void Spell::DoAllEffectOnTarget (TargetInfo *target)
     {
         m_caster->CombatStart(unit, !(m_spellInfo->AttributesEx3 & SPELL_ATTR3_NO_INITIAL_AGGRO));
 
-        if (m_customAttr & SPELL_ATTR0_CU_AURA_CC)
+        if (m_spellInfo->AttributesCu & SPELL_ATTR0_CU_AURA_CC)
             if (!unit->IsStandState())
                 unit->SetStandState(UNIT_STAND_STATE_STAND);
     }
@@ -1445,17 +1444,15 @@ SpellMissInfo Spell::DoSpellHitOnUnit (Unit *unit, const uint32 effectMask, bool
         {
             unit->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_HITBYSPELL);
             //TODO: This is a hack. But we do not know what types of stealth should be interrupted by CC
-            if ((m_customAttr & SPELL_ATTR0_CU_AURA_CC) && unit->IsControlledByPlayer())
+            if ((m_spellInfo->AttributesCu & SPELL_ATTR0_CU_AURA_CC) && unit->IsControlledByPlayer())
                 unit->RemoveAurasByType(SPELL_AURA_MOD_STEALTH);
         }
         else
         {
             // for delayed spells ignore negative spells (after duel end) for friendly targets
             // TODO: this cause soul transfer bugged
-            if (m_spellInfo->Speed > 0.0f && unit->GetTypeId() == TYPEID_PLAYER && !IsPositiveSpell(m_spellInfo->Id))
-            {
+            if (m_spellInfo->Speed > 0.0f && unit->GetTypeId() == TYPEID_PLAYER && !m_spellInfo->IsPositive())
                 return SPELL_MISS_EVADE;
-            }
 
             // assisting case, healing and resurrection
             if (unit->HasUnitState(UNIT_STAT_ATTACK_PLAYER))
@@ -1485,7 +1482,7 @@ SpellMissInfo Spell::DoSpellHitOnUnit (Unit *unit, const uint32 effectMask, bool
 
     uint8 aura_effmask = 0;
     for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
-        if (effectMask & (1 << i) && IsUnitOwnedAuraEffect(m_spellInfo->Effect[i]))
+        if (effectMask & (1 <<i ) && m_spellInfo->Effects[i].IsUnitOwnedAuraEffect())
             aura_effmask |= 1 << i;
 
     if (aura_effmask)
@@ -1496,12 +1493,12 @@ SpellMissInfo Spell::DoSpellHitOnUnit (Unit *unit, const uint32 effectMask, bool
         int32 basePoints[3];
         if (scaleAura)
         {
-            aurSpellInfo = sSpellMgr->SelectAuraRankForPlayerLevel(m_spellInfo, unitTarget->getLevel());
+            aurSpellInfo = m_spellInfo->GetAuraRankForLevel(unitTarget->getLevel());
             ASSERT(aurSpellInfo);
             for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
             {
-                basePoints[i] = aurSpellInfo->EffectBasePoints[i];
-                if (m_spellInfo->Effect[i] != aurSpellInfo->Effect[i])
+                basePoints[i] = aurSpellInfo->Effects[i].BasePoints;
+                if (m_spellInfo->Effects[i].Effect != aurSpellInfo->Effects[i].Effect)
                 {
                     aurSpellInfo = m_spellInfo;
                     break;
@@ -1528,7 +1525,7 @@ SpellMissInfo Spell::DoSpellHitOnUnit (Unit *unit, const uint32 effectMask, bool
 
                 ((UnitAura*) m_spellAura)->SetDiminishGroup(m_diminishGroup);
 
-                bool positive = IsPositiveSpell(m_spellAura->GetId());
+                bool positive = m_spellAura->GetSpellInfo()->IsPositive();
                 AuraApplication * aurApp = m_spellAura->GetApplicationOfTarget(m_originalCaster->GetGUID());
                 if (aurApp)
                     positive = aurApp->IsPositive();
@@ -1536,7 +1533,7 @@ SpellMissInfo Spell::DoSpellHitOnUnit (Unit *unit, const uint32 effectMask, bool
                 duration = m_originalCaster->ModSpellDuration(aurSpellInfo, unit, duration, positive);
 
                 // Haste modifies duration of channeled spells
-                if (IsChanneledSpell(m_spellInfo))
+                if (m_spellInfo->IsChanneled())
                 {
                     if (m_spellInfo->AttributesEx5 & SPELL_ATTR5_HASTE_AFFECT_DURATION)
 

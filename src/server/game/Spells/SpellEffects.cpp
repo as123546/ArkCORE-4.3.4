@@ -274,7 +274,7 @@ void Spell::EffectResurrectNew (SpellEffIndex effIndex)
         return;
 
     uint32 health = damage;
-    uint32 mana = m_spellInfo->EffectMiscValue[effIndex];
+    uint32 mana = m_spellInfo->Effects[effIndex].MiscValue;
     ExecuteLogEffectResurrect(effIndex, pTarget);
     pTarget->setResurrectRequestData(m_caster->GetGUID(), m_caster->GetMapId(), m_caster->GetPositionX(), m_caster->GetPositionY(), m_caster->GetPositionZ(), health, mana);
     SendResurrectRequest(pTarget);
@@ -338,11 +338,11 @@ void Spell::EffectEnvirinmentalDMG (SpellEffIndex effIndex)
     // Note: this hack with damage replace required until GO casting not implemented
     // environment damage spells already have around enemies targeting but this not help in case not existed GO casting support
     // currently each enemy selected explicitly and self cast damage, we prevent apply self casted spell bonuses/etc
-    damage = SpellMgr::CalculateSpellEffectAmount(m_spellInfo, effIndex, m_caster);
+    damage = m_spellInfo->Effects[effIndex].CalcValue(m_caster);
 
-    m_caster->CalcAbsorbResist(m_caster, GetSpellSchoolMask(m_spellInfo), SPELL_DIRECT_DAMAGE, damage, &absorb, &resist, m_spellInfo);
+    m_caster->CalcAbsorbResist(m_caster, m_spellInfo->GetSchoolMask(), SPELL_DIRECT_DAMAGE, damage, &absorb, &resist, m_spellInfo);
 
-    m_caster->SendSpellNonMeleeDamageLog(m_caster, m_spellInfo->Id, damage, GetSpellSchoolMask(m_spellInfo), absorb, resist, false, 0, false);
+    m_caster->SendSpellNonMeleeDamageLog(m_caster, m_spellInfo->Id, damage, m_spellInfo->GetSchoolMask(), absorb, resist, false, 0, false);
     if (m_caster->GetTypeId() == TYPEID_PLAYER)
         m_caster->ToPlayer()->EnvironmentalDamage(DAMAGE_FIRE, damage);
 }
@@ -362,7 +362,7 @@ void Spell::SpellDamageSchoolDmg (SpellEffIndex effIndex)
         case SPELLFAMILY_GENERIC:
         {
             // Meteor like spells (divided damage to targets)
-            if (m_customAttr & SPELL_ATTR0_CU_SHARE_DAMAGE)
+            if (m_spellInfo->AttributesCu & SPELL_ATTR0_CU_SHARE_DAMAGE)
             {
                 uint32 count = 0;
                 for (std::list<TargetInfo>::iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
@@ -524,36 +524,6 @@ void Spell::SpellDamageSchoolDmg (SpellEffIndex effIndex)
                 damage = (m_caster->getLevel() - 60) * 4 + 60;
                 break;
             }
-
-                // Loken Pulsing Shockwave
-            case 59837:
-            case 52942:
-            {
-                // don't damage self and only players
-                if (unitTarget->GetGUID() == m_caster->GetGUID() || unitTarget->GetTypeId() != TYPEID_PLAYER)
-                    return;
-
-                float radius = GetSpellRadiusForHostile(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[0]));
-                if (!radius)
-                    return;
-                float distance = m_caster->GetDistance2d(unitTarget);
-                damage = (distance > radius) ? 0 : int32(SpellMgr::CalculateSpellEffectAmount(m_spellInfo, 0) * distance);
-                break;
-            }
-                // Lightning Nova
-            case 65279:
-            {
-                // Guessed: exponential diminution until max range of spell (100yd)
-                float radius = GetSpellRadiusForHostile(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[0]));
-                if (!radius)
-                    return;
-                float distance = m_caster->GetDistance2d(unitTarget);
-                if (distance > radius)
-                    damage = 0;
-                else
-                    damage *= pow(1.0f - distance / radius, 2);
-                break;
-            }
                 // Rocket Barrage, Goblin racial spell
             case 69041:
             {
@@ -657,11 +627,11 @@ void Spell::SpellDamageSchoolDmg (SpellEffIndex effIndex)
                 for (Unit::AuraEffectList::const_iterator i = mPeriodic.begin(); i != mPeriodic.end(); ++i)
                 {
                     // for caster applied auras only
-                    if ((*i)->GetSpellProto()->SpellFamilyName != SPELLFAMILY_WARLOCK || (*i)->GetCasterGUID() != m_caster->GetGUID())
+                    if ((*i)->GetSpellInfo()->SpellFamilyName != SPELLFAMILY_WARLOCK || (*i)->GetCasterGUID() != m_caster->GetGUID())
                         continue;
 
                     // Immolate
-                    if ((*i)->GetSpellProto()->SpellFamilyFlags[0] & 0x4)
+                    if ((*i)->GetSpellInfo()->SpellFamilyFlags[0] & 0x4)
                     {
                         aura = *i;          // it selected always if exist
                         break;
@@ -672,13 +642,13 @@ void Spell::SpellDamageSchoolDmg (SpellEffIndex effIndex)
                 if (aura)
                 {
                     uint32 pdamage = aura->GetAmount() > 0 ? aura->GetAmount() : 0;
-                    pdamage = m_caster->SpellDamageBonus(unitTarget, aura->GetSpellProto(), effIndex, pdamage, DOT, aura->GetBase()->GetStackAmount());
+                    pdamage = m_caster->SpellDamageBonus(unitTarget, aura->GetSpellInfo(), effIndex, pdamage, DOT, aura->GetBase()->GetStackAmount());
                     uint32 pct_dir = m_caster->CalculateSpellDamage(unitTarget, m_spellInfo, (effIndex + 1));
-                    uint8 baseTotalTicks = uint8(m_caster->CalcSpellDuration(aura->GetSpellProto()) / aura->GetSpellProto()->EffectAmplitude[2]);
+                    uint8 baseTotalTicks = uint8(m_caster->CalcSpellDuration(aura->GetSpellInfo()) / aura->GetSpellInfo()->Effects[2].Amplitude);
                     damage += pdamage * baseTotalTicks * pct_dir / 100;
 
                     uint32 pct_dot = m_caster->CalculateSpellDamage(unitTarget, m_spellInfo, (effIndex + 2)) / 3;
-                    m_spellValue->EffectBasePoints[1] = SpellMgr::CalculateSpellEffectBaseAmount(pdamage * baseTotalTicks * pct_dot / 100, m_spellInfo, 1);
+                    m_spellValue->EffectBasePoints[1] = m_spellInfo->Effects[EFFECT_1].CalcBaseValue(int32(CalculatePctU(pdamage * baseTotalTicks, pct_dot)));
 
                     apply_direct_bonus = false;
                     break;
@@ -738,9 +708,9 @@ void Spell::SpellDamageSchoolDmg (SpellEffIndex effIndex)
                     Unit::AuraEffectList const& ImprMindBlast = m_caster->GetAuraEffectsByType(SPELL_AURA_ADD_FLAT_MODIFIER);
                     for (Unit::AuraEffectList::const_iterator i = ImprMindBlast.begin(); i != ImprMindBlast.end(); ++i)
                     {
-                        if ((*i)->GetSpellProto()->SpellFamilyName == SPELLFAMILY_PRIEST && ((*i)->GetSpellProto()->SpellIconID == 95))
+                        if ((*i)->GetSpellInfo()->SpellFamilyName == SPELLFAMILY_PRIEST && ((*i)->GetSpellInfo()->SpellIconID == 95))
                         {
-                            int chance = SpellMgr::CalculateSpellEffectAmount((*i)->GetSpellProto(), 1, m_caster);
+                            int chance = (*i)->GetSpellInfo()->Effects[EFFECT_1].CalcValue(m_caster);
                             // Mind Trauma
                             if (roll_chance_i(chance))
                                 m_caster->CastSpell(unitTarget, 48301, true, 0);

@@ -404,7 +404,7 @@ void WorldSession::HandleMovementOpcodes (WorldPacket & recv_data)
 void WorldSession::HandleForceSpeedChangeAck (WorldPacket &recv_data)
 {
     uint32 opcode = recv_data.GetOpcode();
-    sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Recvd %s (%u, 0x%X) opcode", LookupOpcodeName(opcode), opcode, opcode);
+    sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Recvd %s (%u, 0x%X) opcode", LookupOpcodeName(Opcodes(opcode)), opcode, opcode);
 
     /* extract packet */
     uint64 guid;
@@ -913,7 +913,7 @@ void WorldSession::ReadMovementInfo(WorldPacket& data, MovementInfo* mi)
                 if (hasFallData)
                     hasFallDirection = data.ReadBit();
                 break;
-            case MSEHasSplineElev:
+            case MSEHasSplineElevation:
                 hasSplineElevation = !data.ReadBit();
                 break;
             case MSEHasSpline:
@@ -1188,7 +1188,7 @@ void WorldSession::WriteMovementInfo(WorldPacket &data, MovementInfo* mi)
                 if (hasFallData)
                     data.WriteBit(hasFallDirection);
                 break;
-            case MSEHasSplineElev:
+            case MSEHasSplineElevation:
                 data.WriteBit(!hasSplineElevation);
                 break;
             case MSEHasSpline:

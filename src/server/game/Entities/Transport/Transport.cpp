@@ -790,7 +790,7 @@ void Transport::UpdatePosition (MovementInfo* mi)
     UpdateNPCPositions();
 }
 
-void Transport::UpdateNPCPositions ()
+void Transport::UpdateNPCPositions()
 {
     for (CreatureSet::iterator itr = m_NPCPassengerSet.begin(); itr != m_NPCPassengerSet.end(); ++itr)
     {
@@ -817,7 +817,7 @@ void Transport::UpdateNPCPositions ()
         y = GetPositionY() + (plr->m_movementInfo.t_pos.m_positionY * cos(GetOrientation()) + plr->m_movementInfo.t_pos.m_positionX * sin(GetOrientation()));
         z = GetPositionZ() + plr->m_movementInfo.t_pos.m_positionZ;
         plr->Relocate(x, y, z, o);
-        UpdateData transData;
+        UpdateData transData(plr->GetMapId());
         WorldPacket packet;
         transData.BuildPacket(&packet);
         plr->SendDirectMessage(&packet);

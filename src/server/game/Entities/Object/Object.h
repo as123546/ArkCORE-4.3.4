@@ -721,6 +721,7 @@ struct MovementInfo
     Position t_pos;
     uint32 t_time;
     uint32 t_time2;
+    uint32 t_time3;
     int8 t_seat;
     // swimming/flying
     float pitch;

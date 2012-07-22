@@ -405,7 +405,7 @@ bool SpellMgr::IsSpellValid(SpellInfo const *spellInfo, Player *pl, bool msg)
 
                 }
                 // also possible IsLootCrafting case but fake item must exist anyway
-                else if (!sObjectMgr->GetItemTemplate(spellInfo->Effects[i].ItemType))
+                else if (!ObjectMgr::GetItemPrototype(spellInfo->Effects[i].ItemType))
                 {
                     if (msg)
                     {

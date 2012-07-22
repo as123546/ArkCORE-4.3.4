@@ -22620,7 +22620,7 @@ void Player::learnQuestRewardedSpells (Quest const* quest)
                         return;
 
                     // compare only specializations
-                    if (itrInfo->Effect[0] != SPELL_EFFECT_TRADE_SKILL || itrInfo->Effects[1].Effect != 0)
+                    if (itrInfo->Effects[0].Effect != SPELL_EFFECT_TRADE_SKILL || itrInfo->Effects[1].Effect != 0)
                         continue;
 
                     // compare same chain spells
@@ -23393,7 +23393,7 @@ void Player::UpdateAreaDependentAuras (uint32 newArea)
     for (AuraMap::iterator iter = m_ownedAuras.begin(); iter != m_ownedAuras.end();)
     {
         // use m_zoneUpdateId for speed: UpdateArea called from UpdateZone or instead UpdateZone in both cases m_zoneUpdateId up-to-date
-        if (sSpellMgr->GetSpellAllowedInLocationError(iter->second->GetSpellInfo(), GetMapId(), m_zoneUpdateId, newArea, this) != SPELL_CAST_OK)
+        if (iter->second->GetSpellInfo()->CheckLocation(GetMapId(), m_zoneUpdateId, newArea, this) != SPELL_CAST_OK)
             RemoveOwnedAura(iter);
         else
             ++iter;
@@ -23958,7 +23958,7 @@ void Player::AddGlobalCooldown (SpellInfo const *spellInfo, Spell *spell)
 
     if (!(spellInfo->Attributes & (SPELL_ATTR0_UNK4 | SPELL_ATTR0_PASSIVE)))
         cdTime *= GetFloatValue(UNIT_MOD_CAST_SPEED);
-    else if (IsRangedWeaponSpell(spellInfo) && !spell->IsAutoRepeat())
+    else if (spellInfo->IsRangedWeaponSpell() && !spell->IsAutoRepeat())
         cdTime *= m_modAttackSpeedPct[RANGED_ATTACK];
 
     if (cdTime > 1500.0f)
@@ -25427,14 +25427,10 @@ void Player::ActivateSpec (uint8 spec)
             if (talentInfo->RankID[rank] == 0)
                 continue;
             removeSpell(talentInfo->RankID[rank], true);          // removes the talent, and all dependant, learned, and chained spells..
-            if (const SpellInfo*_spellEntry = sSpellMgr->GetSpellInfo(talentInfo->RankID[rank]))
-                for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)          // search through the SpellEntry for valid trigger spells
-                    if (_spellEntry->EffectTriggerSpell[i] > 0 && _spellEntry->Effect[i] == SPELL_EFFECT_LEARN_SPELL)
-                        removeSpell(_spellEntry->EffectTriggerSpell[i], true);          // and remove any spells that the talent teaches
-                // if this talent rank can be found in the PlayerTalentMap, mark the talent as removed so it gets deleted
-                //PlayerTalentMap::iterator plrTalent = m_talents[m_activeSpec]->find(talentInfo->RankID[rank]);
-                //if (plrTalent != m_talents[m_activeSpec]->end())
-                //    plrTalent->second->state = PLAYERSPELL_REMOVED;
+            if (const SpellInfo *_spellEntry = sSpellMgr->GetSpellInfo(talentInfo->RankID[rank]))
+                for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)                  // search through the SpellInfo for valid trigger spells
+                    if (_spellEntry->Effects[i].TriggerSpell > 0 && _spellEntry->Effects[i].Effect == SPELL_EFFECT_LEARN_SPELL)
+                        removeSpell(_spellEntry->Effects[i].TriggerSpell, true); // and remove any spells that the talent teaches
         }
     }
 

@@ -2375,13 +2375,13 @@ void DynObjAura::FillTargetMap (std::map<Unit *, uint8> & targets, Unit * /*cast
         if (!HasEffect(effIndex))
             continue;
         UnitList targetList;
-        if (GetSpellInfo()->EffectImplicitTargetB[effIndex] == TARGET_DEST_DYNOBJ_ALLY || GetSpellInfo()->EffectImplicitTargetB[effIndex] == TARGET_UNIT_AREA_ALLY_DST)
+        if (GetSpellInfo()->Effects[effIndex].TargetB == TARGET_DEST_DYNOBJ_ALLY || GetSpellInfo()->Effects[effIndex].TargetB == TARGET_UNIT_AREA_ALLY_DST)
         {
             Trinity::AnyFriendlyUnitInObjectRangeCheck u_check(GetDynobjOwner(), dynObjOwnerCaster, radius);
             Trinity::UnitListSearcher<Trinity::AnyFriendlyUnitInObjectRangeCheck> searcher(GetDynobjOwner(), targetList, u_check);
             GetDynobjOwner()->VisitNearbyObject(radius, searcher);
         }
-        else if (GetSpellInfo()->EffectImplicitTargetB[effIndex] == TARGET_DEST_DYNOBJ_ALL_UNITS)
+        else if (GetSpellInfo()->Effects[effIndex].TargetB == TARGET_DEST_DYNOBJ_ALL_UNITS)
         {
             Trinity::AnyUnitInObjectRangeCheck u_check(GetDynobjOwner(), radius);
             Trinity::UnitListSearcher<Trinity::AnyUnitInObjectRangeCheck> searcher(GetDynobjOwner(), targetList, u_check);
