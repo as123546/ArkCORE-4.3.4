@@ -356,7 +356,7 @@ void StartFlyShip(Transport* t)
     {
         if (Player* pPlayer = itr->getSource())
         {
-            UpdateData transData;
+            UpdateData transData(pPlayer->GetMapId());
             t->BuildCreateUpdateBlockForPlayer(&transData, pPlayer);
             WorldPacket packet;
             transData.BuildPacket(&packet);
@@ -415,7 +415,7 @@ void StopFlyShip(Transport* t)
     {
         if (Player* pPlayer = itr->getSource())
         {
-            UpdateData transData;
+            UpdateData transData(pPlayer->GetMapId());
             t->BuildCreateUpdateBlockForPlayer(&transData, pPlayer);
             WorldPacket packet;
             transData.BuildPacket(&packet);

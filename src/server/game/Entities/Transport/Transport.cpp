@@ -194,7 +194,7 @@ void MapManager::UnLoadTransportFromMap (Transport* t)
         ++itr;
     }
 
-    UpdateData transData;
+    UpdateData transData(map->GetId());
     t->BuildOutOfRangeUpdateBlock(&transData);
     WorldPacket out_packet;
     transData.BuildPacket(&out_packet);
@@ -258,7 +258,7 @@ void MapManager::LoadTransportNPCs ()
 Transport::Transport (uint32 period, uint32 script) :
         GameObject(), m_period(period), ScriptId(script)
 {
-    m_updateFlag = (UPDATEFLAG_TRANSPORT | UPDATEFLAG_HAS_POSITION | UPDATEFLAG_ROTATION);
+    m_updateFlag = (UPDATEFLAG_TRANSPORT | UPDATEFLAG_STATIONARY_POSITION | UPDATEFLAG_ROTATION);
     currenttguid = 0;
 }
 
@@ -660,7 +660,7 @@ void Transport::UpdateForMap (Map const* targetMap)
         {
             if (this != itr->getSource()->GetTransport())
             {
-                UpdateData transData;
+                UpdateData transData(GetMapId());
                 transData.m_map = uint16(GetMapId());
                 BuildCreateUpdateBlockForPlayer(&transData, itr->getSource());
                 WorldPacket packet;
@@ -671,7 +671,7 @@ void Transport::UpdateForMap (Map const* targetMap)
     }
     else
     {
-        UpdateData transData;
+        UpdateData transData(targetMap->GetId());
         transData.m_map = uint16(GetMapId());
         BuildOutOfRangeUpdateBlock(&transData);
         WorldPacket out_packet;

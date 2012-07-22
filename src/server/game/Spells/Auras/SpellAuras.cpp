@@ -2305,7 +2305,7 @@ void UnitAura::FillTargetMap (std::map<Unit *, uint8> & targets, Unit * caster)
                     targetList.push_back(GetUnitOwner());
                     GetUnitOwner()->GetRaidMember(targetList, radius);
                     if (GetSpellInfo()->SpellIconID == 691)
-                        GetUnitOwner()->GetRaidMember(targetList, GetSpellInfo()->Effects[EFFECT_1].CalcRadius()));
+                        GetUnitOwner()->GetRaidMember(targetList, GetSpellInfo()->Effects[EFFECT_1].CalcRadius());
                                                                   
                     break;
                 case SPELL_EFFECT_APPLY_AREA_AURA_FRIEND:

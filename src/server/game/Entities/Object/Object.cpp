@@ -246,7 +246,7 @@ void Object::BuildCreateUpdateBlockForPlayer (UpdateData *data, Player *target) 
 void Object::SendUpdateToPlayer (Player* player)
 {
     // send create update to player
-    UpdateData upd;
+    UpdateData upd(player->GetMapId());
     upd.m_map = uint16(player->GetMapId());
     WorldPacket packet;
 
@@ -380,47 +380,47 @@ void Object::_BuildMovementUpdate (ByteBuffer * data, uint16 flags) const
     }
     else
     {
-        if (flags & UPDATEFLAG_POSITION)
-        {
-            assert(dynamic_cast<WorldObject*>(const_cast<Object*>(this)) != NULL);
-            *data << uint8(0);          // unk PGUID!
-            *data << ((WorldObject*) this)->GetPositionX();
-            *data << ((WorldObject*) this)->GetPositionY();
-            *data << ((WorldObject*) this)->GetPositionZ();
-            *data << ((WorldObject*) this)->GetPositionX();
-            *data << ((WorldObject*) this)->GetPositionY();
-            *data << ((WorldObject*) this)->GetPositionZ();
-            *data << ((WorldObject*) this)->GetOrientation();
+        //if (flags & UPDATEFLAG_POSITION)
+        //{
+        //    assert(dynamic_cast<WorldObject*>(const_cast<Object*>(this)) != NULL);
+        //    *data << uint8(0);          // unk PGUID!
+        //    *data << ((WorldObject*) this)->GetPositionX();
+        //    *data << ((WorldObject*) this)->GetPositionY();
+        //    *data << ((WorldObject*) this)->GetPositionZ();
+        //    *data << ((WorldObject*) this)->GetPositionX();
+        //    *data << ((WorldObject*) this)->GetPositionY();
+        //    *data << ((WorldObject*) this)->GetPositionZ();
+        //    *data << ((WorldObject*) this)->GetOrientation();
 
-            if (GetTypeId() == TYPEID_CORPSE)
-                *data << float(((WorldObject*) this)->GetOrientation());
-            else
-                *data << float(0);
-        }
-        else
-        {
-            // 0x40
-            if (flags & UPDATEFLAG_HAS_POSITION)
-            {
-                // 0x02
-                if (flags & UPDATEFLAG_TRANSPORT && ((GameObject*) this)->GetGoType() == GAMEOBJECT_TYPE_MO_TRANSPORT)
-                {
-                    assert(dynamic_cast<GameObject*>(const_cast<Object*>(this)) != NULL);
-                    *data << (float) 0;
-                    *data << (float) 0;
-                    *data << (float) 0;
-                    *data << ((WorldObject *) this)->GetOrientation();
-                }
-                else
-                {
-                    assert(dynamic_cast<WorldObject*>(const_cast<Object*>(this)) != NULL);
-                    *data << ((WorldObject *) this)->GetPositionX();
-                    *data << ((WorldObject *) this)->GetPositionY();
-                    *data << ((WorldObject *) this)->GetPositionZ();
-                    *data << ((WorldObject *) this)->GetOrientation();
-                }
-            }
-        }
+        //    if (GetTypeId() == TYPEID_CORPSE)
+        //        *data << float(((WorldObject*) this)->GetOrientation());
+        //    else
+        //        *data << float(0);
+        //}
+        //else
+        //{
+        //    // 0x40
+        //    if (flags & UPDATEFLAG_HAS_POSITION)
+        //    {
+        //        // 0x02
+        //        if (flags & UPDATEFLAG_TRANSPORT && ((GameObject*) this)->GetGoType() == GAMEOBJECT_TYPE_MO_TRANSPORT)
+        //        {
+        //            assert(dynamic_cast<GameObject*>(const_cast<Object*>(this)) != NULL);
+        //            *data << (float) 0;
+        //            *data << (float) 0;
+        //            *data << (float) 0;
+        //            *data << ((WorldObject *) this)->GetOrientation();
+        //        }
+        //        else
+        //        {
+        //            assert(dynamic_cast<WorldObject*>(const_cast<Object*>(this)) != NULL);
+        //            *data << ((WorldObject *) this)->GetPositionX();
+        //            *data << ((WorldObject *) this)->GetPositionY();
+        //            *data << ((WorldObject *) this)->GetPositionZ();
+        //            *data << ((WorldObject *) this)->GetOrientation();
+        //        }
+        //    }
+        //}
     }
 
     // 0x4
@@ -447,11 +447,11 @@ void Object::_BuildMovementUpdate (ByteBuffer * data, uint16 flags) const
         *data << float(((Unit*) this)->GetOrientation());          // facing adjustment
     }
 
-    // 0x800
-    if (flags & UPDATEFLAG_UNK2)
-    {
-        *data << uint16(0) << uint16(0) << uint16(0);          //unk
-    }
+    //// 0x800
+    //if (flags & UPDATEFLAG_UNK2)
+    //{
+    //    *data << uint16(0) << uint16(0) << uint16(0);          //unk
+    //}
 
     // 0x200
     if (flags & UPDATEFLAG_ROTATION)
@@ -757,7 +757,7 @@ void Object::BuildFieldsUpdate (Player *pl, UpdateDataMapType &data_map) const
 
     if (iter == data_map.end())
     {
-        UpdateData udata;
+        UpdateData udata(pl->GetMapId());
         udata.m_map = uint16(pl->GetMapId());
         std::pair<UpdateDataMapType::iterator, bool> p = data_map.insert(UpdateDataMapType::value_type(pl, udata));
         ASSERT(p.second);

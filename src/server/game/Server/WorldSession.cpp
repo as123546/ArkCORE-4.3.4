@@ -148,13 +148,13 @@ void WorldSession::SendPacket (WorldPacket const* packet)
     if (sWorld->debugOpcode != 0 && packet->GetOpcode() != sWorld->debugOpcode)
         return;
 
-    if (packet->GetOpcode() == UNKNOWN_OPCODE)
-    {
-        sLog->outError("Sending unknown opcode - prevented. Trace:");
-        ACE_Stack_Trace trace;
-        sLog->outError("%s", trace.c_str());
-        return;
-    }
+    //if (packet->GetOpcode() == UNKNOWN_OPCODE)
+    //{
+    //    sLog->outError("Sending unknown opcode - prevented. Trace:");
+    //    ACE_Stack_Trace trace;
+    //    sLog->outError("%s", trace.c_str());
+    //    return;
+    //}
 
 #ifdef ARKCORE_DEBUG
 

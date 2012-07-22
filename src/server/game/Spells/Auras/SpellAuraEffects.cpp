@@ -1686,7 +1686,7 @@ void AuraEffect::PeriodicTick (AuraApplication * aurApp, Unit * caster) const
         caster->ModifyHealth(-(int32) damage);
         sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "PeriodicTick: donator %u target %u damage %u.", target->GetEntry(), target->GetEntry(), damage);
 
-        float gainMultiplier = SpellMgr::CalculateSpellEffectValueMultiplier(GetSpellInfo(), GetEffIndex(), caster);
+        float gainMultiplier = GetSpellInfo()->Effects[GetEffIndex()].CalcValueMultiplier(caster);
 
         damage = int32(damage * gainMultiplier);
 

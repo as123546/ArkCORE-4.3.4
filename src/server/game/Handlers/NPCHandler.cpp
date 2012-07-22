@@ -111,9 +111,9 @@ void WorldSession::SendShowBank (uint64 guid)
 
 void WorldSession::SendShowReforge (uint64 guid)
 {
-    WorldPacket data(SMSG_SHOW_REFORGE, 8);
-    data << guid;
-    SendPacket(&data);
+    //WorldPacket data(SMSG_SHOW_REFORGE, 8);
+    //data << guid;
+    //SendPacket(&data);
 }
 
 void WorldSession::HandleTrainerListOpcode (WorldPacket & recv_data)

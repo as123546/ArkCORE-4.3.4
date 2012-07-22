@@ -2535,7 +2535,7 @@ void AchievementMgr::Compress(WorldPacket &packet, uint32 newOpcode)
         return;
 
     packet.resize(destsize + sizeof(uint32));
-    packet.SetOpcode(newOpcode);
+    //packet.SetOpcode(newOpcode);
 }
 
 void AchievementMgr::Compress(void* dst, uint32 *dst_size, void* src, int src_size)

@@ -166,11 +166,6 @@ int WorldSocket::SendPacket (const WorldPacket& pct)
     // Dump outgoing packet.
     if (sWorldLog->LogWorld())
     {
-        std::string error = "";
-        if (pct.GetOpcode() > OPCODE_NOT_FOUND)
-            error = "NOT SEND\n";
-        sWorldLog->outTimestampLog("SERVER:\nSOCKET: %u\nLENGTH: %u\nOPCODE: %s (0x%.4X)\n%sDATA:\n", (uint32) get_handle(), pct.size(), LookupOpcodeName(pct.GetOpcode()), pct.GetOpcode(), error.c_str());
-
         uint32 p = 0;
         while (p < pct.size())
         {
@@ -182,12 +177,6 @@ int WorldSocket::SendPacket (const WorldPacket& pct)
         sWorldLog->outLog("\n");
     }
     //sLog->outString("S: %s (0x%.4X)", LookupOpcodeName (pct.GetOpcode()), pct.GetOpcode());
-
-    if (pct.GetOpcode() > OPCODE_NOT_FOUND)
-    {
-        sLog->outDebug(LOG_FILTER_NETWORKIO, "Packet %s (%X) not send.\n", LookupOpcodeName(pct.GetOpcode()), pct.GetOpcode());
-        return 0;
-    }
 
     // Create a copy of the original packet; this is to avoid issues if a hook modifies it.
     sScriptMgr->OnPacketSend(this, WorldPacket(pct));
@@ -854,7 +843,7 @@ int WorldSocket::HandleAuthSession (WorldPacket& recvPacket)
         return -1;
     }
 
-    sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLDSocket::HandleAuthSession: Clientbuild %u, accountname %s, clientseed %u", clientBuild, accountName.c_str(), clientSeed);
+    sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLDSocket::HandleAuthSession: Clientbuild %u, accountname %s, clientseed %u", clientBuild, account.c_str(), clientSeed);
 
     // Get the account information from the realmd database
     std::string safe_account = account;          // Duplicate, else will screw the SHA hash verification below

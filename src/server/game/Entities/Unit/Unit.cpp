@@ -13460,39 +13460,39 @@ void Unit::SetSpeed (UnitMoveType mtype, float rate, bool forced)
     WorldPacket data;
     if (!forced)
     {
-        switch (mtype)
-        {
-        case MOVE_WALK:
-            data.Initialize(MSG_MOVE_SET_WALK_SPEED, 8 + 4 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
-            break;
-        case MOVE_RUN:
-            data.Initialize(MSG_MOVE_SET_RUN_SPEED, 8 + 4 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
-            break;
-        case MOVE_RUN_BACK:
-            data.Initialize(MSG_MOVE_SET_RUN_BACK_SPEED, 8 + 4 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
-            break;
-        case MOVE_SWIM:
-            data.Initialize(MSG_MOVE_SET_SWIM_SPEED, 8 + 4 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
-            break;
-        case MOVE_SWIM_BACK:
-            data.Initialize(MSG_MOVE_SET_SWIM_BACK_SPEED, 8 + 4 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
-            break;
-        case MOVE_TURN_RATE:
-            data.Initialize(MSG_MOVE_SET_TURN_RATE, 8 + 4 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
-            break;
-        case MOVE_FLIGHT:
-            data.Initialize(MSG_MOVE_SET_FLIGHT_SPEED, 8 + 4 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
-            break;
-        case MOVE_FLIGHT_BACK:
-            data.Initialize(MSG_MOVE_SET_FLIGHT_BACK_SPEED, 8 + 4 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
-            break;
-        case MOVE_PITCH_RATE:
-            data.Initialize(MSG_MOVE_SET_PITCH_RATE, 8 + 4 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
-            break;
-        default:
-            sLog->outError("Unit::SetSpeed: Unsupported move type (%d), data not sent to client.", mtype);
-            return;
-        }
+        //switch (mtype)
+        //{
+        //case MOVE_WALK:
+        //    data.Initialize(MSG_MOVE_SET_WALK_SPEED, 8 + 4 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
+        //    break;
+        //case MOVE_RUN:
+        //    data.Initialize(MSG_MOVE_SET_RUN_SPEED, 8 + 4 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
+        //    break;
+        //case MOVE_RUN_BACK:
+        //    data.Initialize(MSG_MOVE_SET_RUN_BACK_SPEED, 8 + 4 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
+        //    break;
+        //case MOVE_SWIM:
+        //    data.Initialize(MSG_MOVE_SET_SWIM_SPEED, 8 + 4 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
+        //    break;
+        //case MOVE_SWIM_BACK:
+        //    data.Initialize(MSG_MOVE_SET_SWIM_BACK_SPEED, 8 + 4 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
+        //    break;
+        //case MOVE_TURN_RATE:
+        //    data.Initialize(MSG_MOVE_SET_TURN_RATE, 8 + 4 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
+        //    break;
+        //case MOVE_FLIGHT:
+        //    data.Initialize(MSG_MOVE_SET_FLIGHT_SPEED, 8 + 4 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
+        //    break;
+        //case MOVE_FLIGHT_BACK:
+        //    data.Initialize(MSG_MOVE_SET_FLIGHT_BACK_SPEED, 8 + 4 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
+        //    break;
+        //case MOVE_PITCH_RATE:
+        //    data.Initialize(MSG_MOVE_SET_PITCH_RATE, 8 + 4 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 4);
+        //    break;
+        //default:
+        //    sLog->outError("Unit::SetSpeed: Unsupported move type (%d), data not sent to client.", mtype);
+        //    return;
+        //}
 
         data.append(GetPackGUID());
         data << uint32(0);          // movement flags
@@ -13519,45 +13519,45 @@ void Unit::SetSpeed (UnitMoveType mtype, float rate, bool forced)
                     pet->SetSpeed(mtype, m_speed_rate[mtype], forced);
         }
 
-        switch (mtype)
-        {
-        case MOVE_WALK:
-            data.Initialize(SMSG_FORCE_WALK_SPEED_CHANGE, 16);
-            break;
-        case MOVE_RUN:
-            data.Initialize(SMSG_FORCE_RUN_SPEED_CHANGE, 17);
-            break;
-        case MOVE_RUN_BACK:
-            data.Initialize(SMSG_FORCE_RUN_BACK_SPEED_CHANGE, 16);
-            break;
-        case MOVE_SWIM:
-            data.Initialize(SMSG_FORCE_SWIM_SPEED_CHANGE, 16);
-            break;
-        case MOVE_SWIM_BACK:
-            data.Initialize(SMSG_FORCE_SWIM_BACK_SPEED_CHANGE, 16);
-            break;
-        case MOVE_TURN_RATE:
-            data.Initialize(SMSG_FORCE_TURN_RATE_CHANGE, 16);
-            break;
-        case MOVE_FLIGHT:
-            data.Initialize(SMSG_FORCE_FLIGHT_SPEED_CHANGE, 16);
-            break;
-        case MOVE_FLIGHT_BACK:
-            data.Initialize(SMSG_FORCE_FLIGHT_BACK_SPEED_CHANGE, 16);
-            break;
-        case MOVE_PITCH_RATE:
-            data.Initialize(SMSG_FORCE_PITCH_RATE_CHANGE, 16);
-            break;
-        default:
-            sLog->outError("Unit::SetSpeed: Unsupported move type (%d), data not sent to client.", mtype);
-            return;
-        }
-        data.append(GetPackGUID());
-        data << (uint32) 0;          // moveEvent, NUM_PMOVE_EVTS = 0x39
-        if (mtype == MOVE_RUN)
-            data << uint8(0);          // new 2.1.0
-        data << float(GetSpeed(mtype));
-        SendMessageToSet(&data, true);
+        //switch (mtype)
+        //{
+        //case MOVE_WALK:
+        //    data.Initialize(SMSG_FORCE_WALK_SPEED_CHANGE, 16);
+        //    break;
+        //case MOVE_RUN:
+        //    data.Initialize(SMSG_FORCE_RUN_SPEED_CHANGE, 17);
+        //    break;
+        //case MOVE_RUN_BACK:
+        //    data.Initialize(SMSG_FORCE_RUN_BACK_SPEED_CHANGE, 16);
+        //    break;
+        //case MOVE_SWIM:
+        //    data.Initialize(SMSG_FORCE_SWIM_SPEED_CHANGE, 16);
+        //    break;
+        //case MOVE_SWIM_BACK:
+        //    data.Initialize(SMSG_FORCE_SWIM_BACK_SPEED_CHANGE, 16);
+        //    break;
+        //case MOVE_TURN_RATE:
+        //    data.Initialize(SMSG_FORCE_TURN_RATE_CHANGE, 16);
+        //    break;
+        //case MOVE_FLIGHT:
+        //    data.Initialize(SMSG_FORCE_FLIGHT_SPEED_CHANGE, 16);
+        //    break;
+        //case MOVE_FLIGHT_BACK:
+        //    data.Initialize(SMSG_FORCE_FLIGHT_BACK_SPEED_CHANGE, 16);
+        //    break;
+        //case MOVE_PITCH_RATE:
+        //    data.Initialize(SMSG_FORCE_PITCH_RATE_CHANGE, 16);
+        //    break;
+        //default:
+        //    sLog->outError("Unit::SetSpeed: Unsupported move type (%d), data not sent to client.", mtype);
+        //    return;
+        //}
+        //data.append(GetPackGUID());
+        //data << (uint32) 0;          // moveEvent, NUM_PMOVE_EVTS = 0x39
+        //if (mtype == MOVE_RUN)
+        //    data << uint8(0);          // new 2.1.0
+        //data << float(GetSpeed(mtype));
+        //SendMessageToSet(&data, true);
     }
 }
 
@@ -16667,30 +16667,30 @@ void Unit::SetRooted (bool apply)
 
 //        AddUnitMovementFlag(MOVEMENTFLAG_ROOT);
 
-        if (Player *plr = ToPlayer())
-        {
-            WorldPacket data(SMSG_FORCE_MOVE_ROOT, 10);
-            data.append(GetPackGUID());
-            data << m_rootTimes;
-            plr->GetSession()->SendPacket(&data);
-        }
-        else
-            ToCreature()->StopMoving();
+        //if (Player *plr = ToPlayer())
+        //{
+        //    WorldPacket data(SMSG_FORCE_MOVE_ROOT, 10);
+        //    data.append(GetPackGUID());
+        //    data << m_rootTimes;
+        //    plr->GetSession()->SendPacket(&data);
+        //}
+        //else
+        //    ToCreature()->StopMoving();
     }
     else
     {
-        if (!HasUnitState(UNIT_STAT_STUNNED))          // prevent allow move if have also stun effect
-        {
-            m_rootTimes++;          //blizzard internal check?
+        //if (!HasUnitState(UNIT_STAT_STUNNED))          // prevent allow move if have also stun effect
+        //{
+        //    m_rootTimes++;          //blizzard internal check?
 
-            if (Player* plr = ToPlayer())
-            {
-                WorldPacket data(SMSG_FORCE_MOVE_UNROOT, 10);
-                data.append(GetPackGUID());
-                data << m_rootTimes;
-                plr->GetSession()->SendPacket(&data);
-            }
-        }
+        //    if (Player* plr = ToPlayer())
+        //    {
+        //        WorldPacket data(SMSG_FORCE_MOVE_UNROOT, 10);
+        //        data.append(GetPackGUID());
+        //        data << m_rootTimes;
+        //        plr->GetSession()->SendPacket(&data);
+        //    }
+        //}
     }
 }
 

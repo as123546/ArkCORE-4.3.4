@@ -313,8 +313,6 @@ protected:
     bool HandleModifyPhaseCommand (const char* args);
     bool HandleModifyGenderCommand (const char* args);
 
-    bool HandleOpcodeTestCommand (const char* args);
-
     bool HandlePDumpLoadCommand (const char *args);
     bool HandlePDumpWriteCommand (const char *args);
 

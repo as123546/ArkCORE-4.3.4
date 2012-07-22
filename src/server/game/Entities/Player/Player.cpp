@@ -2351,20 +2351,20 @@ uint8 Player::chatTag () const
 
 void Player::SendTeleportPacket (Position &oldPos)
 {
-    WorldPacket data2(MSG_MOVE_TELEPORT, 38);
-    data2.append(GetPackGUID());
-    BuildMovementPacket(&data2);
-    Relocate(&oldPos);
-    SendMessageToSet(&data2, false);
+    //WorldPacket data2(MSG_MOVE_TELEPORT, 38);
+    //data2.append(GetPackGUID());
+    //BuildMovementPacket(&data2);
+    //Relocate(&oldPos);
+    //SendMessageToSet(&data2, false);
 }
 
 void Player::SendTeleportAckPacket ()
 {
-    WorldPacket data(MSG_MOVE_TELEPORT_ACK, 41);
-    data.append(GetPackGUID());
-    data << uint32(0);          // this value increments every time
-    BuildMovementPacket(&data);
-    GetSession()->SendPacket(&data);
+    //WorldPacket data(MSG_MOVE_TELEPORT_ACK, 41);
+    //data.append(GetPackGUID());
+    //data << uint32(0);          // this value increments every time
+    //BuildMovementPacket(&data);
+    //GetSession()->SendPacket(&data);
 }
 
 // this is not used anywhere
@@ -5332,48 +5332,48 @@ void Player::DeleteOldCharacters (uint32 keepDays)
 void Player::SetMovement (PlayerMovementType pType)
 {
     //sLog->outError("void Player::SetMovement(PlayerMovementType pType)");
-    WorldPacket data;
+    //WorldPacket data;
 
-    switch (pType)
-    {
-    case MOVE_ROOT:
-    {
-        //sLog->outError("MOVE ROOT");
-        data.Initialize(SMSG_FORCE_MOVE_ROOT, GetPackGUID().size());
-        break;
-        break;
-    }
-    case MOVE_UNROOT:
-    {
-        //sLog->outError("MOVE UNROOT");
-        data.Initialize(SMSG_FORCE_MOVE_UNROOT, GetPackGUID().size());
-        break;
-        break;
-    }
-    case MOVE_WATER_WALK:
-    {
-        //sLog->outError("MOVE WATER WALK");
-        WorldPacket movewaterwalk(SMSG_MULTIPLE_PACKETS, 14);
-        movewaterwalk << uint16(SMSG_SPLINE_MOVE_WATER_WALK);
-        movewaterwalk.append(GetPackGUID());
-        SendMessageToSet(&movewaterwalk, true);
-        break;
-    }
-    case MOVE_LAND_WALK:
-    {
-        // sLog->outError("MOVE LAND WALK");
-        data.Initialize(SMSG_SPLINE_MOVE_LAND_WALK, GetPackGUID().size());
-        break;
-        break;
-    }
-    default:
-    {
-        sLog->outError("Player::SetMovement: Unsupported move type (%d), data not sent to client.", pType);
-        return;
-    }
-    }
-    data.append(GetPackGUID());
-    GetSession()->SendPacket(&data);
+    //switch (pType)
+    //{
+    //case MOVE_ROOT:
+    //{
+    //    //sLog->outError("MOVE ROOT");
+    //    data.Initialize(SMSG_FORCE_MOVE_ROOT, GetPackGUID().size());
+    //    break;
+    //    break;
+    //}
+    //case MOVE_UNROOT:
+    //{
+    //    //sLog->outError("MOVE UNROOT");
+    //    data.Initialize(SMSG_FORCE_MOVE_UNROOT, GetPackGUID().size());
+    //    break;
+    //    break;
+    //}
+    //case MOVE_WATER_WALK:
+    //{
+    //    //sLog->outError("MOVE WATER WALK");
+    //    WorldPacket movewaterwalk(SMSG_MULTIPLE_PACKETS, 14);
+    //    movewaterwalk << uint16(SMSG_SPLINE_MOVE_WATER_WALK);
+    //    movewaterwalk.append(GetPackGUID());
+    //    SendMessageToSet(&movewaterwalk, true);
+    //    break;
+    //}
+    //case MOVE_LAND_WALK:
+    //{
+    //    // sLog->outError("MOVE LAND WALK");
+    //    data.Initialize(SMSG_SPLINE_MOVE_LAND_WALK, GetPackGUID().size());
+    //    break;
+    //    break;
+    //}
+    //default:
+    //{
+    //    sLog->outError("Player::SetMovement: Unsupported move type (%d), data not sent to client.", pType);
+    //    return;
+    //}
+    //}
+    //data.append(GetPackGUID());
+    //GetSession()->SendPacket(&data);
 }
 
 /* Preconditions:
@@ -18010,7 +18010,7 @@ void Player::_LoadAuras (PreparedQueryResult result, uint32 timediff)
             }
 
             // negative effects should continue counting down after logout
-            if (remaintime != -1 && !IsPositiveSpell(spellid))
+            if (remaintime != -1 && !spellproto->IsPositive())
             {
                 if (remaintime / IN_MILLISECONDS <= int32(timediff))
                     continue;
@@ -20458,10 +20458,10 @@ bool Player::IsAffectedBySpellmod (SpellInfo const *spellInfo, SpellModifier *mo
         return false;
 
     // +duration to infinite duration spells making them limited
-    if (mod->op == SPELLMOD_DURATION && GetSpellDuration(spellInfo) == -1)
+    if (mod->op == SPELLMOD_DURATION && spellInfo->GetDuration() == -1)
         return false;
 
-    return sSpellMgr->IsAffectedByMod(spellInfo, mod);
+    return spellInfo->IsAffectedBySpellMod(mod);
 }
 
 void Player::AddSpellMod (SpellModifier* mod, bool apply)
@@ -21037,7 +21037,7 @@ void Player::ProhibitSpellScholl (SpellSchoolMask idSchoolMask, uint32 unTimeMs)
         if (spellInfo->PreventionType != SPELL_PREVENTION_TYPE_SILENCE)
             continue;
 
-        if ((idSchoolMask & GetSpellSchoolMask(spellInfo)) && GetSpellCooldownDelay(unSpellId) < unTimeMs)
+        if ((idSchoolMask & spellInfo->GetSchoolMask()) && GetSpellCooldownDelay(unSpellId) < unTimeMs)
         {
             data << uint32(unSpellId);
             data << uint32(unTimeMs);          // in m.secs
@@ -21508,7 +21508,7 @@ void Player::AddSpellAndCategoryCooldowns (SpellInfo const* spellInfo, uint32 it
     {
         // shoot spells used equipped item cooldown values already assigned in GetAttackTime(RANGED_ATTACK)
         // prevent 0 cooldowns set by another way
-        if (rec <= 0 && catrec <= 0 && (cat == 76 || (IsAutoRepeatRangedSpell(spellInfo) && spellInfo->Id != 75)))
+        if (rec <= 0 && catrec <= 0 && (cat == 76 || (spellInfo->IsAutoRepeatRangedSpell() && spellInfo->Id != 75)))
             rec = GetAttackTime(RANGED_ATTACK);
 
         // Now we have cooldown data (if found any), time to apply mods
@@ -22026,8 +22026,7 @@ void Player::UpdateTriggerVisibility ()
     if (m_clientGUIDs.empty())
         return;
 
-    UpdateData udata;
-    udata.m_map = uint16(GetMapId());
+    UpdateData udata(GetMapId());
     WorldPacket packet;
     for (ClientGUIDs::iterator itr = m_clientGUIDs.begin(); itr != m_clientGUIDs.end(); ++itr)
     {
@@ -22372,15 +22371,15 @@ void Player::SendInitialPacketsAfterAddToMap ()
     if (HasAuraType(SPELL_AURA_MOD_STUN))
         SetMovement(MOVE_ROOT);
 
-    // manual send package (have code in HandleEffect(this, AURA_EFFECT_HANDLE_SEND_FOR_CLIENT, true); that don't must be re-applied.
-    if (HasAuraType(SPELL_AURA_MOD_ROOT))
-    {
-        WorldPacket data2(SMSG_FORCE_MOVE_ROOT, 10);
-        data2.append(GetPackGUID());
-        data2 << (uint32) 2;
-        //SendMessageToSet(&data2, true);
-        m_session->SendPacket(&data2);
-    }
+    //// manual send package (have code in HandleEffect(this, AURA_EFFECT_HANDLE_SEND_FOR_CLIENT, true); that don't must be re-applied.
+    //if (HasAuraType(SPELL_AURA_MOD_ROOT))
+    //{
+    //    WorldPacket data2(SMSG_FORCE_MOVE_ROOT, 10);
+    //    data2.append(GetPackGUID());
+    //    data2 << (uint32) 2;
+    //    //SendMessageToSet(&data2, true);
+    //    m_session->SendPacket(&data2);
+    //}
 
     SendAurasForTarget(this);
     SendEnchantmentDurations();          // must be after add to map
@@ -22578,7 +22577,7 @@ void Player::learnQuestRewardedSpells (Quest const* quest)
     bool found = false;
     for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
     {
-        if (spellInfo->Effect[i] == SPELL_EFFECT_LEARN_SPELL && !HasSpell(spellInfo->EffectTriggerSpell[i]))
+        if (spellInfo->Effects[i].Effect == SPELL_EFFECT_LEARN_SPELL && !HasSpell(spellInfo->Effects[i].TriggerSpell))
         {
             found = true;
             break;
@@ -22590,7 +22589,7 @@ void Player::learnQuestRewardedSpells (Quest const* quest)
         return;
 
     // prevent learn non first rank unknown profession and second specialization for same profession)
-    uint32 learned_0 = spellInfo->EffectTriggerSpell[0];
+    uint32 learned_0 = spellInfo->Effects[0].TriggerSpell;
     if (sSpellMgr->GetSpellRank(learned_0) > 1 && !HasSpell(learned_0))
     {
         // not have first rank learned (unlearned prof?)
@@ -22608,7 +22607,7 @@ void Player::learnQuestRewardedSpells (Quest const* quest)
             uint32 profSpell = itr2->second;
 
             // specialization
-            if (learnedInfo->Effect[0] == SPELL_EFFECT_TRADE_SKILL && learnedInfo->Effect[1] == 0 && profSpell)
+            if (learnedInfo->Effects[0].Effect == SPELL_EFFECT_TRADE_SKILL && learnedInfo->Effects[1].Effect == 0 && profSpell)
             {
                 // search other specialization for same prof
                 for (PlayerSpellMap::const_iterator itr = m_spells.begin(); itr != m_spells.end(); ++itr)
@@ -22621,7 +22620,7 @@ void Player::learnQuestRewardedSpells (Quest const* quest)
                         return;
 
                     // compare only specializations
-                    if (itrInfo->Effect[0] != SPELL_EFFECT_TRADE_SKILL || itrInfo->Effect[1] != 0)
+                    if (itrInfo->Effect[0] != SPELL_EFFECT_TRADE_SKILL || itrInfo->Effects[1].Effect != 0)
                         continue;
 
                     // compare same chain spells
@@ -22928,8 +22927,7 @@ void Player::UpdateForQuestWorldObjects ()
     if (m_clientGUIDs.empty())
         return;
 
-    UpdateData udata;
-    udata.m_map = uint16(GetMapId());
+    UpdateData udata(GetMapId());
     WorldPacket packet;
     for (ClientGUIDs::iterator itr = m_clientGUIDs.begin(); itr != m_clientGUIDs.end(); ++itr)
     {

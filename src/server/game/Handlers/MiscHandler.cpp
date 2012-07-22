@@ -408,14 +408,14 @@ void WorldSession::HandleLogoutRequestOpcode (WorldPacket & /*recv_data*/)
     // not set flags if player can't free move to prevent lost state at logout cancel
     if (GetPlayer()->CanFreeMove())
     {
-        GetPlayer()->SetStandState(UNIT_STAND_STATE_SIT);
+        //GetPlayer()->SetStandState(UNIT_STAND_STATE_SIT);
 
-        WorldPacket data(SMSG_FORCE_MOVE_ROOT, (8 + 4));          // guess size
-        data.append(GetPlayer()->GetPackGUID());
-        data << (uint32) 2;
+        //WorldPacket data(SMSG_FORCE_MOVE_ROOT, (8 + 4));          // guess size
+        //data.append(GetPlayer()->GetPackGUID());
+        //data << (uint32) 2;
 
-        SendPacket(&data);
-        GetPlayer()->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED);
+        //SendPacket(&data);
+        //GetPlayer()->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED);
     }
 
     WorldPacket data(SMSG_LOGOUT_RESPONSE, 1 + 4);
@@ -442,17 +442,17 @@ void WorldSession::HandleLogoutCancelOpcode (WorldPacket & /*recv_data*/)
     // not remove flags if can't free move - its not set in Logout request code.
     if (GetPlayer()->CanFreeMove())
     {
-        //!we can move again
-        data.Initialize(SMSG_FORCE_MOVE_UNROOT, 8);          // guess size
-        data.append(GetPlayer()->GetPackGUID());
-        data << uint32(0);
-        SendPacket(&data);
+        ////!we can move again
+        //data.Initialize(SMSG_FORCE_MOVE_UNROOT, 8);          // guess size
+        //data.append(GetPlayer()->GetPackGUID());
+        //data << uint32(0);
+        //SendPacket(&data);
 
-        //! Stand Up
-        GetPlayer()->SetStandState(UNIT_STAND_STATE_STAND);
+        ////! Stand Up
+        //GetPlayer()->SetStandState(UNIT_STAND_STATE_STAND);
 
-        //! DISABLE_ROTATE
-        GetPlayer()->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED);
+        ////! DISABLE_ROTATE
+        //GetPlayer()->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED);
     }
 
     sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: sent SMSG_LOGOUT_CANCEL_ACK Message");

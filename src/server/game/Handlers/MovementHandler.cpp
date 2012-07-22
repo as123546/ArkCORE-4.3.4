@@ -439,48 +439,48 @@ void WorldSession::HandleForceSpeedChangeAck (WorldPacket &recv_data)
     static char const* move_type_name[MAX_MOVE_TYPE] =
     { "Walk", "Run", "RunBack", "Swim", "SwimBack", "TurnRate", "Flight", "FlightBack", "PitchRate" };
 
-    switch (opcode)
-    {
-    case CMSG_FORCE_WALK_SPEED_CHANGE_ACK:
-        move_type = MOVE_WALK;
-        force_move_type = MOVE_WALK;
-        break;
-    case CMSG_FORCE_RUN_SPEED_CHANGE_ACK:
-        move_type = MOVE_RUN;
-        force_move_type = MOVE_RUN;
-        break;
-    case CMSG_FORCE_RUN_BACK_SPEED_CHANGE_ACK:
-        move_type = MOVE_RUN_BACK;
-        force_move_type = MOVE_RUN_BACK;
-        break;
-    case CMSG_FORCE_SWIM_SPEED_CHANGE_ACK:
-        move_type = MOVE_SWIM;
-        force_move_type = MOVE_SWIM;
-        break;
-    case CMSG_FORCE_SWIM_BACK_SPEED_CHANGE_ACK:
-        move_type = MOVE_SWIM_BACK;
-        force_move_type = MOVE_SWIM_BACK;
-        break;
-    case CMSG_FORCE_TURN_RATE_CHANGE_ACK:
-        move_type = MOVE_TURN_RATE;
-        force_move_type = MOVE_TURN_RATE;
-        break;
-    case CMSG_FORCE_FLIGHT_SPEED_CHANGE_ACK:
-        move_type = MOVE_FLIGHT;
-        force_move_type = MOVE_FLIGHT;
-        break;
-    case CMSG_FORCE_FLIGHT_BACK_SPEED_CHANGE_ACK:
-        move_type = MOVE_FLIGHT_BACK;
-        force_move_type = MOVE_FLIGHT_BACK;
-        break;
-    case CMSG_FORCE_PITCH_RATE_CHANGE_ACK:
-        move_type = MOVE_PITCH_RATE;
-        force_move_type = MOVE_PITCH_RATE;
-        break;
-    default:
-        sLog->outError("WorldSession::HandleForceSpeedChangeAck: Unknown move type opcode: %u", opcode);
-        return;
-    }
+    //switch (opcode)
+    //{
+    //case CMSG_FORCE_WALK_SPEED_CHANGE_ACK:
+    //    move_type = MOVE_WALK;
+    //    force_move_type = MOVE_WALK;
+    //    break;
+    //case CMSG_FORCE_RUN_SPEED_CHANGE_ACK:
+    //    move_type = MOVE_RUN;
+    //    force_move_type = MOVE_RUN;
+    //    break;
+    //case CMSG_FORCE_RUN_BACK_SPEED_CHANGE_ACK:
+    //    move_type = MOVE_RUN_BACK;
+    //    force_move_type = MOVE_RUN_BACK;
+    //    break;
+    //case CMSG_FORCE_SWIM_SPEED_CHANGE_ACK:
+    //    move_type = MOVE_SWIM;
+    //    force_move_type = MOVE_SWIM;
+    //    break;
+    //case CMSG_FORCE_SWIM_BACK_SPEED_CHANGE_ACK:
+    //    move_type = MOVE_SWIM_BACK;
+    //    force_move_type = MOVE_SWIM_BACK;
+    //    break;
+    //case CMSG_FORCE_TURN_RATE_CHANGE_ACK:
+    //    move_type = MOVE_TURN_RATE;
+    //    force_move_type = MOVE_TURN_RATE;
+    //    break;
+    //case CMSG_FORCE_FLIGHT_SPEED_CHANGE_ACK:
+    //    move_type = MOVE_FLIGHT;
+    //    force_move_type = MOVE_FLIGHT;
+    //    break;
+    //case CMSG_FORCE_FLIGHT_BACK_SPEED_CHANGE_ACK:
+    //    move_type = MOVE_FLIGHT_BACK;
+    //    force_move_type = MOVE_FLIGHT_BACK;
+    //    break;
+    //case CMSG_FORCE_PITCH_RATE_CHANGE_ACK:
+    //    move_type = MOVE_PITCH_RATE;
+    //    force_move_type = MOVE_PITCH_RATE;
+    //    break;
+    //default:
+    //    sLog->outError("WorldSession::HandleForceSpeedChangeAck: Unknown move type opcode: %u", opcode);
+    //    return;
+    //}
 
     // skip all forced speed changes except last and unexpected
     // in run/mounted case used one ACK and it must be skipped.m_forced_speed_changes[MOVE_RUN} store both.
@@ -606,50 +606,50 @@ void WorldSession::HandleChangeSeatsOnControlledVehicle (WorldPacket &recv_data)
     case CMSG_REQUEST_VEHICLE_PREV_SEAT:
         GetPlayer()->ChangeSeat(-1, false);
         break;
-    case CMSG_REQUEST_VEHICLE_NEXT_SEAT:
-        GetPlayer()->ChangeSeat(-1, true);
+    //case CMSG_REQUEST_VEHICLE_NEXT_SEAT:
+    //    GetPlayer()->ChangeSeat(-1, true);
+    //    break;
+    //case CMSG_CHANGE_SEATS_ON_CONTROLLED_VEHICLE:
+    //{
+    //    uint64 guid;          // current vehicle guid
+    //    recv_data.readPackGUID(guid);
+
+    //    ReadMovementInfo(recv_data, &vehicle_base->m_movementInfo);
+
+    //    uint64 accessory;          //  accessory guid
+    //    recv_data.readPackGUID(accessory);
+
+    //    int8 seatId;
+    //    recv_data >> seatId;
+
+    //    if (vehicle_base->GetGUID() != guid)
+    //        return;
+
+    //    if (!accessory)
+    //        GetPlayer()->ChangeSeat(-1, seatId > 0);          // prev/next
+    //    else if (Unit *vehUnit = Unit::GetUnit(*GetPlayer(), accessory))
+    //    {
+    //        if (Vehicle *vehicle = vehUnit->GetVehicleKit())
+    //            if (vehicle->HasEmptySeat(seatId))
+    //                GetPlayer()->EnterVehicle(vehicle, seatId);
+    //    }
+    //}
         break;
-    case CMSG_CHANGE_SEATS_ON_CONTROLLED_VEHICLE:
-    {
-        uint64 guid;          // current vehicle guid
-        recv_data.readPackGUID(guid);
+    //case CMSG_REQUEST_VEHICLE_SWITCH_SEAT:
+    //{
+    //    uint64 guid;          // current vehicle guid
+    //    recv_data.readPackGUID(guid);
 
-        ReadMovementInfo(recv_data, &vehicle_base->m_movementInfo);
+    //    int8 seatId;
+    //    recv_data >> seatId;
 
-        uint64 accessory;          //  accessory guid
-        recv_data.readPackGUID(accessory);
-
-        int8 seatId;
-        recv_data >> seatId;
-
-        if (vehicle_base->GetGUID() != guid)
-            return;
-
-        if (!accessory)
-            GetPlayer()->ChangeSeat(-1, seatId > 0);          // prev/next
-        else if (Unit *vehUnit = Unit::GetUnit(*GetPlayer(), accessory))
-        {
-            if (Vehicle *vehicle = vehUnit->GetVehicleKit())
-                if (vehicle->HasEmptySeat(seatId))
-                    GetPlayer()->EnterVehicle(vehicle, seatId);
-        }
-    }
-        break;
-    case CMSG_REQUEST_VEHICLE_SWITCH_SEAT:
-    {
-        uint64 guid;          // current vehicle guid
-        recv_data.readPackGUID(guid);
-
-        int8 seatId;
-        recv_data >> seatId;
-
-        if (vehicle_base->GetGUID() == guid)
-            GetPlayer()->ChangeSeat(seatId);
-        else if (Unit *vehUnit = Unit::GetUnit(*GetPlayer(), guid))
-            if (Vehicle *vehicle = vehUnit->GetVehicleKit())
-                if (vehicle->HasEmptySeat(seatId))
-                    GetPlayer()->EnterVehicle(vehicle, seatId);
-    }
+    //    if (vehicle_base->GetGUID() == guid)
+    //        GetPlayer()->ChangeSeat(seatId);
+    //    else if (Unit *vehUnit = Unit::GetUnit(*GetPlayer(), guid))
+    //        if (Vehicle *vehicle = vehUnit->GetVehicleKit())
+    //            if (vehicle->HasEmptySeat(seatId))
+    //                GetPlayer()->EnterVehicle(vehicle, seatId);
+    //}
         break;
     default:
         break;
@@ -972,10 +972,10 @@ void WorldSession::ReadMovementInfo(WorldPacket& data, MovementInfo* mi)
                 if (hasTransportData && hasTransportTime2)
                     data >> mi->t_time2;
                 break;
-            case MSETransportTime3:
-                if (hasTransportData && hasTransportTime3)
-                    data >> mi->t_time3;
-                break;
+            //case MSETransportTime3:
+            //    if (hasTransportData && hasTransportTime3)
+            //        data >> mi->t_time3;
+            //    break;
             case MSEPitch:
                 if (hasPitch)
                     data >> mi->pitch;
@@ -1021,77 +1021,77 @@ void WorldSession::ReadMovementInfo(WorldPacket& data, MovementInfo* mi)
        if (GetPlayer()->GetTransport())
            GetPlayer()->GetTransport()->UpdatePosition(mi);
 
-    //! Anti-cheat checks. Please keep them in seperate if() blocks to maintain a clear overview.
-    //! Might be subject to latency, so just remove improper flags.
-    #ifdef TRINITY_DEBUG
-    #define REMOVE_VIOLATING_FLAGS(check, maskToRemove) \
-    { \
-        if (check) \
-        { \
-            sLog->outDebug(LOG_FILTER_UNITS, "WorldSession::ReadMovementInfo: Violation of MovementFlags found (%s). " \
-                "MovementFlags: %u, MovementFlags2: %u for player GUID: %u. Mask %u will be removed.", \
-                STRINGIZE(check), mi->GetMovementFlags(), mi->GetExtraMovementFlags(), GetPlayer()->GetGUIDLow(), maskToRemove); \
-            mi->RemoveMovementFlag((maskToRemove)); \
-        } \
-    }
-    #else
-    #define REMOVE_VIOLATING_FLAGS(check, maskToRemove) \
-        if (check) \
-            mi->RemoveMovementFlag((maskToRemove));
-    #endif
+    ////! Anti-cheat checks. Please keep them in seperate if() blocks to maintain a clear overview.
+    ////! Might be subject to latency, so just remove improper flags.
+    //#ifdef TRINITY_DEBUG
+    //#define REMOVE_VIOLATING_FLAGS(check, maskToRemove) \
+    //{ \
+    //    if (check) \
+    //    { \
+    //        sLog->outDebug(LOG_FILTER_UNITS, "WorldSession::ReadMovementInfo: Violation of MovementFlags found (%s). " \
+    //            "MovementFlags: %u, MovementFlags2: %u for player GUID: %u. Mask %u will be removed.", \
+    //            STRINGIZE(check), mi->GetMovementFlags(), mi->GetExtraMovementFlags(), GetPlayer()->GetGUIDLow(), maskToRemove); \
+    //        mi->RemoveMovementFlag((maskToRemove)); \
+    //    } \
+    //}
+    //#else
+    //#define REMOVE_VIOLATING_FLAGS(check, maskToRemove) \
+    //    if (check) \
+    //        mi->RemoveMovementFlag((maskToRemove));
+    //#endif
 
 
-    /*! This must be a packet spoofing attempt. MOVEMENTFLAG_ROOT sent from the client is not valid
-        in conjunction with any of the moving movement flags such as MOVEMENTFLAG_FORWARD.
-        It will freeze clients that receive this player's movement info.
-    */
-    REMOVE_VIOLATING_FLAGS(mi->HasMovementFlag(MOVEMENTFLAG_ROOT),
-        MOVEMENTFLAG_ROOT);
+    ///*! This must be a packet spoofing attempt. MOVEMENTFLAG_ROOT sent from the client is not valid
+    //    in conjunction with any of the moving movement flags such as MOVEMENTFLAG_FORWARD.
+    //    It will freeze clients that receive this player's movement info.
+    //*/
+    //REMOVE_VIOLATING_FLAGS(mi->HasMovementFlag(MOVEMENTFLAG_ROOT),
+    //    MOVEMENTFLAG_ROOT);
 
-    //! Cannot hover without SPELL_AURA_HOVER
-    REMOVE_VIOLATING_FLAGS(mi->HasMovementFlag(MOVEMENTFLAG_HOVER) && !GetPlayer()->HasAuraType(SPELL_AURA_HOVER),
-        MOVEMENTFLAG_HOVER);
+    ////! Cannot hover without SPELL_AURA_HOVER
+    //REMOVE_VIOLATING_FLAGS(mi->HasMovementFlag(MOVEMENTFLAG_HOVER) && !GetPlayer()->HasAuraType(SPELL_AURA_HOVER),
+    //    MOVEMENTFLAG_HOVER);
 
-    //! Cannot ascend and descend at the same time
-    REMOVE_VIOLATING_FLAGS(mi->HasMovementFlag(MOVEMENTFLAG_ASCENDING) && mi->HasMovementFlag(MOVEMENTFLAG_DESCENDING),
-        MOVEMENTFLAG_ASCENDING | MOVEMENTFLAG_DESCENDING);
+    ////! Cannot ascend and descend at the same time
+    //REMOVE_VIOLATING_FLAGS(mi->HasMovementFlag(MOVEMENTFLAG_ASCENDING) && mi->HasMovementFlag(MOVEMENTFLAG_DESCENDING),
+    //    MOVEMENTFLAG_ASCENDING | MOVEMENTFLAG_DESCENDING);
 
-    //! Cannot move left and right at the same time
-    REMOVE_VIOLATING_FLAGS(mi->HasMovementFlag(MOVEMENTFLAG_LEFT) && mi->HasMovementFlag(MOVEMENTFLAG_RIGHT),
-        MOVEMENTFLAG_LEFT | MOVEMENTFLAG_RIGHT);
+    ////! Cannot move left and right at the same time
+    //REMOVE_VIOLATING_FLAGS(mi->HasMovementFlag(MOVEMENTFLAG_LEFT) && mi->HasMovementFlag(MOVEMENTFLAG_RIGHT),
+    //    MOVEMENTFLAG_LEFT | MOVEMENTFLAG_RIGHT);
 
-    //! Cannot strafe left and right at the same time
-    REMOVE_VIOLATING_FLAGS(mi->HasMovementFlag(MOVEMENTFLAG_STRAFE_LEFT) && mi->HasMovementFlag(MOVEMENTFLAG_STRAFE_RIGHT),
-        MOVEMENTFLAG_STRAFE_LEFT | MOVEMENTFLAG_STRAFE_RIGHT);
+    ////! Cannot strafe left and right at the same time
+    //REMOVE_VIOLATING_FLAGS(mi->HasMovementFlag(MOVEMENTFLAG_STRAFE_LEFT) && mi->HasMovementFlag(MOVEMENTFLAG_STRAFE_RIGHT),
+    //    MOVEMENTFLAG_STRAFE_LEFT | MOVEMENTFLAG_STRAFE_RIGHT);
 
-    //! Cannot pitch up and down at the same time
-    REMOVE_VIOLATING_FLAGS(mi->HasMovementFlag(MOVEMENTFLAG_PITCH_UP) && mi->HasMovementFlag(MOVEMENTFLAG_PITCH_DOWN),
-        MOVEMENTFLAG_PITCH_UP | MOVEMENTFLAG_PITCH_DOWN);
+    ////! Cannot pitch up and down at the same time
+    //REMOVE_VIOLATING_FLAGS(mi->HasMovementFlag(MOVEMENTFLAG_PITCH_UP) && mi->HasMovementFlag(MOVEMENTFLAG_PITCH_DOWN),
+    //    MOVEMENTFLAG_PITCH_UP | MOVEMENTFLAG_PITCH_DOWN);
 
-    //! Cannot move forwards and backwards at the same time
-    REMOVE_VIOLATING_FLAGS(mi->HasMovementFlag(MOVEMENTFLAG_FORWARD) && mi->HasMovementFlag(MOVEMENTFLAG_BACKWARD),
-        MOVEMENTFLAG_FORWARD | MOVEMENTFLAG_BACKWARD);
+    ////! Cannot move forwards and backwards at the same time
+    //REMOVE_VIOLATING_FLAGS(mi->HasMovementFlag(MOVEMENTFLAG_FORWARD) && mi->HasMovementFlag(MOVEMENTFLAG_BACKWARD),
+    //    MOVEMENTFLAG_FORWARD | MOVEMENTFLAG_BACKWARD);
 
-    //! Cannot walk on water without SPELL_AURA_WATER_WALK
-    REMOVE_VIOLATING_FLAGS(mi->HasMovementFlag(MOVEMENTFLAG_WATERWALKING) && !GetPlayer()->HasAuraType(SPELL_AURA_WATER_WALK),
-        MOVEMENTFLAG_WATERWALKING);
+    ////! Cannot walk on water without SPELL_AURA_WATER_WALK
+    //REMOVE_VIOLATING_FLAGS(mi->HasMovementFlag(MOVEMENTFLAG_WATERWALKING) && !GetPlayer()->HasAuraType(SPELL_AURA_WATER_WALK),
+    //    MOVEMENTFLAG_WATERWALKING);
 
-    //! Cannot feather fall without SPELL_AURA_FEATHER_FALL
-    REMOVE_VIOLATING_FLAGS(mi->HasMovementFlag(MOVEMENTFLAG_FALLING_SLOW) && !GetPlayer()->HasAuraType(SPELL_AURA_FEATHER_FALL),
-        MOVEMENTFLAG_FALLING_SLOW);
+    ////! Cannot feather fall without SPELL_AURA_FEATHER_FALL
+    //REMOVE_VIOLATING_FLAGS(mi->HasMovementFlag(MOVEMENTFLAG_FALLING_SLOW) && !GetPlayer()->HasAuraType(SPELL_AURA_FEATHER_FALL),
+    //    MOVEMENTFLAG_FALLING_SLOW);
 
-    /*! Cannot fly if no fly auras present. Exception is being a GM.
-        Note that we check for account level instead of Player::IsGameMaster() because in some
-        situations it may be feasable to use .gm fly on as a GM without having .gm on,
-        e.g. aerial combat.
-    */
+    ///*! Cannot fly if no fly auras present. Exception is being a GM.
+    //    Note that we check for account level instead of Player::IsGameMaster() because in some
+    //    situations it may be feasable to use .gm fly on as a GM without having .gm on,
+    //    e.g. aerial combat.
+    //*/
 
-    REMOVE_VIOLATING_FLAGS(mi->HasMovementFlag(MOVEMENTFLAG_FLYING | MOVEMENTFLAG_CAN_FLY) && GetSecurity() == SEC_PLAYER &&
-        !GetPlayer()->m_mover->HasAuraType(SPELL_AURA_FLY) &&
-        !GetPlayer()->m_mover->HasAuraType(SPELL_AURA_MOD_INCREASE_MOUNTED_FLIGHT_SPEED),
-        MOVEMENTFLAG_FLYING | MOVEMENTFLAG_CAN_FLY);
+    //REMOVE_VIOLATING_FLAGS(mi->HasMovementFlag(MOVEMENTFLAG_FLYING | MOVEMENTFLAG_CAN_FLY) && GetSecurity() == SEC_PLAYER &&
+    //    !GetPlayer()->m_mover->HasAuraType(SPELL_AURA_FLY) &&
+    //    !GetPlayer()->m_mover->HasAuraType(SPELL_AURA_MOD_INCREASE_MOUNTED_FLIGHT_SPEED),
+    //    MOVEMENTFLAG_FLYING | MOVEMENTFLAG_CAN_FLY);
 
-    #undef REMOVE_VIOLATING_FLAGS
+    //#undef REMOVE_VIOLATING_FLAGS
 }
 
 void WorldSession::WriteMovementInfo(WorldPacket &data, MovementInfo* mi)

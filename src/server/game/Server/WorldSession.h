@@ -928,6 +928,7 @@ public:
     void HandleEjectPassenger (WorldPacket &data);
     void HandleEnterPlayerVehicle (WorldPacket &data);
     void HandleUpdateProjectilePosition (WorldPacket& recvPacket);
+    int32 HandleEnableNagleAlgorithm();
 
 private:
     void ProcessQueryCallbacks ();

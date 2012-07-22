@@ -446,7 +446,6 @@ ChatCommand * ChatHandler::getCommandTable ()
 
     { "pet", SEC_GAMEMASTER, false, NULL, "", petCommandTable },
     { "ticket", SEC_MODERATOR, false, NULL, "", ticketCommandTable },
-    { "opcode", SEC_ADMINISTRATOR, false, OldHandler<&ChatHandler::HandleOpcodeTestCommand>, "", NULL },
 
     { "ahbotoptions", SEC_GAMEMASTER, true, OldHandler<&ChatHandler::HandleAHBotOptionsCommand>, "", NULL },
 
