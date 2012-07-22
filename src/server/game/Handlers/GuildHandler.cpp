@@ -288,6 +288,7 @@ void WorldSession::HandleGuildRewardsOpcode (WorldPacket& recvPacket)
         return;
 
     recvPacket.read_skip<uint64>();
+    recvPacket.rfinish();
 
     GuildRewardsVector const& vec = sGuildMgr->GetGuildRewards();
     if (vec.empty())

@@ -15,4 +15,4 @@ option(USE_SCRIPTPCH    "Use precompiled headers when compiling scripts"        
 option(USE_COREPCH      "Use precompiled headers when compiling servers"              1)
 option(USE_SFMT         "Use SFMT as random numbergenerator"                          0)
 option(WITH_WARNINGS    "Show all warnings during compile"                            0)
-option(WITH_COREDEBUG   "Include additional debug-code in core"                       0)
+option(WITH_COREDEBUG   "Include additional debug-code in core"                       1)
