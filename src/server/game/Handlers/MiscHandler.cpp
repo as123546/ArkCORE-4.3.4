@@ -1722,9 +1722,10 @@ void WorldSession::HandleQueryInspectAchievements (WorldPacket & recv_data)
     player->GetAchievementMgr().SendRespondInspectAchievements(_player);
 }
 
-void WorldSession::HandleGuildPartyStateUpdate (WorldPacket & /*recv_data*/)
+void WorldSession::HandleGuildPartyStateUpdate (WorldPacket & recv_data)
 {
     sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: CMSG_GUILD_UPDATE_PARTY_STATE");
+    recv_data.rfinish();
 
     // TODO: implement
 

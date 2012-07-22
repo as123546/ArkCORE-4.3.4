@@ -2737,6 +2737,40 @@ void World::InitCurrencyResetTime ()
     m_NextCurrencyReset = wsTime < curTime ? curTime : wsTime;
 }
 
+//void World::ResetGuildAdvancementDailyXP()
+//{
+//    sLog->outDetail("Guild Advancement Daily XP status reset for all characters.");
+//    QueryResult result = CharacterDatabase.Query("SELECT level, xp, guildid FROM guild");
+//    if (!result)
+//        return;
+//    uint32 count = 0;
+//
+//    do
+//    {
+//        Field *fields = result->Fetch();
+//        uint8 level = fields[0].GetUInt32();
+//        uint64 m_xp = fields[1].GetUInt64();
+//        uint64 guildid = fields[2].GetUInt64();
+//
+//        uint64 baseXP = sObjectMgr->GetXPForGuildLevel(level);
+//        uint64 diff = (uint64)(baseXP * 15 / 100);
+//        uint64 m_xp_cap = 0;
+//
+//        if(diff < baseXP)
+//            m_xp_cap = diff + m_xp;
+//        else
+//            m_xp_cap = baseXP;
+//
+//        CharacterDatabase.PExecute("UPDATE guild SET XPCap = %u, todayXp = '0' WHERE guildid = %u", m_xp_cap,guildid);
+//
+//        ++count;
+//    }
+//    while (result->NextRow());
+//
+//    m_NextDailyXPReset = time_t(m_NextDailyXPReset + DAY);
+//    sWorld->setWorldState(WS_GUILD_AD_DAILY_RESET_TIME, uint64(m_NextDailyXPReset));
+//}
+
 void World::ResetDailyQuests ()
 {
     sLog->outDetail("Daily quests reset for all characters.");

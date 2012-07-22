@@ -1151,9 +1151,6 @@ bool Guild::Create (Player* pLeader, const std::string& name)
     m_motd = "No message set.";
     m_bankMoney = 0;
     m_createdDate = ::time(NULL);
-    m_level = 1;
-    m_xp = 0;
-    m_today_xp = 0;
     GenerateXPCap();
     m_nextLevelXP = sObjectMgr->GetXPForGuildLevel(m_level);
     _CreateLogHolders();
@@ -1181,10 +1178,6 @@ bool Guild::Create (Player* pLeader, const std::string& name)
     stmt->setUInt32(++index, m_emblemInfo.GetBorderColor());
     stmt->setUInt32(++index, m_emblemInfo.GetBackgroundColor());
     stmt->setUInt64(++index, m_bankMoney);
-    stmt->setUInt64(++index, m_xp);
-    stmt->setUInt64(++index, m_today_xp);
-    stmt->setUInt64(++index, m_xp_cap);
-    stmt->setUInt32(++index, m_level);
     trans->Append(stmt);
 
     CharacterDatabase.CommitTransaction(trans);
@@ -2160,8 +2153,8 @@ bool Guild::LoadFromDB (Field* fields)
     /*
      //          0          1       2             3              4              5              6
      "SELECT g.guildid, g.name, g.leaderguid, g.EmblemStyle, g.EmblemColor, g.BorderStyle, g.BorderColor, "
-     //   7                  8       9       10            11        12      13      14          15        16
-     "g.BackgroundColor, g.info, g.motd, g.createdate, g.BankMoney, g.xp, g.level, g.todayXP, g.XPCap, COUNT(gbt.guildid) "
+     //   7                  8       9       10            11        12
+     "g.BackgroundColor, g.info, g.motd, g.createdate, g.BankMoney, COUNT(gbt.guildid), "
      "FROM guild g LEFT JOIN guild_bank_tab gbt ON g.guildid = gbt.guildid GROUP BY g.guildid ORDER BY g.guildid ASC", CONNECTION_SYNCH);
      */
     m_id = fields[0].GetUInt32();
@@ -2172,26 +2165,14 @@ bool Guild::LoadFromDB (Field* fields)
     m_motd = fields[9].GetString();
     m_createdDate = fields[10].GetUInt32();          //64 bits?
     m_bankMoney = fields[11].GetUInt64();
-    m_xp = fields[12].GetUInt64();
-    m_level = fields[13].GetUInt32();
-    m_today_xp = fields[14].GetUInt64();
-    m_xp_cap = fields[15].GetUInt64();
 
-    uint8 purchasedTabs = uint8(fields[16].GetUInt32());
+    uint8 purchasedTabs = uint8(fields[12].GetUInt32());
     if (purchasedTabs > GUILD_BANK_MAX_TABS)
         purchasedTabs = GUILD_BANK_MAX_TABS;
 
     m_bankTabs.resize(purchasedTabs);
     for (uint8 i = 0; i < purchasedTabs; ++i)
         m_bankTabs[i] = new BankTab(m_id, i);
-
-    if (m_level == 0)
-        m_level = 1;
-
-    if (m_xp_cap == 0)
-        GenerateXPCap();
-
-    m_nextLevelXP = sObjectMgr->GetXPForGuildLevel(m_level);
 
     _CreateLogHolders();
     //_achievementMgr.LoadFromDB();
@@ -3231,18 +3212,19 @@ void Guild::LevelUp()
 
 void Guild::SaveXP()
 {
-    if (getMSTime() - m_lastXPSave >= 60000) // 1 minute. Hardcoded value for now
-    {
-        m_lastXPSave = getMSTime();
+    //if (getMSTime() - m_lastXPSave >= 60000) // 1 minute. Hardcoded value for now
+    //{
+    //    m_lastXPSave = getMSTime();
 
-        PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SET_GUILD_SAVE_XP);
-        stmt->setUInt64(0, m_xp);
-        stmt->setUInt64(1, m_today_xp);
-        stmt->setUInt64(2, m_xp_cap);
-        stmt->setUInt32(3, uint32(m_level));
-        stmt->setUInt32(4, m_id);
-        CharacterDatabase.Execute(stmt);
-    }
+    //    PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SET_GUILD_SAVE_XP);
+    //    stmt->setUInt64(0, m_xp);
+    //    stmt->setUInt64(1, m_today_xp);
+    //    stmt->setUInt64(2, m_xp_cap);
+    //    stmt->setUInt32(3, uint32(m_level));
+    //    stmt->setUInt32(4, m_id);
+    //    CharacterDatabase.Execute(stmt);
+    //}
+    return;
 }
 
 void Guild::AddGuildNews(uint32 type, uint64 source_guild, int value1, int value2, int flags)
