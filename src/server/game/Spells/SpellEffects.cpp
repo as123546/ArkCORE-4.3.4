@@ -1731,18 +1731,6 @@ void Spell::EffectDummy (SpellEffIndex effIndex)
     }
     case SPELLFAMILY_MAGE:
     {
-        // Cone of Cold
-        if (m_spellInfo->SpellFamilyFlags[0] & SPELLFAMILYFLAG1_MAGE_CONEOFCOLD)
-        {
-            if (m_caster->HasAura(11190))          // Improved Cone of Cold Rank 1
-            {
-                m_caster->CastCustomSpell(unitTarget, 83301, &bp, NULL, NULL, true, 0);
-            }
-            if (m_caster->HasAura(12489))          // Improved Cone of Cold Rank 2
-            {
-                m_caster->CastCustomSpell(unitTarget, 83302, &bp, NULL, NULL, true, 0);
-            }
-        }
         switch (m_spellInfo->Id)
         {
         case 1459:          // Arcane Brilliance
@@ -2122,23 +2110,6 @@ void Spell::EffectDummy (SpellEffIndex effIndex)
         }
         break;
     case SPELLFAMILY_DEATHKNIGHT:
-        // Hungering Cold
-        if (m_spellInfo->SpellFamilyFlags[1] & SPELLFAMILYFLAG1_DK_HUNGERING_COLD)
-        {
-            m_caster->CastCustomSpell(m_caster, 51209, &bp, NULL, NULL, true);
-        }
-        // Chains of Ice
-        if (m_spellInfo->SpellFamilyFlags[0] & SPELLFAMILYFLAG_DK_CHAINS_OF_ICE)
-        {
-            if (m_caster->HasAura(50040))
-            {
-                m_caster->CastSpell(unitTarget, 96293, true);
-            }
-            if (m_caster->HasAura(50041))
-            {
-                m_caster->CastSpell(unitTarget, 96294, true);
-            }
-        }
         // Death strike
         if (m_spellInfo->SpellFamilyFlags[0] & SPELLFAMILYFLAG_DK_DEATH_STRIKE)
         {
@@ -2285,7 +2256,7 @@ void Spell::EffectDummy (SpellEffIndex effIndex)
 
 void Spell::EffectTriggerSpellWithValue (SpellEffIndex effIndex)
 {
-    uint32 triggered_spell_id = m_spellInfo->EffectTriggerSpell[effIndex];
+    uint32 triggered_spell_id = m_spellInfo->Effects[effIndex].TriggerSpell;
 
     // normal case
     SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(triggered_spell_id);
@@ -2297,14 +2268,15 @@ void Spell::EffectTriggerSpellWithValue (SpellEffIndex effIndex)
     }
 
     int32 bp = damage;
-    Unit* caster = GetTriggeredSpellCaster(spellInfo, m_caster, unitTarget);
+
+    Unit* caster = spellInfo->IsRequiringSelectedTarget() ? m_caster : unitTarget;
 
     caster->CastCustomSpell(unitTarget, triggered_spell_id, &bp, &bp, &bp, true);
 }
 
 void Spell::EffectTriggerRitualOfSummoning (SpellEffIndex effIndex)
 {
-    uint32 triggered_spell_id = m_spellInfo->EffectTriggerSpell[effIndex];
+    uint32 triggered_spell_id = m_spellInfo->Effects[effIndex].TriggerSpell;
     SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(triggered_spell_id);
 
     if (!spellInfo)
@@ -2323,7 +2295,7 @@ void Spell::EffectForceCast (SpellEffIndex effIndex)
     if (!unitTarget)
         return;
 
-    uint32 triggered_spell_id = m_spellInfo->EffectTriggerSpell[effIndex];
+    uint32 triggered_spell_id = m_spellInfo->Effects[effIndex].TriggerSpell;
 
     // normal case
     SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(triggered_spell_id);
@@ -2364,7 +2336,7 @@ void Spell::EffectForceCast (SpellEffIndex effIndex)
         return;          // AureEffect::HandleAuraControlVehicle will fail on caster == target
     }
 
-    Unit * caster = GetTriggeredSpellCaster(spellInfo, m_caster, unitTarget);
+    Unit* caster = spellInfo->IsRequiringSelectedTarget() ? m_caster : unitTarget;
 
     caster->CastSpell(unitTarget, spellInfo, true, NULL, NULL, m_originalCasterGUID);
 }
@@ -2374,7 +2346,7 @@ void Spell::EffectForceCastWithValue (SpellEffIndex effIndex)
     if (!unitTarget)
         return;
 
-    uint32 triggered_spell_id = m_spellInfo->EffectTriggerSpell[effIndex];
+    uint32 triggered_spell_id = m_spellInfo->Effects[effIndex].TriggerSpell;
 
     // normal case
     SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(triggered_spell_id);
@@ -2386,7 +2358,7 @@ void Spell::EffectForceCastWithValue (SpellEffIndex effIndex)
     }
     int32 bp = damage;
 
-    Unit* caster = GetTriggeredSpellCaster(spellInfo, m_caster, unitTarget);
+    Unit* caster = spellInfo->IsRequiringSelectedTarget() ? m_caster : unitTarget;
 
     caster->CastCustomSpell(unitTarget, spellInfo->Id, &bp, &bp, &bp, true, NULL, NULL, m_originalCasterGUID);
 }
@@ -2401,7 +2373,7 @@ void Spell::EffectTriggerSpell (SpellEffIndex effIndex)
         return;
     }
 
-    uint32 triggered_spell_id = m_spellInfo->EffectTriggerSpell[effIndex];
+    uint32 triggered_spell_id = m_spellInfo->Effects[effIndex].TriggerSpell;
     Unit* originalCaster = NULL;
 
     // special cases
@@ -2485,7 +2457,7 @@ void Spell::EffectTriggerSpell (SpellEffIndex effIndex)
         // Cloak of Shadows
     case 35729:
     {
-        uint32 dispelMask = GetDispellMask(DISPEL_ALL);
+        uint32 dispelMask = SpellInfo::GetDispelMask(DISPEL_ALL);
         Unit::AuraApplicationMap& Auras = unitTarget->GetAppliedAuras();
         for (Unit::AuraApplicationMap::iterator iter = Auras.begin(); iter != Auras.end();)
         {
@@ -2544,14 +2516,14 @@ void Spell::EffectTriggerSpell (SpellEffIndex effIndex)
 
     // Note: not exist spells with weapon req. and IsSpellHaveCasterSourceTargets == true
     // so this just for speedup places in else
-    Unit * caster = GetTriggeredSpellCaster(spellInfo, m_caster, unitTarget);
+    Unit* caster = spellInfo->IsRequiringSelectedTarget() ? m_caster : unitTarget;
 
     caster->CastSpell(unitTarget, spellInfo, true, 0, 0, (originalCaster ? originalCaster->GetGUID() : 0));
 }
 
 void Spell::EffectTriggerMissileSpell (SpellEffIndex effIndex)
 {
-    uint32 triggered_spell_id = m_spellInfo->EffectTriggerSpell[effIndex];
+    uint32 triggered_spell_id = m_spellInfo->Effects[effIndex].TriggerSpell;
 
     // normal case
     SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(triggered_spell_id);
@@ -2885,7 +2857,7 @@ void Spell::EffectUnlearnSpecialization (SpellEffIndex effIndex)
         return;
 
     Player *_player = (Player*) unitTarget;
-    uint32 spellToUnlearn = m_spellInfo->EffectTriggerSpell[effIndex];
+    uint32 spellToUnlearn = m_spellInfo->Effects[effIndex].TriggerSpell;
 
     _player->removeSpell(spellToUnlearn);
 
@@ -2894,10 +2866,10 @@ void Spell::EffectUnlearnSpecialization (SpellEffIndex effIndex)
 
 void Spell::EffectPowerDrain (SpellEffIndex effIndex)
 {
-    if (m_spellInfo->EffectMiscValue[effIndex] < 0 || m_spellInfo->EffectMiscValue[effIndex] >= int8(MAX_POWERS))
+    if (m_spellInfo->Effects[effIndex].MiscValue < 0 || m_spellInfo->Effects[effIndex].MiscValue >= int8(MAX_POWERS))
         return;
 
-    Powers powerType = Powers(m_spellInfo->EffectMiscValue[effIndex]);
+    Powers powerType = Powers(m_spellInfo->Effects[effIndex].MiscValue);
 
     if (!unitTarget || !unitTarget->isAlive() || unitTarget->getPowerType() != powerType || damage < 0)
         return;
@@ -2914,7 +2886,7 @@ void Spell::EffectPowerDrain (SpellEffIndex effIndex)
     // Don`t restore from self drain
     if (m_caster != unitTarget)
     {
-        gainMultiplier = SpellMgr::CalculateSpellEffectValueMultiplier(m_spellInfo, effIndex, m_originalCaster, this);
+        gainMultiplier = m_spellInfo->Effects[effIndex].CalcValueMultiplier(m_originalCaster, this);
 
         int32 gain = int32(newDamage * gainMultiplier);
 
@@ -2928,7 +2900,7 @@ void Spell::EffectSendEvent (SpellEffIndex effIndex)
     /*
      we do not handle a flag dropping or clicking on flag in battleground by sendevent system
      */
-    sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "Spell ScriptStart %u for spellid %u in EffectSendEvent ", m_spellInfo->EffectMiscValue[effIndex], m_spellInfo->Id);
+    sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "Spell ScriptStart %u for spellid %u in EffectSendEvent ", m_spellInfo->Effects[effIndex].MiscValue, m_spellInfo->Id);
 
     Object *pTarget;
     if (focusObject)
@@ -2943,10 +2915,10 @@ void Spell::EffectSendEvent (SpellEffIndex effIndex)
     if (unitTarget)
     {
         if (ZoneScript* zoneScript = unitTarget->GetZoneScript())
-            zoneScript->ProcessEvent(unitTarget, m_spellInfo->EffectMiscValue[effIndex]);
+            zoneScript->ProcessEvent(unitTarget, m_spellInfo->Effects[effIndex].MiscValue);
     }
 
-    m_caster->GetMap()->ScriptsStart(sEventScripts, m_spellInfo->EffectMiscValue[effIndex], m_caster, pTarget);
+    m_caster->GetMap()->ScriptsStart(sEventScripts, m_spellInfo->Effects[effIndex].MiscValue, m_caster, pTarget);
 }
 
 void Spell::EffectPowerBurn (SpellEffIndex effIndex)

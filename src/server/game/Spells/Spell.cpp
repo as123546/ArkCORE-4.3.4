@@ -2404,7 +2404,7 @@ void Spell::SelectEffectTargets (uint32 i, SpellImplicitTargetInfo const& cur)
             if (SpellTargetPosition const* st = sSpellMgr->GetSpellTargetPosition(m_spellInfo->Id))
             {
                 //TODO: fix this check
-                if (m_spellInfo->Effect[0] == SPELL_EFFECT_TELEPORT_UNITS || m_spellInfo->Effect[1] == SPELL_EFFECT_TELEPORT_UNITS || m_spellInfo->Effect[2] == SPELL_EFFECT_TELEPORT_UNITS)
+                if (m_spellInfo->Effects[0].Effect == SPELL_EFFECT_TELEPORT_UNITS || m_spellInfo->Effects[1].Effect == SPELL_EFFECT_TELEPORT_UNITS || m_spellInfo->Effects[2].Effect == SPELL_EFFECT_TELEPORT_UNITS)
                     m_targets.setDst(st->target_X, st->target_Y, st->target_Z, st->target_Orientation, (int32) st->target_mapId);
                 else if (st->target_mapId == m_caster->GetMapId())
                     m_targets.setDst(st->target_X, st->target_Y, st->target_Z, st->target_Orientation);
@@ -2424,7 +2424,7 @@ void Spell::SelectEffectTargets (uint32 i, SpellImplicitTargetInfo const& cur)
             break;
         case TARGET_DST_NEARBY_ENTRY:
         {
-            float range = GetSpellMaxRange(m_spellInfo, IsPositiveSpell(m_spellInfo->Id));
+            float range = m_spellInfo->GetMaxRange(m_spellInfo->IsPositive());
             if (modOwner)
                 modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_RANGE, range, this);
 
@@ -2505,7 +2505,7 @@ void Spell::SelectEffectTargets (uint32 i, SpellImplicitTargetInfo const& cur)
         }
 
         //Chain: 2, 6, 22, 25, 45, 77
-        uint32 maxTargets = m_spellInfo->EffectChainTarget[i];
+        uint32 maxTargets = m_spellInfo->Effects[i].ChainTarget;
         if (modOwner)
             modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_JUMP_TARGETS, maxTargets, this);
 
@@ -2523,7 +2523,7 @@ void Spell::SelectEffectTargets (uint32 i, SpellImplicitTargetInfo const& cur)
             case TARGET_UNIT_NEARBY_ENEMY:
             case TARGET_UNIT_TARGET_ENEMY:
             case TARGET_UNIT_NEARBY_ENTRY:          // fix me
-                range = GetSpellMaxRange(m_spellInfo, false);
+                range = m_spellInfo->GetMaxRange(false);
                 if (modOwner)
                     modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_RANGE, range, this);
                 SearchChainTarget(unitList, range, maxTargets, SPELL_TARGETS_ENEMY);
@@ -2532,7 +2532,7 @@ void Spell::SelectEffectTargets (uint32 i, SpellImplicitTargetInfo const& cur)
             case TARGET_UNIT_NEARBY_ALLY:          // fix me
             case TARGET_UNIT_NEARBY_ALLY_UNK:
             case TARGET_UNIT_NEARBY_RAID:
-                range = GetSpellMaxRange(m_spellInfo, true);
+                range = m_spellInfo->GetMaxRange(true);
                 if (modOwner)
                     modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_RANGE, range, this);
                 SearchChainTarget(unitList, range, maxTargets, SPELL_TARGETS_CHAINHEAL);
@@ -2550,7 +2550,7 @@ void Spell::SelectEffectTargets (uint32 i, SpellImplicitTargetInfo const& cur)
     else if (pushType)
     {
         // Dummy, just for client
-        if (EffectTargetType[m_spellInfo->Effect[i]] != SPELL_REQUIRE_UNIT)
+        if (m_spellInfo->Effects[i].GetRequiredTargetType() != SPELL_REQUIRE_UNIT)
             return;
 
         float radius;
@@ -2568,29 +2568,29 @@ void Spell::SelectEffectTargets (uint32 i, SpellImplicitTargetInfo const& cur)
                 targetType = SPELL_TARGETS_ENEMY;
                 break;
             }
-            radius = GetSpellRadius(m_spellInfo, i, false);
+            radius = m_spellInfo->Effects[i].CalcRadius();
             targetType = SPELL_TARGETS_ENEMY;
             break;
         case TARGET_UNIT_AREA_ALLY_SRC:
         case TARGET_UNIT_AREA_ALLY_DST:
         case TARGET_UNIT_CONE_ALLY:
-            radius = GetSpellRadius(m_spellInfo, i, true);
+            radius = m_spellInfo->Effects[i].CalcRadius();
             targetType = SPELL_TARGETS_ALLY;
             break;
         case TARGET_UNIT_AREA_ENTRY_DST:
         case TARGET_UNIT_AREA_ENTRY_SRC:
         case TARGET_UNIT_CONE_ENTRY:          // fix me
-            radius = GetSpellRadius(m_spellInfo, i, IsPositiveSpell(m_spellInfo->Id));
+            radius = m_spellInfo->Effects[i].CalcRadius();
             targetType = SPELL_TARGETS_ENTRY;
             break;
         case TARGET_GAMEOBJECT_AREA_SRC:
         case TARGET_GAMEOBJECT_AREA_DST:
         case TARGET_GAMEOBJECT_AREA_PATH:
-            radius = GetSpellRadius(m_spellInfo, i, true);
+            radius = m_spellInfo->Effects[i].CalcRadius();
             targetType = SPELL_TARGETS_GO;
             break;
         default:
-            radius = GetSpellRadius(m_spellInfo, i, true);
+            radius = m_spellInfo->Effects[i].CalcRadius();
             targetType = SPELL_TARGETS_NONE;
             break;
         }

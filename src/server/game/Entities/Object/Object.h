@@ -506,6 +506,8 @@ protected:
 
     uint16 m_valuesCount;
 
+    uint16 _fieldNotifyFlags;
+
     bool m_objectUpdated;
 
 private:

@@ -822,10 +822,10 @@ void Object::GetUpdateFieldData(Player const* target, uint32*& flags, bool& isOw
             flags = DynamicObjectUpdateFieldFlags;
             isOwner = ((DynamicObject*)this)->GetCasterGUID() == target->GetGUID();
             break;
-        case TYPEID_CORPSE:
-            flags = CorpseUpdateFieldFlags;
-            isOwner = ToCorpse()->GetOwnerGUID() == target->GetGUID();
-            break;
+        //case TYPEID_CORPSE: Todo: fix it.
+        //    flags = CorpseUpdateFieldFlags;
+        //    isOwner = ToCorpse()->GetOwnerGUID() == target->GetGUID();
+        //    break;
     }
 }
 

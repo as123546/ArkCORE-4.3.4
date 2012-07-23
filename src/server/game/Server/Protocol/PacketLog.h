@@ -40,6 +40,7 @@ class PacketLog
     ~PacketLog();
 
 public:
+    void Initialize();
     bool CanLogPacket() const { return (_file != NULL); }
     void LogPacket(WorldPacket const& packet, Direction direction);
 
@@ -47,7 +48,7 @@ private:
     FILE* _file;
 };
 
-#define sWorldLog ACE_Singleton<PacketLog, ACE_Thread_Mutex>::instance()
+#define sPacketLog ACE_Singleton<PacketLog, ACE_Thread_Mutex>::instance()
 
 #endif
 

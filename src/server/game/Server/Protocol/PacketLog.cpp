@@ -42,13 +42,13 @@ PacketLog::~PacketLog()
 
 void PacketLog::Initialize()
 {
-    std::string logsDir = sConfigMgr->GetStringDefault("LogsDir", "");
+    std::string logsDir = sConfig->GetStringDefault("LogsDir", "");
 
     if (!logsDir.empty())
         if ((logsDir.at(logsDir.length()-1) != '/') && (logsDir.at(logsDir.length()-1) != '\\'))
             logsDir.push_back('/');
 
-    std::string logname = sConfigMgr->GetStringDefault("PacketLogFile", "");
+    std::string logname = sConfig->GetStringDefault("PacketLogFile", "");
     if (!logname.empty())
         _file = fopen((logsDir + logname).c_str(), "wb");
 }
