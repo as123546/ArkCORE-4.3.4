@@ -5249,7 +5249,7 @@ void Spell::EffectInterruptCast (SpellEffIndex effIndex)
     {
         if (Spell* spell = unitTarget->GetCurrentSpell(CurrentSpellTypes(i)))
         {
-            SpellEntry const* curSpellInfo = spell->m_spellInfo;
+            SpellInfo const* curSpellInfo = spell->m_spellInfo;
             uint32 interruptFlags = (i == CURRENT_CHANNELED_SPELL) ? curSpellInfo->ChannelInterruptFlags : curSpellInfo->InterruptFlags;
             // check if we can interrupt spell
             if ((spell->getState() == SPELL_STATE_CASTING || (spell->getState() == SPELL_STATE_PREPARING && spell->GetCastTime() > 0.0f)) && (interruptFlags & SPELL_INTERRUPT_FLAG_INTERRUPT) && curSpellInfo->PreventionType == SPELL_PREVENTION_TYPE_SILENCE)
@@ -5257,7 +5257,7 @@ void Spell::EffectInterruptCast (SpellEffIndex effIndex)
                 if (m_originalCaster)
                 {
                     int32 duration = m_originalCaster->ModSpellDuration(m_spellInfo, unitTarget, m_originalCaster->CalcSpellDuration(m_spellInfo), false);
-                    unitTarget->ProhibitSpellScholl(GetSpellSchoolMask(curSpellInfo), duration/*GetSpellDuration(m_spellInfo)*/);
+                    unitTarget->ProhibitSpellScholl(curSpellInfo->GetSchoolMask(), duration/*GetSpellDuration(m_spellInfo)*/);
                 }
                 ExecuteLogEffectInterruptCast(effIndex, unitTarget, curSpellInfo->Id);
                 unitTarget->InterruptSpell(CurrentSpellTypes(i), false);

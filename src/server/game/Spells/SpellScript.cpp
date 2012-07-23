@@ -212,7 +212,7 @@ bool SpellScript::UnitTargetHandler::CheckEffect (SpellInfo const * spellEntry, 
 {
     if (!targetType)
         return false;
-    return (spellEntry->Effect[effIndex] == SPELL_EFFECT_ANY) || (spellEntry->EffectImplicitTargetA[effIndex] == targetType || spellEntry->EffectImplicitTargetB[effIndex] == targetType);
+    return (spellEntry->Effects[effIndex].Effect == SPELL_EFFECT_ANY) || (spellEntry->Effects[effIndex].TargetA == targetType || spellEntry->Effects[effIndex].TargetB == targetType);
 }
 
 void SpellScript::UnitTargetHandler::Call (SpellScript * spellScript, std::list<Unit*>& unitTargets)

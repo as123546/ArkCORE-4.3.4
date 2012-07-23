@@ -49,7 +49,7 @@
 #include "WorldSession.h"
 #include "WorldSocketMgr.h"
 #include "Log.h"
-#include "WorldLog.h"
+#include "PacketLog.h"
 #include "ScriptMgr.h"
 
 #if defined(__GNUC__)
@@ -156,7 +156,7 @@ const std::string& WorldSocket::GetRemoteAddress (void) const
     return m_Address;
 }
 
-int WorldSocket::SendPacket (const WorldPacket& pct)
+int WorldSocket::SendPacket (WorldPacket const& pct)
 {
     ACE_GUARD_RETURN(LockType, Guard, m_OutBufferLock, -1);
 
@@ -164,19 +164,8 @@ int WorldSocket::SendPacket (const WorldPacket& pct)
         return -1;
 
     // Dump outgoing packet.
-    if (sWorldLog->LogWorld())
-    {
-        uint32 p = 0;
-        while (p < pct.size())
-        {
-            for (uint32 j = 0; j < 16 && p < pct.size(); j++)
-                sWorldLog->outLog("%.2X ", const_cast<WorldPacket&>(pct)[p++]);
-
-            sWorldLog->outLog("\n");
-        }
-        sWorldLog->outLog("\n");
-    }
-    //sLog->outString("S: %s (0x%.4X)", LookupOpcodeName (pct.GetOpcode()), pct.GetOpcode());
+    if (sPacketLog->CanLogPacket())
+        sPacketLog->LogPacket(pct, SERVER_TO_CLIENT);
 
     // Create a copy of the original packet; this is to avoid issues if a hook modifies it.
     sScriptMgr->OnPacketSend(this, WorldPacket(pct));
@@ -660,20 +649,8 @@ int WorldSocket::ProcessIncoming (WorldPacket* new_pct)
         return -1;
 
     // Dump received packet.
-    if (sWorldLog->LogWorld())
-    {
-        sWorldLog->outTimestampLog("CLIENT:\nSOCKET: %u\nLENGTH: %u\nOPCODE: %s (0x%.4X)\nDATA:\n", (uint32) get_handle(), new_pct->size(), LookupOpcodeName(new_pct->GetOpcode()), new_pct->GetOpcode());
-
-        uint32 p = 0;
-        while (p < new_pct->size())
-        {
-            for (uint32 j = 0; j < 16 && p < new_pct->size(); j++)
-                sWorldLog->outLog("%.2X ", (*new_pct)[p++]);
-
-            sWorldLog->outLog("\n");
-        }
-        sWorldLog->outLog("\n");
-    }
+    if (sPacketLog->CanLogPacket())
+        sPacketLog->LogPacket(*new_pct, CLIENT_TO_SERVER);
 
     try
     {
