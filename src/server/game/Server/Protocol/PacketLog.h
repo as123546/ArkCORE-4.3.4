@@ -1,6 +1,4 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
- *
  * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
  *
  * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
@@ -22,47 +20,34 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-/// \addtogroup u2w
-/// @{
-/// \file
-#ifndef ARKCORE_WORLDLOG_H
-#define ARKCORE_WORLDLOG_H
+#ifndef ARKCORE_PACKETLOG_H
+#define ARKCORE_PACKETLOG_H
 
 #include "Common.h"
 #include <ace/Singleton.h>
-#include "Errors.h"
 
-#include <stdarg.h>
-
-/// %Log packets to a file
-class WorldLog
+enum Direction
 {
-    friend class ACE_Singleton<WorldLog, ACE_Thread_Mutex> ;
-    WorldLog ();
-    WorldLog (const WorldLog &);
-    WorldLog& operator= (const WorldLog &);
-    ACE_Thread_Mutex Lock;
-
-    /// Close the file in destructor
-    ~WorldLog ();
-
-public:
-    void Initialize ();
-    /// Is the world logger active?
-    bool LogWorld (void) const
-    {
-        return (i_file != NULL);
-    }
-    /// %Log to the file
-    void outLog (char const *fmt, ...);
-    void outTimestampLog (char const *fmt, ...);
-
-private:
-    FILE *i_file;
-
-    bool m_dbWorld;
+    CLIENT_TO_SERVER,
+    SERVER_TO_CLIENT
 };
 
-#define sWorldLog ACE_Singleton<WorldLog, ACE_Thread_Mutex>::instance()
+/// %Log packets to a file
+class PacketLog
+{
+    friend class ACE_Singleton<PacketLog, ACE_Thread_Mutex> ;
+    PacketLog();
+    ~PacketLog();
+
+public:
+    bool CanLogPacket() const { return (_file != NULL); }
+    void LogPacket(WorldPacket const& packet, Direction direction);
+
+private:
+    FILE* _file;
+};
+
+#define sWorldLog ACE_Singleton<PacketLog, ACE_Thread_Mutex>::instance()
+
 #endif
-/// @}
+

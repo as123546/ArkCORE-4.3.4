@@ -27,18 +27,18 @@
  \ingroup u2w
  */
 
-#include "WorldLog.h"
+#include "PacketLog.h"
 #include "Config.h"
 #include "Log.h"
 #include "DatabaseWorkerPool.h"
 
-WorldLog::WorldLog () :
+PacketLog::PacketLog () :
         i_file(NULL)
 {
     Initialize();
 }
 
-WorldLog::~WorldLog ()
+PacketLog::~PacketLog ()
 {
     if (i_file != NULL)
         fclose(i_file);
@@ -46,7 +46,7 @@ WorldLog::~WorldLog ()
 }
 
 /// Open the log file (if specified so in the configuration file)
-void WorldLog::Initialize ()
+void PacketLog::Initialize ()
 {
     std::string logsDir = sConfig->GetStringDefault("LogsDir", "");
 
@@ -65,7 +65,7 @@ void WorldLog::Initialize ()
     m_dbWorld = sConfig->GetBoolDefault("LogDB.World", false);          // can be VERY heavy if enabled
 }
 
-void WorldLog::outTimestampLog (char const *fmt, ...)
+void PacketLog::outTimestampLog (char const *fmt, ...)
 {
     if (LogWorld())
     {
@@ -93,7 +93,7 @@ void WorldLog::outTimestampLog (char const *fmt, ...)
     }
 }
 
-void WorldLog::outLog (char const *fmt, ...)
+void PacketLog::outLog (char const *fmt, ...)
 {
     if (LogWorld())
     {
