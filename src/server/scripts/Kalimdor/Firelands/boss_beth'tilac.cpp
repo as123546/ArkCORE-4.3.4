@@ -1,4 +1,7 @@
 /*
+* Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.org/>
+* Copyright (C) 2008 - 2012 TrinityCore <http://www.trinitycore.org/>
+* Copyright (C) 2011 - 2012 Naios <https://github.com/Naios>
 * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
 *
 * This program is free software; you can redistribute it and/or modify it
