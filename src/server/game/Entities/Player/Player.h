@@ -1022,9 +1022,6 @@ public:
 
     void CleanupsBeforeDelete (bool finalCleanup = true);
 
-    static UpdateMask updateVisualBits;
-    static void InitVisibleBits ();
-
     void AddToWorld ();
     void RemoveFromWorld ();
 
@@ -2999,9 +2996,6 @@ protected:
     void _SaveConquestPointsWeekCap();
     void _SaveStats(SQLTransaction& trans);
     void _SaveInstanceTimeRestrictions(SQLTransaction& trans);
-
-    void _SetCreateBits(UpdateMask *updateMask, Player *target) const;
-    void _SetUpdateBits(UpdateMask *updateMask, Player *target) const;
 
     /*********************************************************/
     /***              ENVIRONMENTAL SYSTEM                 ***/

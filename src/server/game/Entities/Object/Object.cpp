@@ -46,7 +46,7 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "SpellAuraEffects.h"
-
+#include "UpdateFieldFlags.h"
 #include "TemporarySummon.h"
 #include "Totem.h"
 #include "OutdoorPvPMgr.h"
@@ -87,6 +87,7 @@ Object::Object () :
     m_uint32Values = 0;
     m_uint32Values_mirror = 0;
     m_valuesCount = 0;
+    _fieldNotifyFlags   = UF_FLAG_DYNAMIC;
 
     m_inWorld = false;
     m_objectUpdated = false;
@@ -489,8 +490,6 @@ void Object::_BuildValuesUpdate (uint8 updatetype, ByteBuffer * data, UpdateMask
             if (((GameObject*) this)->ActivateToQuest(target) || target->isGameMaster())
                 IsActivateToQuest = true;
 
-            updateMask->SetBit(GAMEOBJECT_DYNAMIC);
-
             if (((GameObject*) this)->GetGoArtKit())
                 updateMask->SetBit(GAMEOBJECT_BYTES_1);
         }
@@ -507,10 +506,8 @@ void Object::_BuildValuesUpdate (uint8 updatetype, ByteBuffer * data, UpdateMask
         if (isType(TYPEMASK_GAMEOBJECT) && !((GameObject*) this)->IsTransport())
         {
             if (((GameObject*) this)->ActivateToQuest(target) || target->isGameMaster())
-            {
                 IsActivateToQuest = true;
-            }
-            updateMask->SetBit(GAMEOBJECT_DYNAMIC);
+
             updateMask->SetBit(GAMEOBJECT_BYTES_1);
         }
         else if (isType(TYPEMASK_UNIT))
@@ -797,7 +794,65 @@ void Object::_LoadIntoDataField (const char* data, uint32 startOffset, uint32 co
         m_uint32Values[startOffset + index] = atol(tokens[index]);
 }
 
-void Object::_SetUpdateBits (UpdateMask *updateMask, Player* target) const
+void Object::GetUpdateFieldData(Player const* target, uint32*& flags, bool& isOwner, bool& isItemOwner, bool& hasSpecialInfo, bool& isPartyMember) const
+{
+    // This function assumes updatefield index is always valid
+    switch (GetTypeId())
+    {
+        case TYPEID_ITEM:
+        case TYPEID_CONTAINER:
+            flags = ItemUpdateFieldFlags;
+            isOwner = isItemOwner = ((Item*)this)->GetOwnerGUID() == target->GetGUID();
+            break;
+        case TYPEID_UNIT:
+        case TYPEID_PLAYER:
+        {
+            Player* plr = ToUnit()->GetCharmerOrOwnerPlayerOrPlayerItself();
+            flags = UnitUpdateFieldFlags;
+            isOwner = ToUnit()->GetOwnerGUID() == target->GetGUID();
+            hasSpecialInfo = ToUnit()->HasAuraTypeWithCaster(SPELL_AURA_EMPATHY, target->GetGUID());
+            isPartyMember = plr && plr->IsInSameGroupWith(target);
+            break;
+        }
+        case TYPEID_GAMEOBJECT:
+            flags = GameObjectUpdateFieldFlags;
+            isOwner = ToGameObject()->GetOwnerGUID() == target->GetGUID();
+            break;
+        case TYPEID_DYNAMICOBJECT:
+            flags = DynamicObjectUpdateFieldFlags;
+            isOwner = ((DynamicObject*)this)->GetCasterGUID() == target->GetGUID();
+            break;
+        case TYPEID_CORPSE:
+            flags = CorpseUpdateFieldFlags;
+            isOwner = ToCorpse()->GetOwnerGUID() == target->GetGUID();
+            break;
+    }
+}
+
+bool Object::IsUpdateFieldVisible(uint32 flags, bool isSelf, bool isOwner, bool isItemOwner, bool isPartyMember) const
+{
+    if (flags == UF_FLAG_NONE)
+        return false;
+
+    if (flags & UF_FLAG_PUBLIC)
+        return true;
+
+    if (flags & UF_FLAG_PRIVATE && isSelf)
+        return true;
+
+    if (flags & UF_FLAG_OWNER && isOwner)
+        return true;
+
+    if (flags & UF_FLAG_ITEM_OWNER && isItemOwner)
+        return true;
+
+    if (flags & UF_FLAG_PARTY_MEMBER && isPartyMember)
+        return true;
+
+    return false;
+}
+
+void Object::_SetUpdateBits(UpdateMask* updateMask, Player* target) const
 {
     uint32 *value = m_uint32Values;
     uint32 *mirror = m_uint32Values_mirror;
@@ -815,17 +870,19 @@ void Object::_SetUpdateBits (UpdateMask *updateMask, Player* target) const
 
 void Object::_SetCreateBits (UpdateMask *updateMask, Player* target) const
 {
-    uint32 *value = m_uint32Values;
+     uint32* value = m_uint32Values;
+    uint32* flags = NULL;
+    bool isSelf = target == this;
+    bool isOwner = false;
+    bool isItemOwner = false;
+    bool hasSpecialInfo = false;
+    bool isPartyMember = false;
 
-    uint32 valuesCount = m_valuesCount;
-    if (GetTypeId() == TYPEID_PLAYER && target != this)
-        valuesCount = PLAYER_END_NOT_SELF;
-
-    for (uint16 index = 0; index < valuesCount; ++index, ++value)
-    {
-        if (*value)
+    GetUpdateFieldData(target, flags, isOwner, isItemOwner, hasSpecialInfo, isPartyMember);
+ 
+    for (uint16 index = 0; index < m_valuesCount; ++index, ++value)
+        if (_fieldNotifyFlags & flags[index] || (flags[index] & UF_FLAG_SPECIAL_INFO && hasSpecialInfo) || (*value && IsUpdateFieldVisible(flags[index], isSelf, isOwner, isItemOwner, isPartyMember)))
             updateMask->SetBit(index);
-    }
 }
 
 void Object::SetInt32Value (uint16 index, int32 value)
