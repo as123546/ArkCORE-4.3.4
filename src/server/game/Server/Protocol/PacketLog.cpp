@@ -23,14 +23,9 @@
  */
 
 #include "gamePCH.h"
-/** \file
- \ingroup u2w
- */
-
 #include "PacketLog.h"
 #include "Config.h"
-#include "Log.h"
-#include "DatabaseWorkerPool.h"
+#include "ByteBuffer.h"
 
 PacketLog::PacketLog () :
         i_file(NULL)
