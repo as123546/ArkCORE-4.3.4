@@ -27,90 +27,43 @@
 #include "Config.h"
 #include "ByteBuffer.h"
 
-PacketLog::PacketLog () :
-        i_file(NULL)
+PacketLog::PacketLog() : _file(NULL)
 {
     Initialize();
 }
 
-PacketLog::~PacketLog ()
+PacketLog::~PacketLog()
 {
-    if (i_file != NULL)
-        fclose(i_file);
-    i_file = NULL;
+    if (_file)
+        fclose(_file);
+
+    _file = NULL;
 }
 
-/// Open the log file (if specified so in the configuration file)
-void PacketLog::Initialize ()
+void PacketLog::Initialize()
 {
-    std::string logsDir = sConfig->GetStringDefault("LogsDir", "");
+    std::string logsDir = ConfigMgr::GetStringDefault("LogsDir", "");
 
     if (!logsDir.empty())
-    {
-        if ((logsDir.at(logsDir.length() - 1) != '/') && (logsDir.at(logsDir.length() - 1) != '\\'))
-            logsDir.append("/");
-    }
+        if ((logsDir.at(logsDir.length()-1) != '/') && (logsDir.at(logsDir.length()-1) != '\\'))
+            logsDir.push_back('/');
 
-    std::string logname = sConfig->GetStringDefault("WorldLogFile", "");
+    std::string logname = ConfigMgr::GetStringDefault("PacketLogFile", "");
     if (!logname.empty())
-    {
-        i_file = fopen((logsDir + logname).c_str(), "w");
-    }
-
-    m_dbWorld = sConfig->GetBoolDefault("LogDB.World", false);          // can be VERY heavy if enabled
+        _file = fopen((logsDir + logname).c_str(), "wb");
 }
 
-void PacketLog::outTimestampLog (char const *fmt, ...)
+void PacketLog::LogPacket(WorldPacket const& packet, Direction direction)
 {
-    if (LogWorld())
-    {
-        ACE_GUARD(ACE_Thread_Mutex, Guard, Lock);
-        ASSERT(i_file);
+    ByteBuffer data(4+4+4+1+packet.size());
+    data << int32(packet.GetOpcode());
+    data << int32(packet.size());
+    data << uint32(time(NULL));
+    data << uint8(direction);
 
-        Log::outTimestamp(i_file);
-        va_list args;
-        va_start(args, fmt);
-        vfprintf(i_file, fmt, args);
-        //fprintf(i_file, "\n");
-        va_end(args);
+    for (uint32 i = 0; i < packet.size(); i++)
+        data << const_cast<WorldPacket&>(packet)[i];
 
-        fflush(i_file);
-    }
-
-    if (sLog->GetLogDB() && m_dbWorld)
-    {
-        va_list ap2;
-        va_start(ap2, fmt);
-        char nnew_str[MAX_QUERY_LEN];
-        vsnprintf(nnew_str, MAX_QUERY_LEN, fmt, ap2);
-        sLog->outDB(LOG_TYPE_WORLD, nnew_str);
-        va_end(ap2);
-    }
-}
-
-void PacketLog::outLog (char const *fmt, ...)
-{
-    if (LogWorld())
-    {
-        ACE_GUARD(ACE_Thread_Mutex, Guard, Lock);
-        ASSERT(i_file);
-
-        va_list args;
-        va_start(args, fmt);
-        vfprintf(i_file, fmt, args);
-        //fprintf(i_file, "\n");
-        va_end(args);
-
-        fflush(i_file);
-    }
-
-    if (sLog->GetLogDB() && m_dbWorld)
-    {
-        va_list ap2;
-        va_start(ap2, fmt);
-        char nnew_str[MAX_QUERY_LEN];
-        vsnprintf(nnew_str, MAX_QUERY_LEN, fmt, ap2);
-        sLog->outDB(LOG_TYPE_WORLD, nnew_str);
-        va_end(ap2);
-    }
+    fwrite(data.contents(), 1, data.size(), _file);
+    fflush(_file);
 }
