@@ -473,6 +473,20 @@ public:
         else
             return NULL;
     }
+    Corpse* ToCorpse()
+    {
+        if (GetTypeId() == TYPEID_CORPSE)
+            return reinterpret_cast<Corpse*>(this);
+        else
+            return NULL;
+    }
+    Corpse const* ToCorpse() const
+    {
+        if (GetTypeId() == TYPEID_CORPSE)
+            return (const Corpse*)((Corpse*)this);
+        else
+            return NULL;
+    }
 protected:
 
     Object ();
