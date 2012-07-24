@@ -870,7 +870,7 @@ void Object::_SetUpdateBits(UpdateMask* updateMask, Player* target) const
 
 void Object::_SetCreateBits (UpdateMask *updateMask, Player* target) const
 {
-     uint32* value = m_uint32Values;
+    uint32* value = m_uint32Values;
     uint32* flags = NULL;
     bool isSelf = target == this;
     bool isOwner = false;
