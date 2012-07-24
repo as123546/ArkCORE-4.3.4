@@ -266,6 +266,7 @@ public:
         if (ifs.bad())
             return false;
 
+        Opcodes opcode;
         WorldPacket data(Opcodes(opcode), 0);
 
         while (!ifs.eof())

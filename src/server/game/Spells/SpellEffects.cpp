@@ -2581,7 +2581,7 @@ void Spell::EffectJumpDest (SpellEffIndex effIndex)
     {
         m_targets.m_dstPos.GetPosition(x, y, z);
 
-        if (m_spellInfo->EffectImplicitTargetA[effIndex] == TARGET_DEST_TARGET_BACK)
+        if (m_spellInfo->Effects[effIndex].TargetA == TARGET_DEST_TARGET_BACK)
         {
             // explicit cast data from client or server-side cast
             // some spell at client send caster
@@ -2607,10 +2607,10 @@ void Spell::EffectJumpDest (SpellEffIndex effIndex)
 
 void Spell::CalculateJumpSpeeds (uint8 i, float dist, float & speedXY, float & speedZ)
 {
-    if (m_spellInfo->EffectMiscValue[i])
-        speedZ = float(m_spellInfo->EffectMiscValue[i]) / 10;
-    else if (m_spellInfo->EffectMiscValueB[i])
-        speedZ = float(m_spellInfo->EffectMiscValueB[i]) / 10;
+    if (m_spellInfo->Effects[i].MiscValue)
+        speedZ = float(m_spellInfo->Effects[i].MiscValue)/10;
+    else if (m_spellInfo->Effects[i].MiscValueB)
+        speedZ = float(m_spellInfo->Effects[i].MiscValueB)/10;
     else
         speedZ = 10.0f;
     speedXY = dist * 10.0f / speedZ;
@@ -2923,10 +2923,10 @@ void Spell::EffectSendEvent (SpellEffIndex effIndex)
 
 void Spell::EffectPowerBurn (SpellEffIndex effIndex)
 {
-    if (m_spellInfo->EffectMiscValue[effIndex] < 0 || m_spellInfo->EffectMiscValue[effIndex] >= int8(MAX_POWERS))
+    if (m_spellInfo->Effects[effIndex].MiscValue < 0 || m_spellInfo->Effects[effIndex].MiscValue >= int8(MAX_POWERS))
         return;
 
-    Powers powerType = Powers(m_spellInfo->EffectMiscValue[effIndex]);
+    Powers powerType = Powers(m_spellInfo->Effects[effIndex].MiscValue);
 
     if (!unitTarget || !unitTarget->isAlive() || unitTarget->getPowerType() != powerType || damage < 0)
         return;
@@ -2944,7 +2944,7 @@ void Spell::EffectPowerBurn (SpellEffIndex effIndex)
     int32 newDamage = -(unitTarget->ModifyPower(powerType, -power));
 
     // NO - Not a typo - EffectPowerBurn uses effect value multiplier - not effect damage multiplier
-    float dmgMultiplier = SpellMgr::CalculateSpellEffectValueMultiplier(m_spellInfo, effIndex, m_originalCaster, this);
+    float dmgMultiplier = m_spellInfo->Effects[effIndex].CalcValueMultiplier(m_originalCaster, this);
 
     // add log data before multiplication (need power amount, not damage)
     ExecuteLogEffectTakeTargetPower(effIndex, unitTarget, powerType, newDamage, 0.0f);
@@ -3168,7 +3168,7 @@ void Spell::EffectHealthLeech (SpellEffIndex effIndex)
 
     sLog->outDebug(LOG_FILTER_SPELLS_AURAS, "HealthLeech :%i", damage);
 
-    float healMultiplier = SpellMgr::CalculateSpellEffectValueMultiplier(m_spellInfo, effIndex, m_originalCaster, this);
+    float healMultiplier = m_spellInfo->Effects[effIndex].CalcValueMultiplier(m_originalCaster, this);
 
     m_damage += damage;
     // get max possible damage, don't count overkill for heal
@@ -3281,23 +3281,14 @@ void Spell::DoCreateItem (uint32 /*i*/, uint32 itemtype)
         if (bgType == 0)
             player->UpdateCraftSkill(m_spellInfo->Id);
     }
-
-    /*
-     // for battleground marks send by mail if not add all expected
-     if (no_space > 0 && bgType)
-     {
-     if (Battleground* bg = sBattlegroundMgr->GetBattlegroundTemplate(BattlegroundTypeId(bgType)))
-     bg->SendRewardMarkByMail(player, newitemid, no_space);
-     }
-     */
 }
 
 void Spell::EffectCreateItem (SpellEffIndex effIndex)
 {
-    if (m_spellInfo->EffectItemType[effIndex] == 6948 && unitTarget->ToPlayer()->GetItemByEntry(6948))          //dont create a new hearthstone on homebind if player already has
+    if (m_spellInfo->Effects[effIndex].ItemType == 6948 && unitTarget->ToPlayer()->GetItemByEntry(6948))          //dont create a new hearthstone on homebind if player already has
         return;
-    DoCreateItem(effIndex, m_spellInfo->EffectItemType[effIndex]);
-    ExecuteLogEffectCreateItem(effIndex, m_spellInfo->EffectItemType[effIndex]);
+    DoCreateItem(effIndex, m_spellInfo->Effects[effIndex].ItemType);
+    ExecuteLogEffectCreateItem(effIndex, m_spellInfo->Effects[effIndex].ItemType);
 }
 
 void Spell::EffectCreateItem2 (SpellEffIndex effIndex)
@@ -3306,13 +3297,13 @@ void Spell::EffectCreateItem2 (SpellEffIndex effIndex)
         return;
     Player* player = (Player*) m_caster;
 
-    uint32 item_id = m_spellInfo->EffectItemType[effIndex];
+    uint32 item_id = m_spellInfo->Effects[effIndex].ItemType;
 
     if (item_id)
         DoCreateItem(effIndex, item_id);
 
     // special case: fake item replaced by generate using spell_loot_template
-    if (IsLootCraftingSpell(m_spellInfo))
+    if (m_spellInfo->IsLootCrafting())
     {
         if (item_id)
         {
@@ -3347,11 +3338,9 @@ void Spell::EffectPersistentAA (SpellEffIndex effIndex)
 {
     if (!m_spellAura)
     {
-        float radius = GetSpellRadiusForFriend(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[effIndex]));
-        if (Player* modOwner = m_originalCaster->GetSpellModOwner())
-            modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_RADIUS, radius);
-
         Unit *caster = m_caster->GetEntry() == WORLD_TRIGGER ? m_originalCaster : m_caster;
+        float radius = m_spellInfo->Effects[effIndex].CalcRadius(caster);
+
         // Caster not in world, might be spell triggered from aura removal
         if (!caster->IsInWorld())
             return;
@@ -3383,10 +3372,10 @@ void Spell::EffectEnergize (SpellEffIndex effIndex)
     if (!unitTarget->isAlive())
         return;
 
-    if (m_spellInfo->EffectMiscValue[effIndex] < 0 || m_spellInfo->EffectMiscValue[effIndex] >= int8(MAX_POWERS))
+    if (m_spellInfo->Effects[effIndex].MiscValue < 0 || m_spellInfo->Effects[effIndex].MiscValue >= int8(MAX_POWERS))
         return;
 
-    Powers power = Powers(m_spellInfo->EffectMiscValue[effIndex]);
+    Powers power = Powers(m_spellInfo->Effects[effIndex].MiscValue);
 
     // Some level depends spells
     int level_multiplier = 0;
@@ -3498,10 +3487,10 @@ void Spell::EffectEnergizePct (SpellEffIndex effIndex)
     if (!unitTarget->isAlive())
         return;
 
-    if (m_spellInfo->EffectMiscValue[effIndex] < 0 || m_spellInfo->EffectMiscValue[effIndex] >= int8(MAX_POWERS))
+    if (m_spellInfo->Effects[effIndex].MiscValue < 0 || m_spellInfo->Effects[effIndex].MiscValue >= int8(MAX_POWERS))
         return;
 
-    Powers power = Powers(m_spellInfo->EffectMiscValue[effIndex]);
+    Powers power = Powers(m_spellInfo->Effects[effIndex].MiscValue);
 
     uint32 maxPower = unitTarget->GetMaxPower(power);
     if (maxPower == 0)
