@@ -561,3 +561,4 @@ enum EAreaTriggerFields
 };
 
 #endif // _UPDATEFIELDS_H
+
