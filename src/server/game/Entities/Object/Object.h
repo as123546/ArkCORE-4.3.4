@@ -772,9 +772,17 @@ struct MovementInfo
     {
         return flags;
     }
+    void SetMovementFlags(uint32 flag)
+    {
+        flags = flag;
+    }
     void AddMovementFlag (uint32 flag)
     {
         flags |= flag;
+    }
+    void RemoveMovementFlag(uint32 flag)
+    {
+        flags &= ~flag;
     }
     bool HasMovementFlag (uint32 flag) const
     {
