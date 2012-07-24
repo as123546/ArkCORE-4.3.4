@@ -7499,10 +7499,10 @@ void Spell::EffectDestroyAllTotems (SpellEffIndex /*effIndex*/)
         if (totem && totem->isTotem())
         {
             uint32 spell_id = totem->GetUInt32Value(UNIT_CREATED_BY_SPELL);
-            SpellEntry const* spellInfo = sSpellMgr->GetSpellInfo(spell_id);
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell_id);
             if (spellInfo)
             {
-                mana += spellInfo->manaCost;
+                mana += spellInfo->ManaCost;
                 mana += spellInfo->ManaCostPercentage * m_caster->GetCreateMana() / 100;
             }
             totem->ToTotem()->UnSummon();

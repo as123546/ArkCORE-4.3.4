@@ -126,5 +126,4 @@
     void AddSC_boss_ragnaros_cata()
     {
         new boss_ragnaros_cata();
-        new npc_living_meteor();
     }
