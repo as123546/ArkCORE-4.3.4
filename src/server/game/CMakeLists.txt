@@ -181,6 +181,7 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/Miscellaneous
   ${CMAKE_CURRENT_SOURCE_DIR}/Movement
   ${CMAKE_CURRENT_SOURCE_DIR}/Movement/MovementGenerators
+  ${CMAKE_CURRENT_SOURCE_DIR}/Movement/Spline
   ${CMAKE_CURRENT_SOURCE_DIR}/Movement/Waypoints
   ${CMAKE_CURRENT_SOURCE_DIR}/OutdoorPvP
   ${CMAKE_CURRENT_SOURCE_DIR}/OutdoorPvP/Zones
