@@ -19,6 +19,7 @@
 #define _UPDATEFIELDFLAGS_H
 
 #include "UpdateFields.h"
+#include "Define.h"
 
 enum UpdatefieldFlags
 {
@@ -39,6 +40,6 @@ extern uint32 UnitUpdateFieldFlags[PLAYER_END];
 extern uint32 GameObjectUpdateFieldFlags[GAMEOBJECT_END];
 extern uint32 DynamicObjectUpdateFieldFlags[DYNAMICOBJECT_END];
 extern uint32 CorpseUpdateFieldFlags[CORPSE_END];
-extern uint32 AreaTriggerUpdateFieldFlags[0];
+extern uint32 AreaTriggerUpdateFieldFlags[AREATRIGGER_END];
 
 #endif // _UPDATEFIELDFLAGS_H

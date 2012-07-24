@@ -1640,7 +1640,7 @@ uint32 CorpseUpdateFieldFlags[CORPSE_END] =
     UF_FLAG_DYNAMIC,                                        // CORPSE_FIELD_DYNAMIC_FLAGS
 };
 
-uint32 AreaTriggerUpdateFieldFlags[0] =
+uint32 AreaTriggerUpdateFieldFlags[AREATRIGGER_END] =
 {
     UF_FLAG_PUBLIC,                                         // OBJECT_FIELD_GUID
     UF_FLAG_PUBLIC,                                         // OBJECT_FIELD_GUID+1
