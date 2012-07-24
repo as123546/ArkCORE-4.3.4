@@ -479,8 +479,6 @@ void Object::_BuildValuesUpdate (uint8 updatetype, ByteBuffer * data, UpdateMask
         return;
 
     uint32 valuesCount = m_valuesCount;
-    if (GetTypeId() == TYPEID_PLAYER && target != this)
-        valuesCount = PLAYER_END_NOT_SELF;
 
     bool IsActivateToQuest = false;
     if (updatetype == UPDATETYPE_CREATE_OBJECT || updatetype == UPDATETYPE_CREATE_OBJECT2)
@@ -858,8 +856,6 @@ void Object::_SetUpdateBits(UpdateMask* updateMask, Player* target) const
     uint32 *mirror = m_uint32Values_mirror;
 
     uint32 valuesCount = m_valuesCount;
-    if (GetTypeId() == TYPEID_PLAYER && target != this)
-        valuesCount = PLAYER_END_NOT_SELF;
 
     for (uint16 index = 0; index < valuesCount; ++index, ++value, ++mirror)
     {
