@@ -577,6 +577,8 @@ public:
         else
             return NULL;
     }
+
+    float GetWaterOrGroundLevel(float x, float y, float z, float* ground = NULL, bool swim = false) const;
 private:
     void LoadMapAndVMap (int gx, int gy);
     void LoadVMap (int gx, int gy);

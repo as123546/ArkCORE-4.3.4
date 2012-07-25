@@ -120,7 +120,7 @@ private:
 struct TimeTrackerSmall {
 public:
 
-	TimeTrackerSmall(uint32 expiry) :
+	TimeTrackerSmall(uint32 expiry = 0) :
 			i_expiryTime(expiry) {
 	}
 

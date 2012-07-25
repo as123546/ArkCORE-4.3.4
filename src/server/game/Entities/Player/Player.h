@@ -2217,7 +2217,6 @@ public:
     Corpse *GetCorpse() const;
     void SpawnCorpseBones();
     void CreateCorpse();
-    bool FallGround(uint8 FallMode = 0);
     void KillPlayer();
     uint32 GetResurrectionSpellId();
     void ResurrectPlayer(float restore_percent, bool applySickness = false);

@@ -570,6 +570,9 @@ public:
         return (CreatureAI*) i_AI;
     }
 
+    void SetWalk(bool enable);
+    void SetLevitate(bool enable);
+
     uint32 GetShieldBlockValue () const          //dunno mob block value
     {
         return (getLevel() / 2 + uint32(GetStat(STAT_STRENGTH) / 20));
@@ -656,7 +659,6 @@ public:
     const char* GetNameForLocaleIdx (LocaleConstant locale_idx) const;
 
     void setDeathState (DeathState s);          // overwrite virtual Unit::setDeathState
-    bool FallGround ();
 
     bool LoadFromDB (uint32 guid, Map *map);
     void SaveToDB ();
