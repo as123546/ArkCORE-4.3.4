@@ -4482,16 +4482,6 @@ bool ChatHandler::HandlePDumpWriteCommand (const char *args)
     return true;
 }
 
-bool ChatHandler::HandleMovegensCommand (const char* /*args*/)
-{
-    Unit* unit = getSelectedUnit();
-    if (!unit)
-    {
-        SendSysMessage(LANG_SELECT_CHAR_OR_CREATURE);
-        SetSentErrorMessage(true);
-        return false;
-    }
-
 bool ChatHandler::HandleMovegensCommand(const char* /*args*/)
 {
     Unit* unit = getSelectedUnit();

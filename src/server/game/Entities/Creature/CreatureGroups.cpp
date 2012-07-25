@@ -229,6 +229,8 @@ void CreatureGroup::FormationReset (bool dismiss)
 
 void CreatureGroup::LeaderMoveTo (float x, float y, float z)
 {
+    // To do: This should probably get its own movement generator or use WaypointMovementGenerator
+    // If the leader's path is known, member's path can be plotted as well formating offsets
     if (!m_leader)
         return;
 
