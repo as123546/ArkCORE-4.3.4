@@ -37,6 +37,7 @@
 #include "MovementStructures.h"
 #include "InstanceSaveMgr.h"
 #include "ObjectMgr.h"
+#include <G3D/Matrix4.h>
 
 void WorldSession::HandleMoveWorldportAckOpcode (WorldPacket & /*recv_data*/)
 {

@@ -53,7 +53,7 @@
 bool MapSessionFilter::Process (WorldPacket *packet)
 {
     Opcodes opcode = DropHighBytes(packet->GetOpcode());
-    const OpcodeHandler* opHandle = opcodeTable[opcode];
+    OpcodeHandler const* opHandle = opcodeTable[opcode];
     //let's check if our opcode can be really processed in Map::Update()
     if (opHandle->packetProcessing == PROCESS_INPLACE)
         return true;
@@ -75,7 +75,7 @@ bool MapSessionFilter::Process (WorldPacket *packet)
 bool WorldSessionFilter::Process (WorldPacket *packet)
 {
     Opcodes opcode = DropHighBytes(packet->GetOpcode());
-    const OpcodeHandler* opHandle = opcodeTable[opcode];
+    OpcodeHandler const* opHandle = opcodeTable[opcode];
     //check if packet handler is supposed to be safe
     if (opHandle->packetProcessing == PROCESS_INPLACE)
         return true;
@@ -145,12 +145,16 @@ void WorldSession::SendPacket (WorldPacket const* packet)
 {
     if (!m_Socket)
         return;
-    if (sWorld->debugOpcode != 0 && packet->GetOpcode() != sWorld->debugOpcode)
-        return;
 
     if (packet->GetOpcode() == NULL_OPCODE || packet->GetOpcode() == UNKNOWN_OPCODE)
     {
         sLog->outError("Prevented sending of %s", packet->GetOpcode() == NULL_OPCODE ? "NULL_OPCODE" : "UNKNOWN_OPCODE");
+        return;
+    }
+
+    if (!opcodeTable[packet->GetOpcode()])
+    {
+        sLog->outError("Prevented sending disabled opcode %d (hex 0x%04X)", packet->GetOpcode(), packet->GetOpcode());
         return;
     }
 
@@ -563,8 +567,11 @@ void WorldSession::SendNotification (const char *format, ...)
         vsnprintf(szStr, 1024, format, ap);
         va_end(ap);
 
-        WorldPacket data(SMSG_NOTIFICATION, (strlen(szStr) + 1));
-        data << szStr;
+        size_t len = strlen(szStr);
+        WorldPacket data(SMSG_NOTIFICATION, 2 + len);
+        data.WriteBits(len, 13);
+        data.FlushBits();
+        data.append(szStr, len);
         SendPacket(&data);
     }
 }
@@ -581,8 +588,11 @@ void WorldSession::SendNotification (uint32 string_id, ...)
         vsnprintf(szStr, 1024, format, ap);
         va_end(ap);
 
-        WorldPacket data(SMSG_NOTIFICATION, (strlen(szStr) + 1));
-        data << szStr;
+        size_t len = strlen(szStr);
+        WorldPacket data(SMSG_NOTIFICATION, 2 + len);
+        data.WriteBits(len, 13);
+        data.FlushBits();
+        data.append(szStr, len);
         SendPacket(&data);
     }
 }
@@ -617,15 +627,19 @@ void WorldSession::SendAuthWaitQue (uint32 position)
     if (position == 0)
     {
         WorldPacket packet(SMSG_AUTH_RESPONSE, 1);
+        packet.WriteBit(0); // has queue info
+        packet.WriteBit(0); // has account info
         packet << uint8(AUTH_OK);
         SendPacket(&packet);
     }
     else
     {
         WorldPacket packet(SMSG_AUTH_RESPONSE, 6);
+        packet.WriteBit(1); // has queue info
+        packet.WriteBit(0); // unk queue bool
+        packet.WriteBit(0); // has account info
         packet << uint8(AUTH_WAIT_QUEUE);
         packet << uint32(position);
-        packet << uint8(0);          // unk
         SendPacket(&packet);
     }
 }

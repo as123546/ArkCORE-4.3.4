@@ -227,21 +227,12 @@ void AddSC_uldaman();
 void AddSC_instance_uldaman();
 void AddSC_boss_akilzon();//Zul'Aman
 void AddSC_boss_halazzi();
-void AddSC_boss_hex_lord_malacrass();
-void AddSC_boss_janalai();
 void AddSC_boss_nalorakk();
-void AddSC_boss_zuljin();
 void AddSC_instance_zulaman();
 void AddSC_zulaman();
-void AddSC_boss_jeklik();//Zul'Gurub
 void AddSC_boss_venoxis();
-void AddSC_boss_marli();
 void AddSC_boss_mandokir();
-void AddSC_boss_gahzranka();
-void AddSC_boss_thekal();
-void AddSC_boss_arlokk();
 void AddSC_boss_jindo();
-void AddSC_boss_hakkar();
 void AddSC_boss_grilek();
 void AddSC_boss_hazzarah();
 void AddSC_boss_renataki();
@@ -904,21 +895,12 @@ void AddEasternKingdomsScripts ()
     AddSC_instance_uldaman();
     AddSC_boss_akilzon();//Zul'Aman
     AddSC_boss_halazzi();
-    AddSC_boss_hex_lord_malacrass();
-    AddSC_boss_janalai();
     AddSC_boss_nalorakk();
-    AddSC_boss_zuljin();
     AddSC_instance_zulaman();
     AddSC_zulaman();
-    AddSC_boss_jeklik();//Zul'Gurub
     AddSC_boss_venoxis();
-    AddSC_boss_marli();
     AddSC_boss_mandokir();
-    AddSC_boss_gahzranka();
-    AddSC_boss_thekal();
-    AddSC_boss_arlokk();
     AddSC_boss_jindo();
-    AddSC_boss_hakkar();
     AddSC_boss_grilek();
     AddSC_boss_hazzarah();
     AddSC_boss_renataki();
