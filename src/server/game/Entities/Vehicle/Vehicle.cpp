@@ -50,7 +50,7 @@ Vehicle::Vehicle(Unit* unit, VehicleEntry const* vehInfo, uint32 creatureEntry) 
     InitMovementInfoForBase();
 }
 
-Vehicle::~Vehicle ()
+Vehicle::~Vehicle()
 {
     for (SeatMap::const_iterator itr = m_Seats.begin(); itr != m_Seats.end(); ++itr)
     {

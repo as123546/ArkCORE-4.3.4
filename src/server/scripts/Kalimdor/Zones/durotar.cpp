@@ -233,13 +233,14 @@ public:
             if (summoner->GetTypeId() != TYPEID_PLAYER)
                 return;
 
-            _tiger = summoner->GetVehicle()->GetBase();
-            if (_tiger) {
-                me->AddThreat(_tiger, 500000.0f);
-                DoCast(me, SPELL_FURIOUS_BITE);
-                events.ScheduleEvent(EVENT_POUNCE, 100);
-                events.ScheduleEvent(EVENT_NOSUMMON, 50000);
-            }
+            //_tiger = summoner->GetVehicle()->GetBase();
+            //if (_tiger)
+            //{
+            //    me->AddThreat(_tiger, 500000.0f);
+            //    DoCast(me, SPELL_FURIOUS_BITE);
+            //    events.ScheduleEvent(EVENT_POUNCE, 100);
+            //    events.ScheduleEvent(EVENT_NOSUMMON, 50000);
+            //}
         }
 
         void KilledUnit(Unit* victim) {

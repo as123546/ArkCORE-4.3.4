@@ -2647,6 +2647,8 @@ private:
     bool HandleAuraRaidProcFromChargeWithValue (AuraEffect* triggeredByAura);
     bool HandleAuraRaidProcFromCharge (AuraEffect* triggeredByAura);
 
+    void UpdateSplineMovement(uint32 t_diff);
+
     // player or player's pet
     float GetCombatRatingReduction (CombatRating cr) const;
     uint32 GetCombatRatingDamageReduction (CombatRating cr, float rate, float cap, uint32 damage) const;
