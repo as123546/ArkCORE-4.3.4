@@ -2392,7 +2392,7 @@ public:
     }
 
     bool IsAIEnabled, NeedChangeAI;
-    bool CreateVehicleKit (uint32 id);
+    bool CreateVehicleKit (uint32 id, uint32 creatureEntry);
     void RemoveVehicleKit ();
     Vehicle *GetVehicleKit () const
     {

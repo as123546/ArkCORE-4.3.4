@@ -16919,13 +16919,13 @@ void Unit::RestoreFaction ()
     }
 }
 
-bool Unit::CreateVehicleKit (uint32 id)
+bool Unit::CreateVehicleKit (uint32 id, uint32 creatureEntry)
 {
     VehicleEntry const *vehInfo = sVehicleStore.LookupEntry(id);
     if (!vehInfo)
         return false;
 
-    m_vehicleKit = new Vehicle(this, vehInfo);
+    m_vehicleKit = new Vehicle(this, vehInfo, creatureEntry);
     m_updateFlag |= UPDATEFLAG_VEHICLE;
     m_unitTypeMask |= UNIT_MASK_VEHICLE;
     return true;
@@ -17850,7 +17850,7 @@ bool Unit::CheckPlayerCondition (Player* pPlayer)
 bool Unit::HandleSpellClick(Unit* clicker, int8 seatId)
 {
     bool success = false;
-    uint32 spellClickEntry = GetTypeId() == TYPEID_UNIT ? GetEntry() : GetUInt32Value(UNIT_FIELD_MOUNTDISPLAYID);
+    uint32 spellClickEntry = GetVehicleKit() ? GetVehicleKit()->m_creatureEntry : GetEntry();
     SpellClickInfoMapBounds clickPair = sObjectMgr->GetSpellClickInfoMapBounds(spellClickEntry);
     for (SpellClickInfoMap::const_iterator itr = clickPair.first; itr != clickPair.second; ++itr)
     {
@@ -17860,7 +17860,7 @@ bool Unit::HandleSpellClick(Unit* clicker, int8 seatId)
             Unit *target = (itr->second.castFlags & NPC_CLICK_CAST_TARGET_CLICKER) ? clicker : this;
             uint64 origCasterGUID = (itr->second.castFlags & NPC_CLICK_CAST_ORIG_CASTER_OWNER) ? GetOwnerGUID() : clicker->GetGUID();
 
-            SpellEntry const* spellEntry = sSpellStore.LookupEntry(itr->second.spellId);
+            SpellInfo const* spellEntry = sSpellMgr->GetSpellInfo(itr->second.spellId);
             // if(!spellEntry) should be checked at npc_spellclick load
 
             if (seatId > -1)
@@ -17868,7 +17868,7 @@ bool Unit::HandleSpellClick(Unit* clicker, int8 seatId)
                 uint8 i = 0;
                 bool valid = false;
                 while (i < MAX_SPELL_EFFECTS && !valid)
-                    if (spellEntry->EffectApplyAuraName[i] == SPELL_AURA_CONTROL_VEHICLE)
+                    if (spellEntry->Effects[i++].ApplyAuraName == SPELL_AURA_CONTROL_VEHICLE)
                         valid = true;
 
                 if (!valid)
@@ -17877,10 +17877,21 @@ bool Unit::HandleSpellClick(Unit* clicker, int8 seatId)
                     return false;
                 }
 
-                caster->CastCustomSpell(itr->second.spellId, SpellValueMod(SPELLVALUE_BASE_POINT0+i), seatId+1, target, true, NULL, NULL, origCasterGUID);
+                if (IsInMap(caster))
+                    caster->CastCustomSpell(itr->second.spellId, SpellValueMod(SPELLVALUE_BASE_POINT0+i), seatId+1, target, true, NULL, NULL, origCasterGUID);
+                else    // This can happen during Player::_LoadAuras
+                {
+                    int32 bp0 = seatId;
+                    Aura::TryCreate(spellEntry, this, clicker, &bp0, NULL, origCasterGUID);
+                } 
+           }
+           else
+           {
+                if (IsInMap(caster))
+                    caster->CastSpell(target, spellEntry, true, NULL, NULL, origCasterGUID);
+                else
+                    Aura::TryCreate(spellEntry, this, clicker, NULL, NULL, origCasterGUID);
             }
-            else
-                caster->CastSpell(target, spellEntry, true, NULL, NULL, origCasterGUID);
 
             success = true;
         }
