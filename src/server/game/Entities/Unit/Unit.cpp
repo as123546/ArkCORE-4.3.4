@@ -13499,8 +13499,6 @@ void Unit::setDeathState (DeathState s)
         ClearDiminishings();
         GetMotionMaster()->Clear(false);
         GetMotionMaster()->MoveIdle();
-        if (m_vehicleKit)
-            m_vehicleKit->Die();
         SendMonsterStop(true);
         //without this when removing IncreaseMaxHealth aura player may stuck with 1 hp
         //do not why since in IncreaseMaxHealth currenthealth is checked
@@ -17852,7 +17850,7 @@ void Unit::EnterVehicle (Vehicle *vehicle, int8 seatId, bool byAura)
             if (seatId >= 0 && seatId != GetTransSeat())
             {
                 sLog->outDebug(LOG_FILTER_UNITS, "EnterVehicle: %u leave vehicle %u seat %d and enter %d.", GetEntry(), m_vehicle->GetBase()->GetEntry(), GetTransSeat(), seatId);
-                ChangeSeat(seatId, byAura);
+                ChangeSeat(seatId);
             }
             return;
         }
@@ -17881,7 +17879,7 @@ void Unit::EnterVehicle (Vehicle *vehicle, int8 seatId, bool byAura)
 
     ASSERT(!m_vehicle);
     m_vehicle = vehicle;
-    if (!m_vehicle->AddPassenger(this, seatId, byAura))
+    if (!m_vehicle->AddPassenger(this, seatId))
     {
         m_vehicle = NULL;
         return;
@@ -17900,14 +17898,14 @@ void Unit::EnterVehicle (Vehicle *vehicle, int8 seatId, bool byAura)
     //packets are sent in AddPassenger
 }
 
-void Unit::ChangeSeat (int8 seatId, bool next, bool byAura)
+void Unit::ChangeSeat (int8 seatId, bool next)
 {
     if (!m_vehicle)
         return;
 
     if (seatId < 0)
     {
-        seatId = m_vehicle->GetNextEmptySeat(GetTransSeat(), next, byAura);
+        seatId = m_vehicle->GetNextEmptySeat(GetTransSeat(), next);
         if (seatId < 0)
             return;
     }
@@ -17915,7 +17913,7 @@ void Unit::ChangeSeat (int8 seatId, bool next, bool byAura)
         return;
 
     m_vehicle->RemovePassenger(this);
-    if (!m_vehicle->AddPassenger(this, seatId, byAura))
+    if (!m_vehicle->AddPassenger(this, seatId))
         ASSERT(false);
 }
 
@@ -17993,10 +17991,6 @@ void Unit::BuildMovementPacket (ByteBuffer *data) const
     default:
         break;
     }
-
-    if (Vehicle* pVehicle = GetVehicle())
-        if (!HasUnitMovementFlag(MOVEMENTFLAG_ROOT))
-            sLog->outError("Unit (GUID: " UI64FMTD ", entry: %u) does not have MOVEMENTFLAG_ROOT but is in vehicle (ID: %u)!", GetGUID(), GetEntry(), pVehicle->GetVehicleInfo()->m_ID);
 
     *data << uint32(GetUnitMovementFlags());          // movement flags
     *data << uint16(m_movementInfo.flags2);          // 2.3.0

@@ -2443,7 +2443,7 @@ public:
     }
     void EnterVehicle (Vehicle *vehicle, int8 seatId = -1, bool byAura = false);
     void ExitVehicle ();
-    void ChangeSeat (int8 seatId, bool next = true, bool byAura = false);
+    void ChangeSeat (int8 seatId, bool next = true);
 
     void BuildMovementPacket (ByteBuffer *data) const;
 

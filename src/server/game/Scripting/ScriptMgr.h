@@ -788,11 +788,6 @@ public:
     {
     }
 
-    // Called after a vehicle dies.
-    virtual void OnDie (Vehicle* /*veh*/)
-    {
-    }
-
     // Called when a vehicle resets.
     virtual void OnReset (Vehicle* /*veh*/)
     {
@@ -1255,7 +1250,6 @@ public:
 
     void OnInstall (Vehicle* veh);
     void OnUninstall (Vehicle* veh);
-    void OnDie (Vehicle* veh);
     void OnReset (Vehicle* veh);
     void OnInstallAccessory (Vehicle* veh, Creature* accessory);
     void OnAddPassenger (Vehicle* veh, Unit* passenger, int8 seatId);
