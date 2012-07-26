@@ -2442,7 +2442,7 @@ public:
         EnterVehicle(base->GetVehicleKit(), seatId, byAura);
     }
     void EnterVehicle (Vehicle *vehicle, int8 seatId = -1, bool byAura = false);
-    void ExitVehicle ();
+    void ExitVehicle (Poistion const* exitPosition = NULL);
     void ChangeSeat (int8 seatId, bool next = true);
 
     void BuildMovementPacket (ByteBuffer *data) const;

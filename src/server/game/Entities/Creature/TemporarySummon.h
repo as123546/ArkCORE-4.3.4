@@ -47,6 +47,10 @@ public:
     {
         return m_summonerGUID;
     }
+    TempSummonType const& GetSummonType()
+    {
+        return m_type;
+    }
 
     const SummonPropertiesEntry * const m_Properties;
 private:
