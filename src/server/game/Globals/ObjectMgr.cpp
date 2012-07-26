@@ -288,53 +288,61 @@ LanguageDesc const* GetLanguageDescByID (uint32 lang)
     return NULL;
 }
 
-bool SpellClickInfo::IsFitToRequirements (Player const* player, Creature const * clickNpc) const
+bool SpellClickInfo::IsFitToRequirements(Unit const* clicker, Unit const* clickee) const
 {
-    if (questStart)
+    Player const* playerClicker = NULL;
+    if (playerClicker = clicker->ToPlayer())
     {
-        // not in expected required quest state
-        if (!player || ((!questStartCanActive || !player->IsActiveQuest(questStart)) && !player->GetQuestRewardStatus(questStart)))
-            return false;
-    }
+        if (questStart)
+        {
+            // not in expected required quest state
+            if (((!questStartCanActive || !playerClicker->IsActiveQuest(questStart)) && !playerClicker->GetQuestRewardStatus(questStart)))
+                return false;
+        }
 
-    if (questEnd)
-    {
-        // not in expected forbidden quest state
-        if (!player || player->GetQuestRewardStatus(questEnd))
-            return false;
+        if (questEnd)
+        {
+            // not in expected forbidden quest state
+            if (playerClicker->GetQuestRewardStatus(questEnd))
+                return false;
+        }
     }
 
     if (auraRequired)
-        if (!player->HasAura(auraRequired))
+        if (!clicker->HasAura(auraRequired))
             return false;
 
     if (auraForbidden)
-        if (player->HasAura(auraForbidden))
+        if (clicker->HasAura(auraForbidden))
             return false;
 
     Unit const * summoner = NULL;
     // Check summoners for party
-    if (clickNpc->isSummon())
-        summoner = clickNpc->ToTempSummon()->GetSummoner();
+    if (clickee->isSummon())
+        summoner = clickee->ToTempSummon()->GetSummoner();
     if (!summoner)
-        summoner = clickNpc;
+        summoner = clickee;
 
+    if (!playerClicker)
+        return true;
+
+    // This only applies to players
     switch (userType)
     {
-    case SPELL_CLICK_USER_FRIEND:
-        if (!player->IsFriendlyTo(summoner))
-            return false;
-        break;
-    case SPELL_CLICK_USER_RAID:
-        if (!player->IsInRaidWith(summoner))
-            return false;
-        break;
-    case SPELL_CLICK_USER_PARTY:
-        if (!player->IsInPartyWith(summoner))
-            return false;
-        break;
-    default:
-        break;
+        case SPELL_CLICK_USER_FRIEND:
+            if (!playerClicker->IsFriendlyTo(summoner))
+                return false;
+            break;
+        case SPELL_CLICK_USER_RAID:
+            if (!playerClicker->IsInRaidWith(summoner))
+                return false;
+            break;
+        case SPELL_CLICK_USER_PARTY:
+            if (!playerClicker->IsInPartyWith(summoner))
+                return false;
+            break;
+        default:
+            break;
     }
 
     return true;
@@ -7315,9 +7323,6 @@ void ObjectMgr::LoadNPCSpellClickSpells ()
             continue;
         }
 
-        if (!(cInfo->npcflag & UNIT_NPC_FLAG_SPELLCLICK))
-            const_cast<CreatureInfo*>(cInfo)->npcflag |= UNIT_NPC_FLAG_SPELLCLICK;
-
         uint32 spellid = fields[1].GetUInt32();
         SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(spellid);
         if (!spellInfo)
@@ -7388,9 +7393,6 @@ void ObjectMgr::LoadNPCSpellClickSpells ()
         info.auraForbidden = auraForbidden;
         info.userType = SpellClickUserTypes(userType);
         mSpellClickInfoMap.insert(SpellClickInfoMap::value_type(npc_entry, info));
-
-        // mark creature template as spell clickable
-        const_cast<CreatureInfo*>(cInfo)->npcflag |= UNIT_NPC_FLAG_SPELLCLICK;
 
         ++count;
     }

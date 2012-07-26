@@ -2437,6 +2437,7 @@ public:
     bool m_ControlledByPlayer;
 
     bool CheckPlayerCondition (Player* pPlayer);
+    bool HandleSpellClick(Unit* clicker, int8 seatId = -1);
     void EnterVehicle (Unit *base, int8 seatId = -1, bool byAura = false)
     {
         EnterVehicle(base->GetVehicleKit(), seatId, byAura);
