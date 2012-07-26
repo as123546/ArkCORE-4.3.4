@@ -2438,13 +2438,13 @@ public:
 
     bool CheckPlayerCondition (Player* pPlayer);
     bool HandleSpellClick(Unit* clicker, int8 seatId = -1);
-    void EnterVehicle (Unit *base, int8 seatId = -1, bool byAura = false)
-    {
-        EnterVehicle(base->GetVehicleKit(), seatId, byAura);
-    }
-    void EnterVehicle (Vehicle *vehicle, int8 seatId = -1, bool byAura = false);
-    void ExitVehicle (Poistion const* exitPosition = NULL);
+    void EnterVehicle(Unit *base, int8 seatId = -1);
+    void ExitVehicle(Position const* exitPosition = NULL);
     void ChangeSeat (int8 seatId, bool next = true);
+
+    // Should only be called by AuraEffect::HandleAuraControlVehicle(AuraApplication const* auraApp, uint8 mode, bool apply) const;
+    void _ExitVehicle(Position const* exitPosition = NULL);
+    void _EnterVehicle(Vehicle* vehicle, int8 seatId, AuraApplication const* aurApp = NULL);
 
     void BuildMovementPacket (ByteBuffer *data) const;
 

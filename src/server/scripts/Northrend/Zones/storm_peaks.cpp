@@ -1067,7 +1067,7 @@ class npc_hyldsmeet_protodrake : public CreatureScript
                     //! so EnterEvadeMode is never triggered. The accessory on the other hand is hostile and killable.
                     if (_accessoryRespawnTimer && _accessoryRespawnTimer <= diff && _vehicleKit)
                     {
-                        _vehicleKit->InstallAllAccessories(true);
+                        _vehicleKit->InstallAllAccessories();
                         _accessoryRespawnTimer = 0;
                     }
                     else

@@ -444,17 +444,20 @@ void Creature::Update (uint32 diff)
     {
         TriggerJustRespawned = false;
         AI()->JustRespawned();
+ 	
+        if (m_vehicleKit)
+            m_vehicleKit->Reset();
     }
 
     if (IsInWater())
     {
-          if (canSwim())
-             AddUnitMovementFlag(MOVEMENTFLAG_SWIMMING);
+        if (canSwim())
+            AddUnitMovementFlag(MOVEMENTFLAG_SWIMMING);
     }
     else
     {
-          if (canWalk())
-             RemoveUnitMovementFlag(MOVEMENTFLAG_SWIMMING);
+        if (canWalk())
+            RemoveUnitMovementFlag(MOVEMENTFLAG_SWIMMING);
     }
 
     switch (m_deathState)
@@ -735,6 +738,9 @@ bool Creature::AIM_Initialize (CreatureAI* ai)
     delete oldAI;
     IsAIEnabled = true;
     i_AI->InitializeAI();
+    // Initialize vehicle
+    if (GetVehicleKit())
+        GetVehicleKit()->Reset();
     return true;
 }
 
@@ -1273,7 +1279,7 @@ bool Creature::CreateFromProto (uint32 guidlow, uint32 Entry, uint32 vehId, uint
     if (!vehId)
         vehId = cinfo->VehicleId;
 
-    if (vehId && !CreateVehicleKit(vehId))
+    if (vehId && !CreateVehicleKit(vehId, Entry))
         vehId = 0;
 
     Object::_Create(guidlow, Entry, vehId ? HIGHGUID_VEHICLE : HIGHGUID_UNIT);
@@ -1589,8 +1595,6 @@ void Creature::setDeathState (DeathState s)
         Motion_Initialize();
         if (GetCreatureData() && GetPhaseMask() != GetCreatureData()->phaseMask)
             SetPhaseMask(GetCreatureData()->phaseMask, false);
-        if (m_vehicleKit)
-            m_vehicleKit->Reset();
         Unit::setDeathState(ALIVE);
     }
 }

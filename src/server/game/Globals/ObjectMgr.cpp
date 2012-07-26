@@ -792,12 +792,6 @@ void ObjectMgr::CheckCreatureTemplate (CreatureInfo const* cInfo)
     if (cInfo->rangeattacktime == 0)
         const_cast<CreatureInfo*>(cInfo)->rangeattacktime = BASE_ATTACK_TIME;
 
-    if (cInfo->npcflag & UNIT_NPC_FLAG_SPELLCLICK)
-    {
-        sLog->outErrorDb("Creature (Entry: %u) has dynamic flag UNIT_NPC_FLAG_SPELLCLICK (%u) set, it is expected to be set by code handling `npc_spellclick_spells` content.", cInfo->Entry, UNIT_NPC_FLAG_SPELLCLICK);
-        const_cast<CreatureInfo*>(cInfo)->npcflag &= ~UNIT_NPC_FLAG_SPELLCLICK;
-    }
-
     if ((cInfo->npcflag & UNIT_NPC_FLAG_TRAINER) && cInfo->trainer_type >= MAX_TRAINER_TYPE)
         sLog->outErrorDb("Creature (Entry: %u) has wrong trainer type %u.", cInfo->Entry, cInfo->trainer_type);
 
@@ -2773,7 +2767,7 @@ void ObjectMgr::LoadVehicleTemplateAccessories()
             continue;
         }
 
-        m_VehicleTemplateAccessoryMap[uiEntry].push_back(VehicleAccessory(uiAccessory, uiSeat, bMinion));
+        m_VehicleTemplateAccessoryMap[uiEntry].push_back(VehicleAccessory(uiAccessory, uiSeat, bMinion, uiSummonType, uiSummonTimer));
 
         ++count;
     }
@@ -2785,16 +2779,18 @@ void ObjectMgr::LoadVehicleTemplateAccessories()
 
 void ObjectMgr::LoadVehicleAccessories ()
 {
-    m_VehicleAccessoryMap.clear();          // needed for reload case
+    uint32 oldMSTime = getMSTime();
+
+    m_VehicleAccessoryMap.clear();                           // needed for reload case
 
     uint32 count = 0;
 
-    QueryResult result = WorldDatabase.Query("SELECT `entry`,`accessory_entry`,`seat_id`,`minion`,`summontype`,`summontimer` FROM `vehicle_accessory`");
+    QueryResult result = WorldDatabase.Query("SELECT `guid`,`accessory_entry`,`seat_id`,`minion`,`summontype`,`summontimer` FROM `vehicle_accessory`");
 
     if (!result)
     {
-        sLog->outString();
         sLog->outErrorDb(">> Loaded 0 vehicle accessories. DB table `vehicle_accessory` is empty.");
+        sLog->outString();
         return;
     }
 
@@ -2802,13 +2798,13 @@ void ObjectMgr::LoadVehicleAccessories ()
     {
         Field *fields = result->Fetch();
 
-        uint32 uiGUID             = fields[0].GetUInt32();
-        uint32 uiAccessory      = fields[1].GetUInt32();
-        int8   uiSeat                = int8(fields[2].GetInt16());
-        bool   bMinion             = fields[3].GetBool();
-        uint8 uiSummonType   = fields[4].GetUInt8();
-        uint32 uiSummonTime = fields[5].GetUInt32();
- 
+        uint32 uiGUID       = fields[0].GetUInt32();
+        uint32 uiAccessory  = fields[1].GetUInt32();
+        int8   uiSeat       = int8(fields[2].GetInt16());
+        bool   bMinion      = fields[3].GetBool();
+        uint8  uiSummonType = fields[4].GetUInt8();
+        uint32 uiSummonTimer= fields[5].GetUInt32();
+
         if (!sCreatureStorage.LookupEntry<CreatureInfo>(uiAccessory))
         {
             sLog->outErrorDb("Table `vehicle_accessory`: Accessory %u does not exist.", uiAccessory);
@@ -2821,49 +2817,8 @@ void ObjectMgr::LoadVehicleAccessories ()
     }
     while (result->NextRow());
 
+    sLog->outString(">> Loaded %u Vehicle Accessories in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
     sLog->outString();
-    sLog->outString(">> Loaded %u Vehicle Accessories", count);
-}
-
-void ObjectMgr::LoadVehicleScaling ()
-{
-    m_VehicleScalingMap.clear();          // needed for reload case
-
-    uint32 count = 0;
-
-    QueryResult result = WorldDatabase.Query("SELECT `entry`, `baseItemLevel`, `scalingFactor` FROM `vehicle_scaling_info`");
-
-    if (!result)
-    {
-        sLog->outString();
-        sLog->outErrorDb(">> Loaded 0 vehicle scaling entries. DB table `vehicle_scaling_info` is empty.");
-        return;
-    }
-
-    do
-    {
-        Field *fields = result->Fetch();
-
-        uint32 vehicleEntry = fields[0].GetUInt32();
-        float baseItemLevel = fields[1].GetFloat();
-        float scalingFactor = fields[2].GetFloat();
-
-        if (!sVehicleStore.LookupEntry(vehicleEntry))
-        {
-            sLog->outErrorDb("Table `vehicle_scaling_info`: vehicle entry %u does not exist.", vehicleEntry);
-            continue;
-        }
-
-        m_VehicleScalingMap[vehicleEntry].ID = vehicleEntry;
-        m_VehicleScalingMap[vehicleEntry].baseItemLevel = baseItemLevel;
-        m_VehicleScalingMap[vehicleEntry].scalingFactor = scalingFactor;
-
-        ++count;
-    }
-    while (result->NextRow());
-
-    sLog->outString();
-    sLog->outString(">> Loaded %u vehicle scaling entries.", count);
 }
 
 void ObjectMgr::LoadPetLevelInfo ()
@@ -7398,6 +7353,20 @@ void ObjectMgr::LoadNPCSpellClickSpells ()
     }
     while (result->NextRow());
 
+    // all spellclick data loaded, now we check if there are creatures with NPC_FLAG_SPELLCLICK but with no data
+    // NOTE: It *CAN* be the other way around: no spellclick flag but with spellclick data, in case of creature-only vehicle accessories
+    for (uint32 i = 0; i < sCreatureStorage.MaxEntry; ++i)
+    {
+        if (CreatureInfo const* cInfo = GetCreatureTemplate(i))
+        {
+            if ((cInfo->npcflag & UNIT_NPC_FLAG_SPELLCLICK) && mSpellClickInfoMap.find(i) == mSpellClickInfoMap.end())
+            {
+                sLog->outErrorDb("npc_spellclick_spells: Creature template %u has UNIT_NPC_FLAG_SPELLCLICK but no data in spellclick table! Removing flag", i);
+                const_cast<CreatureInfo*>(cInfo)->npcflag &= ~UNIT_NPC_FLAG_SPELLCLICK;
+            }
+        }
+    }
+
     sLog->outString();
     sLog->outString(">> Loaded %u spellclick definitions", count);
 }
@@ -9089,4 +9058,21 @@ void ObjectMgr::LoadFactionChangeReputations ()
 
     sLog->outString();
     sLog->outString(">> Loaded %u faction change reputation pairs.", counter);
+}
+
+VehicleAccessoryList const* ObjectMgr::GetVehicleAccessoryList(Vehicle* veh) const
+{
+    if (Creature* cre = veh->GetBase()->ToCreature())
+    {
+        // Give preference to GUID-based accessories
+        VehicleAccessoryMap::const_iterator itr = m_VehicleAccessoryMap.find(cre->GetDBTableGUIDLow());
+        if (itr != m_VehicleAccessoryMap.end())
+            return &itr->second;
+    }
+
+    // Otherwise return entry-based
+    VehicleAccessoryMap::const_iterator itr = m_VehicleTemplateAccessoryMap.find(veh->GetCreatureEntry());
+    if (itr != m_VehicleTemplateAccessoryMap.end())
+        return &itr->second;
+    return NULL;
 }

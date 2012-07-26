@@ -444,8 +444,7 @@ SpellValue::SpellValue(SpellInfo const* proto)
     AuraStackAmount = 1;
 }
 
-Spell::Spell (Unit* Caster, SpellInfo const *info, bool triggered, uint64 originalCasterGUID, bool skipCheck) :
-        m_spellInfo(sSpellMgr->GetSpellForDifficultyFromSpell(info, Caster)), m_caster(Caster), m_spellValue(new SpellValue(m_spellInfo))
+Spell::Spell (Unit* Caster, SpellInfo const *info, bool triggered, uint64 originalCasterGUID, bool skipCheck) : m_spellInfo(sSpellMgr->GetSpellForDifficultyFromSpell(info, Caster)), m_caster(Caster), m_spellValue(new SpellValue(m_spellInfo))
 {
     m_customError = SPELL_CUSTOM_ERROR_NONE;
     m_skipCheck = skipCheck;
@@ -4469,7 +4468,7 @@ void Spell::SendChannelStart (uint32 duration)
 {
     WorldObject* target = NULL;
 
-    // select first not resisted target from target list for _0_ effect
+    // select first not resisted target from target list for first available effect
     if (!m_UniqueTargetInfo.empty())
     {
         for (std::list<TargetInfo>::const_iterator itr = m_UniqueTargetInfo.begin(); itr != m_UniqueTargetInfo.end(); ++itr)
@@ -5092,8 +5091,34 @@ SpellCastResult Spell::CheckCast (bool strict)
             return SPELL_FAILED_MOVING;
     }
 
-    Unit *target = m_targets.getUnitTarget();
+    if (Vehicle* vehicle = m_caster->GetVehicle())
+    {
+        uint16 checkMask = 0;
+        for (uint8 effIndex = EFFECT_0; effIndex < MAX_SPELL_EFFECTS; ++effIndex)
+        {
+            SpellEffectInfo const* effInfo = &m_spellInfo->Effects[effIndex];
+            if (effInfo->ApplyAuraName == SPELL_AURA_MOD_SHAPESHIFT)
+            {
+                SpellShapeshiftEntry const* shapeShiftEntry = sSpellShapeshiftStore.LookupEntry(effInfo->MiscValue);
+                if (shapeShiftEntry && (shapeShiftEntry->flags1 & 1) == 0)  // unk flag
+                    checkMask |= VEHICLE_SEAT_FLAG_UNCONTROLLED;
+                break;
+            }
+        }
 
+        if (m_spellInfo->HasAura(SPELL_AURA_MOUNTED))
+            checkMask |= VEHICLE_SEAT_FLAG_CAN_CAST_MOUNT_SPELL;
+
+        if (!checkMask)
+            checkMask = VEHICLE_SEAT_FLAG_CAN_ATTACK;
+
+        VehicleSeatEntry const* vehicleSeat = vehicle->GetSeatForPassenger(m_caster);
+        if (!(m_spellInfo->AttributesEx6 & SPELL_ATTR6_CASTABLE_WHILE_ON_VEHICLE) && !(m_spellInfo->Attributes & SPELL_ATTR0_CASTABLE_WHILE_MOUNTED)
+            && (vehicleSeat->m_flags & checkMask) != checkMask)
+            return SPELL_FAILED_DONT_REPORT;
+    }
+
+    Unit* target = m_targets.getUnitTarget();
     // In pure self-cast spells, the client won't send any unit target
     if (!target && (m_targets.getTargetMask() == TARGET_FLAG_SELF || m_targets.getTargetMask() & TARGET_FLAG_UNIT_CASTER))          // TARGET_FLAG_SELF == 0, remember!
         target = m_caster;

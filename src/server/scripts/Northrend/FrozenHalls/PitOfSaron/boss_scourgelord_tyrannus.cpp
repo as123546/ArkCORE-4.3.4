@@ -316,7 +316,7 @@ public:
 
             void JustReachedHome()
             {
-                _vehicle->InstallAllAccessories(false);
+                _vehicle->InstallAllAccessories();
             }
 
             void DoAction(const int32 actionId)

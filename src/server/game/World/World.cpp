@@ -1408,9 +1408,6 @@ void World::SetInitialWorldSettings ()
     sLog->outString("Loading Creature templates...");
     sObjectMgr->LoadCreatureTemplates();
 
-    sLog->outString("Loading Vehicle scaling information...");
-    sObjectMgr->LoadVehicleScaling();
-
     sLog->outString("Loading Reputation Reward Rates...");
     sObjectMgr->LoadReputationRewardRate();
 
@@ -1437,9 +1434,6 @@ void World::SetInitialWorldSettings ()
 
     sLog->outString("Loading Creature Template Addon Data...");
     sObjectMgr->LoadCreatureAddons();          // must be after LoadCreatureTemplates() and LoadCreatures()
-
-    sLog->outString("Loading Vehicle Accessories...");
-    sObjectMgr->LoadVehicleAccessories();          // must be after LoadCreatureTemplates()
 
     sLog->outString("Loading Creature Respawn Data...");          // must be after PackInstances()
     sObjectMgr->LoadCreatureRespawnTimes();

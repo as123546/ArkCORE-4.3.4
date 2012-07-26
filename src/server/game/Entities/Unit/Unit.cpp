@@ -2550,10 +2550,6 @@ SpellMissInfo Unit::MagicSpellHitResult (Unit *pVictim, SpellInfo const *spell)
 //   Resist
 SpellMissInfo Unit::SpellHitResult (Unit *pVictim, SpellInfo const *spell, bool CanReflect)
 {
-    // Return evade for units in evade mode
-    if (pVictim->GetTypeId() == TYPEID_UNIT && pVictim->ToCreature()->IsInEvadeMode() && this != pVictim)
-        return SPELL_MISS_EVADE;
-
     // Check for immune
     if (pVictim->IsImmunedToSpell(spell))
         return SPELL_MISS_IMMUNE;
@@ -2568,6 +2564,10 @@ SpellMissInfo Unit::SpellHitResult (Unit *pVictim, SpellInfo const *spell, bool 
 
     if (this == pVictim)
         return SPELL_MISS_NONE;
+
+    // Return evade for units in evade mode
+    if (pVictim->GetTypeId() == TYPEID_UNIT && pVictim->ToCreature()->IsInEvadeMode())
+        return SPELL_MISS_EVADE;
 
     // Try victim reflect spell
     if (CanReflect)
@@ -3974,6 +3974,27 @@ void Unit::RemoveAllAurasRequiringDeadTarget ()
     {
         Aura * aura = iter->second;
         if (!aura->IsPassive() && aura->GetSpellInfo()->IsRequiringDeadTarget())
+            RemoveOwnedAura(iter, AURA_REMOVE_BY_DEFAULT);
+        else
+            ++iter;
+    }
+}
+
+void Unit::RemoveAllAurasExceptVehicle()
+{
+    for (AuraApplicationMap::iterator iter = m_appliedAuras.begin(); iter != m_appliedAuras.end();)
+    {
+        Aura const* aura = iter->second->GetBase();
+        if (!IsSpellHaveAura(aura->GetSpellProto(), SPELL_AURA_CONTROL_VEHICLE))
+            _UnapplyAura(iter, AURA_REMOVE_BY_DEFAULT);
+        else
+            ++iter;
+    }
+
+    for (AuraMap::iterator iter = m_ownedAuras.begin(); iter != m_ownedAuras.end();)
+    {
+        Aura* aura = iter->second;
+        if (!IsSpellHaveAura(aura->GetSpellProto(), SPELL_AURA_CONTROL_VEHICLE))
             RemoveOwnedAura(iter, AURA_REMOVE_BY_DEFAULT);
         else
             ++iter;
@@ -12758,7 +12779,7 @@ void Unit::Mount (uint32 mount, uint32 VehicleId, uint32 creatureEntry)
 
         if (VehicleId)
         {
-            if (CreateVehicleKit(VehicleId))
+            if (CreateVehicleKit(VehicleId, creatureEntry))
             {
                 GetVehicleKit()->Reset();
 
@@ -12772,7 +12793,7 @@ void Unit::Mount (uint32 mount, uint32 VehicleId, uint32 creatureEntry)
                 plr->GetSession()->SendPacket(&data);
 
                 // mounts can also have accessories
-                GetVehicleKit()->InstallAllAccessories(creatureEntry);
+                GetVehicleKit()->InstallAllAccessories(false);
             }
         }
     }
@@ -13487,7 +13508,6 @@ void Unit::setDeathState (DeathState s)
         UnsummonAllTotems();
         RemoveAllControlled();
         RemoveAllAurasOnDeath();
-        ExitVehicle();
     }
 
     if (s == JUST_DIED)
@@ -17897,13 +17917,18 @@ bool Unit::HandleSpellClick(Unit* clicker, int8 seatId)
         }
     }
 
-    if (this->ToCreature())
+    if (this->ToCreature() && this->ToCreature()->IsAIEnabled)
         this->ToCreature()->AI()->DoAction(EVENT_SPELLCLICK);
 
     return success;
 }
 
-void Unit::EnterVehicle (Vehicle *vehicle, int8 seatId, bool byAura)
+void Unit::EnterVehicle(Unit *base, int8 seatId)
+{
+    CastCustomSpell(VEHICLE_SPELL_RIDE_HARDCODED, SPELLVALUE_BASE_POINT0, seatId+1, base, false);
+}
+
+void Unit::_EnterVehicle(Vehicle* vehicle, int8 seatId, AuraApplication const* aurApp)
 {
     if (!isAlive() || GetVehicleKit() == vehicle)
         return;
@@ -17926,6 +17951,12 @@ void Unit::EnterVehicle (Vehicle *vehicle, int8 seatId, bool byAura)
         }
     }
 
+    if (aurApp && aurApp->GetRemoveMode())
+        return;
+
+  	16551 	
+
++
     if (Player* plr = ToPlayer())
     {
         if (vehicle->GetBase()->GetTypeId() == TYPEID_PLAYER && plr->isInCombat())
@@ -17978,6 +18009,7 @@ void Unit::ChangeSeat (int8 seatId, bool next)
 
 void Unit::ExitVehicle (Position const* exitPosition)
 {
+    // This function can be called at upper level code to initialize an exit from the passenger's side.
     if (!m_vehicle)
         return;
 
@@ -17992,6 +18024,11 @@ void Unit::ExitVehicle (Position const* exitPosition)
         }
     }
 
+   _ExitVehicle(exitPosition);
+}
+
+void Unit::_ExitVehicle(Position const* exitPosition)
+{
     if (!m_vehicle)
         return;
 
@@ -18030,6 +18067,16 @@ void Unit::ExitVehicle (Position const* exitPosition)
     if (vehicle->GetBase()->HasUnitTypeMask(UNIT_MASK_MINION))
         if (((Minion*) vehicle->GetBase())->GetOwner() == this)
             vehicle->Dismiss();
+
+    if (HasUnitTypeMask(UNIT_MASK_ACCESSORY))
+    {
+        // Vehicle just died, we die too
+        if (vehicle->GetBase()->getDeathState() == JUST_DIED)
+            setDeathState(JUST_DIED);
+        // If for other reason we as minion are exiting the vehicle (ejected, master unmounted) - unsummon
+        else
+            ToTempSummon()->UnSummon();
+    }
 }
 
 void Unit::BuildMovementPacket (ByteBuffer *data) const

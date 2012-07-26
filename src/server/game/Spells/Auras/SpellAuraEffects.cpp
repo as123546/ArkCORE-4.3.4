@@ -7330,7 +7330,7 @@ void AuraEffect::HandleAuraSetVehicle (AuraApplication const * aurApp, uint8 mod
 
     if (apply)
     {
-        if (!target->CreateVehicleKit(vehicleId))
+        if (!target->CreateVehicleKit(vehicleId, 0))
             return;
     }
     else if (target->GetVehicleKit())
@@ -7350,6 +7350,7 @@ void AuraEffect::HandleAuraSetVehicle (AuraApplication const * aurApp, uint8 mod
         target->ToPlayer()->GetSession()->SendPacket(&data);
     }
 }
+
 void AuraEffect::HandleAuraReplaceSpell (AuraApplication const * aurApp, uint8 mode, bool apply) const
 {
    //    if (!(mode & (AURA_EFFECT_HANDLE_CHANGE_AMOUNT_MASK | AURA_EFFECT_HANDLE_STAT)))
