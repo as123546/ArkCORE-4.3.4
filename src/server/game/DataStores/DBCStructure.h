@@ -2195,7 +2195,7 @@ struct VehicleSeatEntry
     }
     bool IsUsableByOverride() const
     {
-        return m_flags & VEHICLE_SEAT_FLAG_UNCONTROLLED;
+        return (m_flags & VEHICLE_SEAT_FLAG_UNCONTROLLED) || (m_flagsB & VEHICLE_SEAT_FLAG_B_USABLE_FORCED | VEHICLE_SEAT_FLAG_B_USABLE_FORCED_2 | VEHICLE_SEAT_FLAG_B_USABLE_FORCED_3);
     }
     bool IsEjectable () const
     {

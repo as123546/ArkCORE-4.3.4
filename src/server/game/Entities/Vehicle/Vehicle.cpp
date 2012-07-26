@@ -141,7 +141,7 @@ void Vehicle::InstallAllAccessories (uint32 entry)
         return;
 
     for (VehicleAccessoryList::const_iterator itr = mVehicleList->begin(); itr != mVehicleList->end(); ++itr)
-        InstallAccessory(itr->uiAccessory, itr->uiSeat, itr->bMinion);
+        InstallAccessory(itr->uiAccessory, itr->uiSeat, itr->bMinion, itr->uiSummonType, itr->uiSummonTime);
 }
 
 void Vehicle::Uninstall ()
@@ -249,7 +249,7 @@ int8 Vehicle::GetNextEmptySeat (int8 seatId, bool next) const
     return seat->first;
 }
 
-void Vehicle::InstallAccessory (uint32 entry, int8 seatId, bool minion)
+void Vehicle::InstallAccessory (uint32 entry, int8 seatId, bool minion, uint8 type, uint32 summonTime)
 {
     if (Unit *passenger = GetPassenger(seatId))
     {

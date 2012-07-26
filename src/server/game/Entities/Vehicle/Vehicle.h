@@ -67,11 +67,11 @@ enum VehicleSeatFlags
 enum VehicleSeatFlagsB
 {
     VEHICLE_SEAT_FLAG_B_NONE                     = 0x00000000,
-    //VEHICLE_SEAT_FLAG_B_USABLE_FORCED            = 0x00000002,
+    VEHICLE_SEAT_FLAG_B_USABLE_FORCED            = 0x00000002,
     VEHICLE_SEAT_FLAG_B_TARGETS_IN_RAIDUI        = 0x00000008,           // Lua_UnitTargetsVehicleInRaidUI
     VEHICLE_SEAT_FLAG_B_EJECTABLE                = 0x00000020,           // ejectable
-    //VEHICLE_SEAT_FLAG_B_USABLE_FORCED_2          = 0x00000040,
-    //VEHICLE_SEAT_FLAG_B_USABLE_FORCED_3          = 0x00000100,
+    VEHICLE_SEAT_FLAG_B_USABLE_FORCED_2          = 0x00000040,
+    VEHICLE_SEAT_FLAG_B_USABLE_FORCED_3          = 0x00000100,
     VEHICLE_SEAT_FLAG_B_CANSWITCH                = 0x04000000,           // can switch seats
     VEHICLE_SEAT_FLAG_B_VEHICLE_PLAYERFRAME_UI   = 0x80000000,           // Lua_UnitHasVehiclePlayerFrameUI - actually checked for flagsb &~ 0x80000000
 };
@@ -93,14 +93,15 @@ struct VehicleSeat
 };
 
 struct VehicleAccessory
-{
-    explicit VehicleAccessory (uint32 _uiAccessory, int8 _uiSeat, bool _bMinion) :
-            uiAccessory(_uiAccessory), uiSeat(_uiSeat), bMinion(_bMinion)
+    explicit VehicleAccessory(uint32 _uiAccessory, int8 _uiSeat, bool _bMinion, uint8 _uiSummonType, uint32 _uiSummonTime) : 
+            uiAccessory(_uiAccessory), uiSeat(_uiSeat), bMinion(_bMinion), uiSummonType(_uiSummonType), uiSummonTime(_uiSummonTime) {}
     {
     }
     uint32 uiAccessory;
     int8 uiSeat;
     uint32 bMinion;
+    uint8 uiSummonType;
+    uint32 uiSummonTime; 
 };
 
 struct VehicleScalingInfo
@@ -170,6 +171,6 @@ protected:
 
     SeatMap::iterator GetSeatIteratorForPassenger (Unit* passenger);
     void InitMovementInfoForBase ();
-    void InstallAccessory (uint32 entry, int8 seatId, bool minion = true);
+    void InstallAccessory (uint32 entry, int8 seatId, bool minion, uint8 type, uint32 summonTime);
 };
 #endif
