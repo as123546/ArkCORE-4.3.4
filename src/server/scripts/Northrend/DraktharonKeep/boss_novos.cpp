@@ -221,7 +221,7 @@ public:
             }
 
             /*
-            if (!me->hasUnitState(UNIT_STAT_CASTING))
+            if (!me->HasUnitState(UNIT_STAT_CASTING))
             {
                 uint8 cast=(urand(0, 100));
                 if (cast<=65)
