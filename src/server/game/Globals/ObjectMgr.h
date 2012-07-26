@@ -1374,8 +1374,8 @@ protected:
 
     ItemRequiredTargetMap m_ItemRequiredTarget;
 
-    VehicleAccessoryMap m_VehicleTemplateAccessoryMap;
-    VehicleAccessoryMap m_VehicleAccessoryMap;
+    VehicleAccessoryContainer m_VehicleTemplateAccessoryMap;
+    VehicleAccessoryContainer m_VehicleAccessoryMap;
 
     typedef std::vector<LocaleConstant> LocalForIndex;
     LocalForIndex m_LocalForIndex;

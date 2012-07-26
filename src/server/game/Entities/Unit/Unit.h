@@ -1823,6 +1823,7 @@ public:
     void RemoveArenaAuras (bool onleave = false);
     void RemoveAllAurasOnDeath ();
     void RemoveAllAurasRequiringDeadTarget ();
+    void RemoveAllAurasExceptVehicle();
     void DelayOwnedAuras (uint32 spellId, uint64 caster, int32 delaytime);
 
     void _RemoveAllAuraStatMods ();
