@@ -26,8 +26,6 @@
 #define ARKCORE_RANDOMMOTIONGENERATOR_H
 
 #include "MovementGenerator.h"
-#include "DestinationHolder.h"
-#include "Traveller.h"
 
 template<class T>
 class RandomMovementGenerator: public MovementGeneratorMedium<T, RandomMovementGenerator<T> >
@@ -44,11 +42,7 @@ public:
     void Finalize (T &);
     void Reset (T &);
     bool Update (T &, const uint32 &);
-    bool GetDestination (float &x, float &y, float &z) const;
-    void UpdateMapPosition (uint32 mapid, float &x, float &y, float &z)
-    {
-        i_destinationHolder.GetLocationNow(mapid, x, y, z);
-    }
+    bool GetResetPosition(T&, float& x, float& y, float& z);
     MovementGeneratorType GetMovementGeneratorType ()
     {
         return RANDOM_MOTION_TYPE;
@@ -56,8 +50,7 @@ public:
 private:
     TimeTrackerSmall i_nextMoveTime;
 
-    DestinationHolder<Traveller<T> > i_destinationHolder;
-    float wander_distance;
     uint32 i_nextMove;
+    float wander_distance;
 };
 #endif

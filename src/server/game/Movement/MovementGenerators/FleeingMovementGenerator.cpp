@@ -385,7 +385,7 @@ template bool FleeingMovementGenerator<Creature>::Update (Creature &, const uint
 void TimedFleeingMovementGenerator::Finalize (Unit &owner)
 {
     owner.RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_FLEEING);
-    owner.ClearUnitState(UNIT_STAT_FLEEING | UNIT_STAT_ROAMING);
+    owner.ClearUnitState(UNIT_STAT_FLEEING | UNIT_STAT_FLEEING_MOVE);
     if (Unit* victim = owner.getVictim())
     {
         if (owner.isAlive())
@@ -402,7 +402,15 @@ bool TimedFleeingMovementGenerator::Update (Unit & owner, const uint32 & time_di
         return false;
 
     if (owner.HasUnitState(UNIT_STAT_ROOT | UNIT_STAT_STUNNED))
+    {
+        owner.ClearUnitState(UNIT_STAT_FLEEING_MOVE);
         return true;
+
+    }
+
+    i_totalFleeTime.Update(time_diff);
+    if (i_totalFleeTime.Passed())
+        return false;
 
     i_totalFleeTime.Update(time_diff);
     if (i_totalFleeTime.Passed())

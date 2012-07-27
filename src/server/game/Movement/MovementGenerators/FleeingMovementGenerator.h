@@ -26,8 +26,6 @@
 #define ARKCORE_FLEEINGMOVEMENTGENERATOR_H
 
 #include "MovementGenerator.h"
-#include "DestinationHolder.h"
-#include "Traveller.h"
 
 template<class T>
 class FleeingMovementGenerator: public MovementGeneratorMedium<T, FleeingMovementGenerator<T> >
@@ -42,7 +40,6 @@ public:
     void Finalize (T &);
     void Reset (T &);
     bool Update (T &, const uint32 &);
-    bool GetDestination (float &x, float &y, float &z) const;
 
     MovementGeneratorType GetMovementGeneratorType ()
     {
@@ -67,8 +64,6 @@ private:
     float i_cur_angle;
     uint64 i_frightGUID;
     TimeTracker i_nextCheckTime;
-
-    DestinationHolder<Traveller<T> > i_destinationHolder;
 };
 
 class TimedFleeingMovementGenerator: public FleeingMovementGenerator<Creature>
