@@ -52,7 +52,7 @@ void ConfusedMovementGenerator<T>::Initialize (T &unit)
 
     for (uint8 idx = 0; idx < MAX_CONF_WAYPOINTS + 1; ++idx)
     {
-        float const wanderX = x + wanderDstance * (float) rand_norm() - wanderDistance / 2;
+        float const wanderX = x + wanderDistance * (float) rand_norm() - wanderDistance / 2;
         float const wanderY = y + wanderDistance * (float) rand_norm() - wanderDistance / 2;
 
         i_waypoints[idx][0] = x + wanderX;
@@ -112,11 +112,8 @@ bool ConfusedMovementGenerator<T>::Update (T &unit, const uint32 &diff)
 
         if (unit.movespline->Finalized())
         {
-            if (i_destinationHolder.HasArrived())
-            {
-                i_nextMove = urand(1, MAX_CONF_WAYPOINTS);
-                i_nextMoveTime.Reset(urand(0, 1500 - 1));          // TODO: check the minimum reset time, should be probably higher
-            }
+            i_nextMove = urand(1, MAX_CONF_WAYPOINTS);
+            i_nextMoveTime.Reset(urand(0, 1500 - 1));          // TODO: check the minimum reset time, should be probably higher
         }
     }
     else

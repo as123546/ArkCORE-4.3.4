@@ -364,11 +364,11 @@ void ScriptedAI::DoModifyThreatPercent(Unit* pUnit, int32 pct)
     me->getThreatManager().modifyThreatPercent(pUnit, pct);
 }
 
-void ScriptedAI::DoTeleportTo(float fX, float fY, float fZ, uint32 uiTime)
+void ScriptedAI::DoTeleportTo(float x, float y, float z, uint32 time)
 {
-    me->Relocate(fX, fY, fZ);
+    me->Relocate(x, y, z);
     float speed = me->GetDistance(x, y, z) / ((float)time * 0.001f);
-    me->MonsterMoveWithSpeed(x, y, speed);
+    me->MonsterMoveWithSpeed(x, y, z, speed);
 }
 
 void ScriptedAI::DoTeleportTo(const float fPos[4])

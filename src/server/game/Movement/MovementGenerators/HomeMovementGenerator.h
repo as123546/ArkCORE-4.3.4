@@ -29,30 +29,26 @@
 
 class Creature;
 
-template<class T>
+template < class T >
 class HomeMovementGenerator;
 
-template<>
-class HomeMovementGenerator<Creature> : public MovementGeneratorMedium<Creature, HomeMovementGenerator<Creature> >
+template <>
+class HomeMovementGenerator<Creature>
+: public MovementGeneratorMedium< Creature, HomeMovementGenerator<Creature> >
 {
-public:
+    public:
 
-    HomeMovementGenerator() : arrived(false) {}
-    ~HomeMovementGenerator ()
-    {
-    }
+        HomeMovementGenerator() : arrived(false) {}
+        ~HomeMovementGenerator() {}
 
-    void Initialize (Creature &);
-    void Finalize (Creature &);
-    void Reset (Creature &);
-    bool Update (Creature &, const uint32 &);
-    MovementGeneratorType GetMovementGeneratorType ()
-    {
-        return HOME_MOTION_TYPE;
-    }
+        void Initialize(Creature &);
+        void Finalize(Creature &);
+        void Reset(Creature &);
+        bool Update(Creature &, const uint32);
+        MovementGeneratorType GetMovementGeneratorType() { return HOME_MOTION_TYPE; }
 
-private:
-    void _setTargetLocation (Creature &);
-    bool arrived;
+    private:
+        void _setTargetLocation(Creature &);
+        bool arrived;
 };
 #endif

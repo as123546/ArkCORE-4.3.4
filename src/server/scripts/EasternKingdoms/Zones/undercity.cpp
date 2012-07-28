@@ -100,7 +100,7 @@ public:
         void JustSummoned(Creature *summoned) {
             if (summoned->GetEntry() == ENTRY_HIGHBORNE_BUNNY) {
                 if (Unit *pTarget = Unit::GetUnit(*summoned, targetGUID)) {
-                    pTarget->SendMonsterMove(pTarget->GetPositionX(),
+                    pTarget->MonsterMoveWithSpeed(pTarget->GetPositionX(),
                             pTarget->GetPositionY(), me->GetPositionZ() + 15.0f,
                             0);
                     pTarget->GetMap()->CreatureRelocation(me,

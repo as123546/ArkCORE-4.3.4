@@ -29,55 +29,38 @@
 #include "FollowerReference.h"
 
 template<class T>
-class PointMovementGenerator: public MovementGeneratorMedium<T, PointMovementGenerator<T> >
+class PointMovementGenerator
+: public MovementGeneratorMedium< T, PointMovementGenerator<T> >
 {
-public:
+    public:
         PointMovementGenerator(uint32 _id, float _x, float _y, float _z, float _speed = 0.0f) : id(_id),
             i_x(_x), i_y(_y), i_z(_z), speed(_speed) {}
-    {
-    }
 
-    void Initialize (T &);
-    void Finalize (T &);
-    void Reset (T &)
-    {
-        unit.StopMoving();
-    }
-    bool Update (T &, const uint32 &);
+        void Initialize(T &);
+        void Finalize(T &);
+        void Reset(T &);
+        bool Update(T &, const uint32 &);
 
-    void MovementInform (T &);
+        void MovementInform(T &);
 
-    MovementGeneratorType GetMovementGeneratorType ()
-    {
-        return POINT_MOTION_TYPE;
-    }
+        MovementGeneratorType GetMovementGeneratorType() { return POINT_MOTION_TYPE; }
 
-    bool GetDestination (float& x, float& y, float& z) const
-    {
-        x = i_x;
-        y = i_y;
-        z = i_z;
-        return true;
-    }
-private:
-    uint32 id;
-    float i_x, i_y, i_z;
-    float speed;
+        bool GetDestination(float& x, float& y, float& z) const { x=i_x; y=i_y; z=i_z; return true; }
+    private:
+        uint32 id;
+        float i_x, i_y, i_z;
+        float speed;
 };
 
-class AssistanceMovementGenerator: public PointMovementGenerator<Creature>
+class AssistanceMovementGenerator
+: public PointMovementGenerator<Creature>
 {
-public:
-    AssistanceMovementGenerator (float _x, float _y, float _z) :
-            PointMovementGenerator<Creature>(0, _x, _y, _z)
-    {
-    }
+    public:
+        AssistanceMovementGenerator(float _x, float _y, float _z) :
+            PointMovementGenerator<Creature>(0, _x, _y, _z) {}
 
-    MovementGeneratorType GetMovementGeneratorType ()
-    {
-        return ASSISTANCE_MOTION_TYPE;
-    }
-    void Finalize (Unit &);
+        MovementGeneratorType GetMovementGeneratorType() { return ASSISTANCE_MOTION_TYPE; }
+        void Finalize(Unit &);
 };
 
 // Does almost nothing - just doesn't allows previous movegen interrupt current effect.

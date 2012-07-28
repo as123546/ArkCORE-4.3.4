@@ -515,7 +515,7 @@ class boss_the_lich_king : public CreatureScript
                 if (fabs(ground_Z - z) < 0.1f)
                     return;
 
-                me->GetMotionMaster()->MoveFall(ground_Z);
+                me->GetMotionMaster()->MoveFall();
             }
 
             void EnterCombat(Unit* target)
@@ -810,7 +810,7 @@ class boss_the_lich_king : public CreatureScript
                         events.ScheduleEvent(EVENT_INTRO_TALK_1, 9000, 0, PHASE_INTRO);
                         break;
                     case POINT_CENTER_1:
-                        me->SetFacing(0.0f);
+                        me->SetFacingTo(0.0f);
                         Talk(SAY_LK_REMORSELESS_WINTER);
                         SendMusicToPlayers(MUSIC_SPECIAL);
                         me->SetReactState(REACT_PASSIVE);
@@ -827,7 +827,7 @@ class boss_the_lich_king : public CreatureScript
                         events.ScheduleEvent(EVENT_SOUL_REAPER, 94000, 0, PHASE_TWO);
                         break;
                     case POINT_CENTER_2:
-                        me->SetFacing(0.0f);
+                        me->SetFacingTo(0.0f);
                         Talk(SAY_LK_REMORSELESS_WINTER);
                         SendMusicToPlayers(MUSIC_SPECIAL);
                         me->SetReactState(REACT_PASSIVE);
@@ -1066,14 +1066,14 @@ class boss_the_lich_king : public CreatureScript
                             break;
                         case EVENT_OUTRO_TALK_3:
                             if (Creature* tirion = ObjectAccessor::GetCreature(*me, instance->GetData64(DATA_HIGHLORD_TIRION_FORDRING)))
-                                me->SetFacing(0.0f, tirion);
+                                me->SetFacingToObject(tirion);
                             Talk(SAY_LK_OUTRO_3);
                             break;
                         case EVENT_OUTRO_MOVE_CENTER:
                             me->GetMotionMaster()->MovePoint(POINT_LK_OUTRO_1, CenterPosition);
                             break;
                         case EVENT_OUTRO_TALK_4:
-                            me->SetFacing(0.01745329f);
+                            me->SetFacingTo(0.01745329f);
                             Talk(SAY_LK_OUTRO_4);
                             break;
                         case EVENT_OUTRO_RAISE_DEAD:

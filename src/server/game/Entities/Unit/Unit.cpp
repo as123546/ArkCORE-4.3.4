@@ -16583,7 +16583,7 @@ void Unit::SetRooted (bool apply)
             WorldPacket data(SMSG_FORCE_MOVE_ROOT, 10);
             data.append(GetPackGUID());
             data << m_rootTimes;
-            plr->GetSession()->SendPacket(&data);
+            thisplr->GetSession()->SendPacket(&data);
         }
         else
         {
@@ -17954,7 +17954,7 @@ void Unit::_EnterVehicle(Vehicle* vehicle, int8 seatId, AuraApplication const* a
 
   	16551 	
 
-+
+
     if (Player* plr = ToPlayer())
     {
         if (vehicle->GetBase()->GetTypeId() == TYPEID_PLAYER && plr->isInCombat())

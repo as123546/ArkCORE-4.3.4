@@ -329,7 +329,7 @@ public:
                 pTarget->GetPosition(x, y, z);
                 if (pTarget) {
                     pTarget->SetUnitMovementFlags(MOVEMENTFLAG_LEVITATING);
-                    pTarget->SendMonsterMove(x, y, me->GetPositionZ() + 15, 0);
+                    pTarget->MonsterMoveWithSpeed(x, y, me->GetPositionZ() + 15, 0);
                 }
                 Unit *Cloud = me->SummonTrigger(x, y, me->GetPositionZ() + 16,
                         0, 15000);
