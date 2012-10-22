@@ -1,25 +1,19 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 /* ScriptData
@@ -29,7 +23,8 @@ SDComment: Bloodboil not working correctly, missing enrage
 SDCategory: Black Temple
 EndScriptData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "black_temple.h"
 
 //Speech'n'Sound
@@ -66,19 +61,19 @@ class boss_gurtogg_bloodboil : public CreatureScript
 public:
     boss_gurtogg_bloodboil() : CreatureScript("boss_gurtogg_bloodboil") { }
 
-    CreatureAI* GetAI(Creature* pCreature) const
+    CreatureAI* GetAI(Creature* creature) const
     {
-        return new boss_gurtogg_bloodboilAI (pCreature);
+        return new boss_gurtogg_bloodboilAI (creature);
     }
 
     struct boss_gurtogg_bloodboilAI : public ScriptedAI
     {
-        boss_gurtogg_bloodboilAI(Creature *c) : ScriptedAI(c)
+        boss_gurtogg_bloodboilAI(Creature* creature) : ScriptedAI(creature)
         {
-            pInstance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
-        InstanceScript* pInstance;
+        InstanceScript* instance;
 
         uint64 TargetGUID;
 
@@ -99,8 +94,8 @@ public:
 
         void Reset()
         {
-            if (pInstance)
-                pInstance->SetData(DATA_GURTOGGBLOODBOILEVENT, NOT_STARTED);
+            if (instance)
+                instance->SetData(DATA_GURTOGGBLOODBOILEVENT, NOT_STARTED);
 
             TargetGUID = 0;
 
@@ -123,23 +118,23 @@ public:
             me->ApplySpellImmune(0, IMMUNITY_EFFECT, SPELL_EFFECT_ATTACK_ME, false);
         }
 
-        void EnterCombat(Unit * /*who*/)
+        void EnterCombat(Unit* /*who*/)
         {
             DoZoneInCombat();
             DoScriptText(SAY_AGGRO, me);
-            if (pInstance)
-                pInstance->SetData(DATA_GURTOGGBLOODBOILEVENT, IN_PROGRESS);
+            if (instance)
+                instance->SetData(DATA_GURTOGGBLOODBOILEVENT, IN_PROGRESS);
         }
 
-        void KilledUnit(Unit * /*victim*/)
+        void KilledUnit(Unit* /*victim*/)
         {
             DoScriptText(RAND(SAY_SLAY1, SAY_SLAY2), me);
         }
 
-        void JustDied(Unit * /*victim*/)
+        void JustDied(Unit* /*killer*/)
         {
-            if (pInstance)
-                pInstance->SetData(DATA_GURTOGGBLOODBOILEVENT, DONE);
+            if (instance)
+                instance->SetData(DATA_GURTOGGBLOODBOILEVENT, DONE);
 
             DoScriptText(SAY_DEATH, me);
         }
@@ -148,19 +143,19 @@ public:
         void CastBloodboil()
         {
             // Get the Threat List
-            std::list<HostileReference *> m_threatlist = me->getThreatManager().getThreatList();
+            std::list<HostileReference*> m_threatlist = me->getThreatManager().getThreatList();
 
-            if (!m_threatlist.size()) // He doesn't have anyone in his threatlist, useless to continue
+            if (m_threatlist.empty()) // He doesn't have anyone in his threatlist, useless to continue
                 return;
 
-            std::list<Unit *> targets;
-            std::list<HostileReference *>::const_iterator itr = m_threatlist.begin();
+            std::list<Unit*> targets;
+            std::list<HostileReference*>::const_iterator itr = m_threatlist.begin();
             for (; itr!= m_threatlist.end(); ++itr)             //store the threat list in a different container
             {
-                Unit *pTarget = Unit::GetUnit(*me, (*itr)->getUnitGuid());
+                Unit* target = Unit::GetUnit(*me, (*itr)->getUnitGuid());
                                                                 //only on alive players
-                if (pTarget && pTarget->isAlive() && pTarget->GetTypeId() == TYPEID_PLAYER)
-                    targets.push_back(pTarget);
+                if (target && target->isAlive() && target->GetTypeId() == TYPEID_PLAYER)
+                    targets.push_back(target);
             }
 
             //Sort the list of players
@@ -169,21 +164,21 @@ public:
             targets.resize(5);
 
             //Aura each player in the targets list with Bloodboil. Aura code copied+pasted from Aura command in Level3.cpp
-            /*SpellInfo const *spellInfo = GetSpellStore()->LookupEntry(SPELL_BLOODBOIL);
+            /*SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(SPELL_BLOODBOIL);
             if (spellInfo)
             {
-                for (std::list<Unit *>::const_iterator itr = targets.begin(); itr != targets.end(); ++itr)
+                for (std::list<Unit*>::const_iterator itr = targets.begin(); itr != targets.end(); ++itr)
                 {
-                    Unit *pTarget = *itr;
-                    if (!pTarget) return;
+                    Unit* target = *itr;
+                    if (!target) return;
                     for (uint32 i = 0; i<3; ++i)
                     {
                         uint8 eff = spellInfo->Effect[i];
                         if (eff >= TOTAL_SPELL_EFFECTS)
                             continue;
 
-                        Aura *Aur = new Aura(spellInfo, i, pTarget, pTarget, pTarget);
-                        pTarget->AddAura(Aur);
+                        Aura* Aur = new Aura(spellInfo, i, target, target, target);
+                        target->AddAura(Aur);
                     }
                 }
             }*/
@@ -191,14 +186,14 @@ public:
 
         void RevertThreatOnTarget(uint64 guid)
         {
-            Unit* pUnit = NULL;
-            pUnit = Unit::GetUnit((*me), guid);
-            if (pUnit)
+            Unit* unit = NULL;
+            unit = Unit::GetUnit(*me, guid);
+            if (unit)
             {
-                if (DoGetThreat(pUnit))
-                    DoModifyThreatPercent(pUnit, -100);
+                if (DoGetThreat(unit))
+                    DoModifyThreatPercent(unit, -100);
                 if (TargetThreat)
-                    me->AddThreat(pUnit, TargetThreat);
+                    me->AddThreat(unit, TargetThreat);
             }
         }
 
@@ -234,8 +229,8 @@ public:
                 {
                     DoCast(me->getVictim(), SPELL_BEWILDERING_STRIKE);
                     float mt_threat = DoGetThreat(me->getVictim());
-                    if (Unit *pTarget = SelectUnit(SELECT_TARGET_TOPAGGRO, 1))
-                        me->AddThreat(pTarget, mt_threat);
+                    if (Unit* target = SelectTarget(SELECT_TARGET_TOPAGGRO, 1))
+                        me->AddThreat(target, mt_threat);
                     BewilderingStrikeTimer = 20000;
                 } else BewilderingStrikeTimer -= diff;
 
@@ -283,26 +278,26 @@ public:
             {
                 if (Phase1)
                 {
-                    Unit *pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0);
-                    if (pTarget && pTarget->isAlive())
+                    Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0);
+                    if (target && target->isAlive())
                     {
                         Phase1 = false;
 
-                        TargetThreat = DoGetThreat(pTarget);
-                        TargetGUID = pTarget->GetGUID();
-                        pTarget->CastSpell(me, SPELL_TAUNT_GURTOGG, true);
-                        if (DoGetThreat(pTarget))
-                            DoModifyThreatPercent(pTarget, -100);
-                        me->AddThreat(pTarget, 50000000.0f);
+                        TargetThreat = DoGetThreat(target);
+                        TargetGUID = target->GetGUID();
+                        target->CastSpell(me, SPELL_TAUNT_GURTOGG, true);
+                        if (DoGetThreat(target))
+                            DoModifyThreatPercent(target, -100);
+                        me->AddThreat(target, 50000000.0f);
                         me->ApplySpellImmune(0, IMMUNITY_STATE, SPELL_AURA_MOD_TAUNT, true);
                         me->ApplySpellImmune(0, IMMUNITY_EFFECT, SPELL_EFFECT_ATTACK_ME, true);
                                                                 // If VMaps are disabled, this spell can call the whole instance
                         DoCast(me, SPELL_INSIGNIFIGANCE, true);
-                        DoCast(pTarget, SPELL_FEL_RAGE_TARGET, true);
-                        DoCast(pTarget, SPELL_FEL_RAGE_2, true);
+                        DoCast(target, SPELL_FEL_RAGE_TARGET, true);
+                        DoCast(target, SPELL_FEL_RAGE_2, true);
                         /* These spells do not work, comment them out for now.
-                        DoCast(pTarget, SPELL_FEL_RAGE_2, true);
-                        DoCast(pTarget, SPELL_FEL_RAGE_3, true);*/
+                        DoCast(target, SPELL_FEL_RAGE_2, true);
+                        DoCast(target, SPELL_FEL_RAGE_3, true);*/
 
                         //Cast this without triggered so that it appears in combat logs and shows visual.
                         DoCast(me, SPELL_FEL_RAGE_SELF);
@@ -333,6 +328,7 @@ public:
             DoMeleeAttackIfReady();
         }
     };
+
 };
 
 void AddSC_boss_gurtogg_bloodboil()

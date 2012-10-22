@@ -1,27 +1,19 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 /* ScriptData
@@ -31,7 +23,8 @@ SDComment: Water globules don't explode properly, remove hacks
 SDCategory: Coilfang Resevoir, Serpent Shrine Cavern
 EndScriptData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "serpent_shrine.h"
 
 enum eEnums
@@ -90,21 +83,21 @@ class boss_morogrim_tidewalker : public CreatureScript
 public:
     boss_morogrim_tidewalker() : CreatureScript("boss_morogrim_tidewalker") { }
 
-    CreatureAI* GetAI(Creature* pCreature) const
+    CreatureAI* GetAI(Creature* creature) const
     {
-        return new boss_morogrim_tidewalkerAI (pCreature);
+        return new boss_morogrim_tidewalkerAI (creature);
     }
 
     struct boss_morogrim_tidewalkerAI : public ScriptedAI
     {
-        boss_morogrim_tidewalkerAI(Creature *c) : ScriptedAI(c)
+        boss_morogrim_tidewalkerAI(Creature* creature) : ScriptedAI(creature)
         {
-            pInstance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
-        InstanceScript* pInstance;
+        InstanceScript* instance;
 
-        Map::PlayerList const *PlayerList;
+        Map::PlayerList const* PlayerList;
 
         uint32 TidalWave_Timer;
         uint32 WateryGrave_Timer;
@@ -131,46 +124,46 @@ public:
             Earthquake = false;
             Phase2 = false;
 
-            if (pInstance)
-                pInstance->SetData(DATA_MOROGRIMTIDEWALKEREVENT, NOT_STARTED);
+            if (instance)
+                instance->SetData(DATA_MOROGRIMTIDEWALKEREVENT, NOT_STARTED);
         }
 
         void StartEvent()
         {
             DoScriptText(SAY_AGGRO, me);
 
-            if (pInstance)
-                pInstance->SetData(DATA_MOROGRIMTIDEWALKEREVENT, IN_PROGRESS);
+            if (instance)
+                instance->SetData(DATA_MOROGRIMTIDEWALKEREVENT, IN_PROGRESS);
         }
 
-        void KilledUnit(Unit * /*victim*/)
+        void KilledUnit(Unit* /*victim*/)
         {
             DoScriptText(RAND(SAY_SLAY1, SAY_SLAY2, SAY_SLAY3), me);
         }
 
-        void JustDied(Unit * /*victim*/)
+        void JustDied(Unit* /*killer*/)
         {
             DoScriptText(SAY_DEATH, me);
 
-            if (pInstance)
-                pInstance->SetData(DATA_MOROGRIMTIDEWALKEREVENT, DONE);
+            if (instance)
+                instance->SetData(DATA_MOROGRIMTIDEWALKEREVENT, DONE);
         }
 
-        void EnterCombat(Unit * /*who*/)
+        void EnterCombat(Unit* /*who*/)
         {
             PlayerList = &me->GetMap()->GetPlayers();
             Playercount = PlayerList->getSize();
             StartEvent();
         }
 
-        void ApplyWateryGrave(Unit* pPlayer, uint8 i)
+        void ApplyWateryGrave(Unit* player, uint8 i)
         {
             switch (i)
             {
-            case 0: pPlayer->CastSpell(pPlayer, SPELL_WATERY_GRAVE_1, true); break;
-            case 1: pPlayer->CastSpell(pPlayer, SPELL_WATERY_GRAVE_2, true); break;
-            case 2: pPlayer->CastSpell(pPlayer, SPELL_WATERY_GRAVE_3, true); break;
-            case 3: pPlayer->CastSpell(pPlayer, SPELL_WATERY_GRAVE_4, true); break;
+            case 0: player->CastSpell(player, SPELL_WATERY_GRAVE_1, true); break;
+            case 1: player->CastSpell(player, SPELL_WATERY_GRAVE_2, true); break;
+            case 2: player->CastSpell(player, SPELL_WATERY_GRAVE_3, true); break;
+            case 3: player->CastSpell(player, SPELL_WATERY_GRAVE_4, true); break;
             }
         }
 
@@ -195,10 +188,10 @@ public:
 
                     for (uint8 i = 0; i < 10; ++i)
                     {
-                        Unit *pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0);
+                        Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0);
                         Creature* Murloc = me->SummonCreature(NPC_TIDEWALKER_LURKER, MurlocCords[i][0], MurlocCords[i][1], MurlocCords[i][2], MurlocCords[i][3], TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 10000);
-                        if (pTarget && Murloc)
-                            Murloc->AI()->AttackStart(pTarget);
+                        if (target && Murloc)
+                            Murloc->AI()->AttackStart(target);
                     }
                     DoScriptText(EMOTE_EARTHQUAKE, me);
                     Earthquake = false;
@@ -219,7 +212,7 @@ public:
                 if (WateryGrave_Timer <= diff)
                 {
                     //Teleport 4 players under the waterfalls
-                    Unit *pTarget;
+                    Unit* target;
                     std::set<uint64> list;
                     std::set<uint64>::const_iterator itr;
                     for (uint8 i = 0; i < 4; ++i)
@@ -227,18 +220,18 @@ public:
                         counter = 0;
                         do
                         {
-                            pTarget = SelectTarget(SELECT_TARGET_RANDOM, 1, 50, true);    //target players only
+                            target = SelectTarget(SELECT_TARGET_RANDOM, 1, 50, true);    //target players only
                             if (counter < Playercount)
                                 break;
-                            if (pTarget)
-                                itr = list.find(pTarget->GetGUID());
+                            if (target)
+                                itr = list.find(target->GetGUID());
                             ++counter;
                         } while (itr != list.end());
 
-                        if (pTarget)
+                        if (target)
                         {
-                            list.insert(pTarget->GetGUID());
-                            ApplyWateryGrave(pTarget, i);
+                            list.insert(target->GetGUID());
+                            ApplyWateryGrave(target, i);
                         }
                     }
 
@@ -286,6 +279,7 @@ public:
             DoMeleeAttackIfReady();
         }
     };
+
 };
 
 //Water Globule AI
@@ -296,14 +290,14 @@ class mob_water_globule : public CreatureScript
 public:
     mob_water_globule() : CreatureScript("mob_water_globule") { }
 
-    CreatureAI* GetAI(Creature* pCreature) const
+    CreatureAI* GetAI(Creature* creature) const
     {
-        return new mob_water_globuleAI (pCreature);
+        return new mob_water_globuleAI (creature);
     }
 
     struct mob_water_globuleAI : public ScriptedAI
     {
-        mob_water_globuleAI(Creature *c) : ScriptedAI(c) {}
+        mob_water_globuleAI(Creature* creature) : ScriptedAI(creature) {}
 
         uint32 Check_Timer;
 
@@ -316,14 +310,14 @@ public:
             me->setFaction(14);
         }
 
-        void EnterCombat(Unit * /*who*/) {}
+        void EnterCombat(Unit* /*who*/) {}
 
-        void MoveInLineOfSight(Unit *who)
+        void MoveInLineOfSight(Unit* who)
         {
             if (!who || me->getVictim())
                 return;
 
-            if (who->isTargetableForAttack() && who->isInAccessiblePlaceFor(me) && me->IsHostileTo(who))
+            if (me->canCreatureAttack(who))
             {
                 //no attack radius check - it attacks the first target that moves in his los
                 //who->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
@@ -344,7 +338,7 @@ public:
                     DoCast(me->getVictim(), SPELL_GLOBULE_EXPLOSION);
 
                     //despawn
-                    me->ForcedDespawn();
+                    me->DespawnOrUnsummon();
                     return;
                 }
                 Check_Timer = 500;
@@ -353,6 +347,7 @@ public:
             //do NOT deal any melee damage to the target.
         }
     };
+
 };
 
 void AddSC_boss_morogrim_tidewalker()

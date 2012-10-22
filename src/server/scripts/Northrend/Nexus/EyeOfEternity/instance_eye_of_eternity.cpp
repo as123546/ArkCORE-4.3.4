@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- * Copyright (C) 2008 - 2012 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -19,7 +15,9 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
+#include "InstanceScript.h"
 #include "eye_of_eternity.h"
 
 class instance_eye_of_eternity : public InstanceMapScript
@@ -50,7 +48,7 @@ public:
         bool SetBossState(uint32 type, EncounterState state)
         {
             if (!InstanceScript::SetBossState(type, state))
-            return false;
+                return false;
 
             if (type == DATA_MALYGOS_EVENT)
             {
@@ -103,10 +101,10 @@ public:
                 return;
             }
 
-            instance->Add(go);
+            instance->AddToMap(go);
         }
 
-        void OnGameObjectCreate(GameObject *go)
+        void OnGameObjectCreate(GameObject* go)
         {
             switch (go->GetEntry())
             {
@@ -239,7 +237,7 @@ public:
                     return platformGUID;
             }
 
-                    return 0;
+            return 0;
         }
 
         std::string GetSaveData()
@@ -278,6 +276,7 @@ public:
                         tmpState = NOT_STARTED;
                     SetBossState(i, EncounterState(tmpState));
                 }
+
             } else OUT_LOAD_INST_DATA_FAIL;
 
             OUT_LOAD_INST_DATA_COMPLETE;
@@ -298,5 +297,5 @@ public:
 
 void AddSC_instance_eye_of_eternity()
 {
-    new instance_eye_of_eternity();
+   new instance_eye_of_eternity();
 }

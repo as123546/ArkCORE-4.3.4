@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2010 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -15,102 +15,109 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
+#include "PassiveAI.h"
 
 /*####
- ## npc_valkyr_battle_maiden
- ####*/
+## npc_valkyr_battle_maiden
+####*/
 #define SPELL_REVIVE 51918
 #define VALK_WHISPER "It is not yet your time, champion. Rise! Rise and fight once more!"
 
-class npc_valkyr_battle_maiden: public CreatureScript {
+class npc_valkyr_battle_maiden : public CreatureScript
+{
 public:
-    npc_valkyr_battle_maiden() :
-            CreatureScript("npc_valkyr_battle_maiden") {
+    npc_valkyr_battle_maiden() : CreatureScript("npc_valkyr_battle_maiden") { }
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return new npc_valkyr_battle_maidenAI (creature);
     }
 
-    CreatureAI* GetAI(Creature* pCreature) const {
-        return new npc_valkyr_battle_maidenAI(pCreature);
-    }
-
-    struct npc_valkyr_battle_maidenAI: public PassiveAI {
-        npc_valkyr_battle_maidenAI(Creature *c) :
-                PassiveAI(c) {
-        }
+    struct npc_valkyr_battle_maidenAI : public PassiveAI
+    {
+        npc_valkyr_battle_maidenAI(Creature* creature) : PassiveAI(creature) {}
 
         uint32 FlyBackTimer;
         float x, y, z;
         uint32 phase;
 
-        void Reset() {
+        void Reset()
+        {
             me->setActive(true);
             me->SetVisible(false);
             me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-            me->SetFlying(true);
+            me->SetCanFly(true);
             FlyBackTimer = 500;
             phase = 0;
 
             me->GetPosition(x, y, z);
-            z += 4;
-            x -= 3.5;
-            y -= 5;
+            z += 4.0f;
+            x -= 3.5f;
+            y -= 5.0f;
             me->GetMotionMaster()->Clear(false);
-            me->GetMap()->CreatureRelocation(me, x, y, z, 0.0f);
+            me->SetPosition(x, y, z, 0.0f);
         }
 
-        void UpdateAI(const uint32 diff) {
-            if (FlyBackTimer <= diff) {
-                Player *plr = NULL;
+        void UpdateAI(const uint32 diff)
+        {
+            if (FlyBackTimer <= diff)
+            {
+                Player* player = NULL;
                 if (me->isSummon())
-                    if (Unit *summoner = CAST_SUM(me)->GetSummoner())
+                    if (Unit* summoner = me->ToTempSummon()->GetSummoner())
                         if (summoner->GetTypeId() == TYPEID_PLAYER)
-                            plr = CAST_PLR(summoner);
+                            player = CAST_PLR(summoner);
 
-                if (!plr)
+                if (!player)
                     phase = 3;
 
-                switch (phase) {
-                case 0:
-                    me->RemoveUnitMovementFlag(MOVEMENTFLAG_WALKING);
-                    me->HandleEmoteCommand(EMOTE_STATE_FLYGRABCLOSED);
-                    FlyBackTimer = 500;
-                    break;
-                case 1:
-                    plr->GetClosePoint(x, y, z, me->GetObjectSize());
-                    z += 2.5;
-                    x -= 2;
-                    y -= 1.5;
-                    me->GetMotionMaster()->MovePoint(0, x, y, z);
-                    me->SetUInt64Value(UNIT_FIELD_TARGET, plr->GetGUID());
-                    me->SetVisible(true);
-                    FlyBackTimer = 4500;
-                    break;
-                case 2:
-                    if (!plr->isRessurectRequested()) {
-                        me->HandleEmoteCommand(EMOTE_ONESHOT_CUSTOMSPELL01);
-                        DoCast(plr, SPELL_REVIVE, true);
-                        me->MonsterWhisper(VALK_WHISPER, plr->GetGUID());
-                    }
-                    FlyBackTimer = 5000;
-                    break;
-                case 3:
-                    me->SetVisible(false);
-                    FlyBackTimer = 3000;
-                    break;
-                case 4:
-                    me->DisappearAndDie();
-                    break;
-                default:
-                    //Nothing To DO
-                    break;
+                switch (phase)
+                {
+                    case 0:
+                        me->SetWalk(false);
+                        me->HandleEmoteCommand(EMOTE_STATE_FLYGRABCLOSED);
+                        FlyBackTimer = 500;
+                        break;
+                    case 1:
+                        player->GetClosePoint(x, y, z, me->GetObjectSize());
+                        z += 2.5f;
+                        x -= 2.0f;
+                        y -= 1.5f;
+                        me->GetMotionMaster()->MovePoint(0, x, y, z);
+                        me->SetTarget(player->GetGUID());
+                        me->SetVisible(true);
+                        FlyBackTimer = 4500;
+                        break;
+                    case 2:
+                        if (!player->isRessurectRequested())
+                        {
+                            me->HandleEmoteCommand(EMOTE_ONESHOT_CUSTOM_SPELL_01);
+                            DoCast(player, SPELL_REVIVE, true);
+                            me->MonsterWhisper(VALK_WHISPER, player->GetGUID());
+                        }
+                        FlyBackTimer = 5000;
+                        break;
+                    case 3:
+                        me->SetVisible(false);
+                        FlyBackTimer = 3000;
+                        break;
+                    case 4:
+                        me->DisappearAndDie();
+                        break;
+                    default:
+                        //Nothing To DO
+                        break;
                 }
                 ++phase;
-            } else
-                FlyBackTimer -= diff;
+            } else FlyBackTimer-=diff;
         }
     };
+
 };
 
-void AddSC_the_scarlet_enclave() {
+void AddSC_the_scarlet_enclave()
+{
     new npc_valkyr_battle_maiden();
 }

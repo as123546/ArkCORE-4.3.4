@@ -1,37 +1,30 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 /* ScriptData
- SDName: Instance_Scholomance
- SD%Complete: 100
- SDComment:
- SDCategory: Scholomance
- EndScriptData */
+SDName: Instance_Scholomance
+SD%Complete: 100
+SDComment:
+SDCategory: Scholomance
+EndScriptData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "InstanceScript.h"
 #include "scholomance.h"
 
 #define GO_GATE_KIRTONOS    175570
@@ -45,22 +38,19 @@
 
 #define MAX_ENCOUNTER          2
 
-class instance_scholomance: public InstanceMapScript {
+class instance_scholomance : public InstanceMapScript
+{
 public:
-    instance_scholomance() :
-            InstanceMapScript("instance_scholomance", 289) {
+    instance_scholomance() : InstanceMapScript("instance_scholomance", 289) { }
+
+    InstanceScript* GetInstanceScript(InstanceMap* map) const
+    {
+        return new instance_scholomance_InstanceMapScript(map);
     }
 
-    InstanceScript* GetInstanceScript(InstanceMap* pMap) const {
-        return new instance_scholomance_InstanceMapScript(pMap);
-    }
-
-    struct instance_scholomance_InstanceMapScript: public InstanceScript {
-        instance_scholomance_InstanceMapScript(Map* pMap) :
-                InstanceScript(pMap) {
-            Initialize();
-        }
-        ;
+    struct instance_scholomance_InstanceMapScript : public InstanceScript
+    {
+        instance_scholomance_InstanceMapScript(Map* map) : InstanceScript(map) {}
 
         //Lord Alexei Barov, Doctor Theolen Krastinov, The Ravenian, Lorekeeper Polkelt, Instructor Malicia and the Lady Illucia Barov.
         bool IsBossDied[6];
@@ -75,7 +65,8 @@ public:
         uint64 GateBarovGUID;
         uint64 GateIlluciaGUID;
 
-        void Initialize() {
+        void Initialize()
+        {
             memset(&m_auiEncounter, 0, sizeof(m_auiEncounter));
 
             GateKirtonosGUID = 0;
@@ -91,68 +82,58 @@ public:
                 IsBossDied[i] = false;
         }
 
-        void OnGameObjectCreate(GameObject* pGo, bool /*add*/) {
-            switch (pGo->GetEntry()) {
-            case GO_GATE_KIRTONOS:
-                GateKirtonosGUID = pGo->GetGUID();
-                break;
-            case GO_GATE_GANDLING:
-                GateGandlingGUID = pGo->GetGUID();
-                break;
-            case GO_GATE_MALICIA:
-                GateMiliciaGUID = pGo->GetGUID();
-                break;
-            case GO_GATE_THEOLEN:
-                GateTheolenGUID = pGo->GetGUID();
-                break;
-            case GO_GATE_POLKELT:
-                GatePolkeltGUID = pGo->GetGUID();
-                break;
-            case GO_GATE_RAVENIAN:
-                GateRavenianGUID = pGo->GetGUID();
-                break;
-            case GO_GATE_BAROV:
-                GateBarovGUID = pGo->GetGUID();
-                break;
-            case GO_GATE_ILLUCIA:
-                GateIlluciaGUID = pGo->GetGUID();
-                break;
+        void OnGameObjectCreate(GameObject* go)
+        {
+            switch (go->GetEntry())
+            {
+                case GO_GATE_KIRTONOS:  GateKirtonosGUID = go->GetGUID(); break;
+                case GO_GATE_GANDLING:  GateGandlingGUID = go->GetGUID(); break;
+                case GO_GATE_MALICIA:   GateMiliciaGUID = go->GetGUID(); break;
+                case GO_GATE_THEOLEN:   GateTheolenGUID = go->GetGUID(); break;
+                case GO_GATE_POLKELT:   GatePolkeltGUID = go->GetGUID(); break;
+                case GO_GATE_RAVENIAN:  GateRavenianGUID = go->GetGUID(); break;
+                case GO_GATE_BAROV:     GateBarovGUID = go->GetGUID(); break;
+                case GO_GATE_ILLUCIA:   GateIlluciaGUID = go->GetGUID(); break;
             }
         }
 
-        void SetData(uint32 type, uint32 data) {
-            switch (type) {
-            case DATA_LORDALEXEIBAROV_DEATH:
-                IsBossDied[0] = true;
-                break;
-            case DATA_DOCTORTHEOLENKRASTINOV_DEATH:
-                IsBossDied[1] = true;
-                break;
-            case DATA_THERAVENIAN_DEATH:
-                IsBossDied[2] = true;
-                break;
-            case DATA_LOREKEEPERPOLKELT_DEATH:
-                IsBossDied[3] = true;
-                break;
-            case DATA_INSTRUCTORMALICIA_DEATH:
-                IsBossDied[4] = true;
-                break;
-            case DATA_LADYILLUCIABAROV_DEATH:
-                IsBossDied[5] = true;
-                break;
-            case TYPE_GANDLING:
-                m_auiEncounter[0] = data;
-                break;
-            case TYPE_KIRTONOS:
-                m_auiEncounter[1] = data;
-                break;
+        void SetData(uint32 type, uint32 data)
+        {
+            switch (type)
+            {
+                case DATA_LORDALEXEIBAROV_DEATH:
+                    IsBossDied[0] = true;
+                    break;
+                case DATA_DOCTORTHEOLENKRASTINOV_DEATH:
+                    IsBossDied[1] = true;
+                    break;
+                case DATA_THERAVENIAN_DEATH:
+                    IsBossDied[2] = true;
+                    break;
+                case DATA_LOREKEEPERPOLKELT_DEATH:
+                    IsBossDied[3] = true;
+                    break;
+                case DATA_INSTRUCTORMALICIA_DEATH:
+                    IsBossDied[4] = true;
+                    break;
+                case DATA_LADYILLUCIABAROV_DEATH:
+                    IsBossDied[5] = true;
+                    break;
+                case TYPE_GANDLING:
+                    m_auiEncounter[0] = data;
+                    break;
+                case TYPE_KIRTONOS:
+                    m_auiEncounter[1] = data;
+                    break;
             }
         }
 
-        uint32 GetData(uint32 type) {
-            if (type == TYPE_GANDLING) {
-                if (IsBossDied[0] && IsBossDied[1] && IsBossDied[2]
-                        && IsBossDied[3] && IsBossDied[4] && IsBossDied[5]) {
+        uint32 GetData(uint32 type)
+        {
+            if (type == TYPE_GANDLING)
+            {
+                if (IsBossDied[0] && IsBossDied[1] && IsBossDied[2] && IsBossDied[3] && IsBossDied[4] && IsBossDied[5])
+                {
                     m_auiEncounter[0] = IN_PROGRESS;
                     return IN_PROGRESS;
                 }
@@ -161,8 +142,10 @@ public:
             return 0;
         }
     };
+
 };
 
-void AddSC_instance_scholomance() {
+void AddSC_instance_scholomance()
+{
     new instance_scholomance();
 }

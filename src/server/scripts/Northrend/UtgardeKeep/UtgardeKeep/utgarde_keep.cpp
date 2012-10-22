@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
- *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
- *
- * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -19,8 +15,11 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "utgarde_keep.h"
+#include "SpellScript.h"
+#include "SpellAuraEffects.h"
 
 uint32 entry_search[3] =
 {
@@ -41,9 +40,9 @@ public:
 
     struct npc_dragonflayer_forge_masterAI : public ScriptedAI
     {
-        npc_dragonflayer_forge_masterAI(Creature* c) : ScriptedAI(c)
+        npc_dragonflayer_forge_masterAI(Creature* creature) : ScriptedAI(creature)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
             fm_Type = 0;
         }
 
@@ -52,65 +51,77 @@ public:
 
         void Reset()
         {
-            if (fm_Type == 0) fm_Type = GetForgeMasterType();
+            if (fm_Type == 0)
+                fm_Type = GetForgeMasterType();
+
             CheckForge();
         }
 
         void CheckForge()
         {
-           if (instance)
+            if (instance)
             {
                 switch (fm_Type)
                 {
-                case 1:
-                    instance->SetData(EVENT_FORGE_1, me->isAlive() ? NOT_STARTED : DONE);
-                    break;
-                case 2:
-                    instance->SetData(EVENT_FORGE_2, me->isAlive() ? NOT_STARTED : DONE);
-                    break;
-                case 3:
-                    instance->SetData(EVENT_FORGE_3, me->isAlive() ? NOT_STARTED : DONE);
-                    break;
+                    case 1:
+                        instance->SetData(EVENT_FORGE_1, me->isAlive() ? NOT_STARTED : DONE);
+                        break;
+
+                    case 2:
+                        instance->SetData(EVENT_FORGE_2, me->isAlive() ? NOT_STARTED : DONE);
+                        break;
+
+                    case 3:
+                        instance->SetData(EVENT_FORGE_3, me->isAlive() ? NOT_STARTED : DONE);
+                        break;
                 }
             }
         }
 
         void JustDied(Unit* /*killer*/)
         {
-            if (fm_Type == 0) fm_Type = GetForgeMasterType();
+            if (fm_Type == 0)
+                fm_Type = GetForgeMasterType();
+
             if (instance)
             {
                 switch (fm_Type)
                 {
-                case 1:
-                    instance->SetData(EVENT_FORGE_1, DONE);
-                    break;
-                case 2:
-                    instance->SetData(EVENT_FORGE_2, DONE);
-                    break;
-                case 3:
-                    instance->SetData(EVENT_FORGE_3, DONE);
-                    break;
+                    case 1:
+                        instance->SetData(EVENT_FORGE_1, DONE);
+                        break;
+
+                    case 2:
+                        instance->SetData(EVENT_FORGE_2, DONE);
+                        break;
+
+                    case 3:
+                        instance->SetData(EVENT_FORGE_3, DONE);
+                        break;
                 }
             }
         }
 
         void EnterCombat(Unit* /*who*/)
         {
-            if (fm_Type == 0) fm_Type = GetForgeMasterType();
+            if (fm_Type == 0)
+                fm_Type = GetForgeMasterType();
+
             if (instance)
             {
                 switch (fm_Type)
                 {
-                case 1:
-                    instance->SetData(EVENT_FORGE_1, IN_PROGRESS);
-                    break;
-                case 2:
-                    instance->SetData(EVENT_FORGE_2, IN_PROGRESS);
-                    break;
-                case 3:
-                    instance->SetData(EVENT_FORGE_3, IN_PROGRESS);
-                    break;
+                    case 1:
+                        instance->SetData(EVENT_FORGE_1, IN_PROGRESS);
+                        break;
+
+                    case 2:
+                        instance->SetData(EVENT_FORGE_2, IN_PROGRESS);
+                        break;
+
+                    case 3:
+                        instance->SetData(EVENT_FORGE_3, IN_PROGRESS);
+                        break;
                 }
             }
             me->SetUInt32Value(UNIT_NPC_EMOTESTATE, EMOTE_ONESHOT_NONE);
@@ -119,28 +130,26 @@ public:
         uint8 GetForgeMasterType()
         {
             float diff = 30.0f;
-            int near_f = 0;
+            uint8 near_f = 0;
 
-            for (uint8 i = 0; i < 3 ; ++i)
+            for (uint8 i = 0; i < 3; ++i)
             {
-                GameObject* temp;
-                temp = me->FindNearestGameObject(entry_search[i], 30);
-                if (temp)
+                if (GameObject* go = me->FindNearestGameObject(entry_search[i], 30))
                 {
-                    if (me->IsWithinDist(temp, diff, false))
+                    if (me->IsWithinDist(go, diff, false))
                     {
                         near_f = i + 1;
-                        diff = me->GetDistance2d(temp);
+                        diff = me->GetDistance2d(go);
                     }
                 }
             }
 
             switch (near_f)
             {
-            case 1:  return 1;
-            case 2:  return 2;
-            case 3:  return 3;
-            default: return 0;
+                case 1:  return 1;
+                case 2:  return 2;
+                case 3:  return 3;
+                default: return 0;
             }
         }
 
@@ -157,101 +166,82 @@ public:
     };
 };
 
-/*######
-## npc_dark_ranger_marrah
-######*/
-#define SPELL_RANGER_STEALTH   34189
-
-class npc_dark_ranger_marrah : public CreatureScript
+enum TickingTimeBomb
 {
-public:
-    npc_dark_ranger_marrah() : CreatureScript("npc_dark_ranger_marrah") { }
+    SPELL_TICKING_TIME_BOMB_EXPLODE = 59687
+};
+class spell_ticking_time_bomb : public SpellScriptLoader
+{
+    public:
+        spell_ticking_time_bomb() : SpellScriptLoader("spell_ticking_time_bomb") { }
 
-    CreatureAI* GetAI(Creature* pCreature) const
-    {
-        return new  npc_dark_ranger_marrahAI(pCreature);
-    }
-
-    struct npc_dark_ranger_marrahAI : public ScriptedAI
-    {
-        npc_dark_ranger_marrahAI(Creature *c) : ScriptedAI(c) { }
-
-        void Reset()
+        class spell_ticking_time_bomb_AuraScript : public AuraScript
         {
-            DoCast(me, SPELL_RANGER_STEALTH);
-        }
-        void MoveInLineOfSight(Unit *who)
-        {
-            if (!who || who->GetTypeId() != TYPEID_PLAYER)
-                return;
+            PrepareAuraScript(spell_ticking_time_bomb_AuraScript);
 
-            if (who->ToPlayer()->GetTeamId() == TEAM_HORDE)
+            bool Validate(SpellInfo const* /*spellEntry*/)
             {
-                if (who->GetDistance2d(me) <= 5)
-                    me->RemoveAurasDueToSpell(SPELL_RANGER_STEALTH);
-            }else
-            {
-                me->SetVisible(false);
+                return (bool) sSpellMgr->GetSpellInfo(SPELL_TICKING_TIME_BOMB_EXPLODE);
             }
 
-            return;
+            void HandleOnEffectRemove(AuraEffect const* /* aurEff */, AuraEffectHandleModes /* mode */)
+            {
+                if (GetCaster() == GetTarget())
+                {
+                    GetTarget()->CastSpell(GetTarget(), SPELL_TICKING_TIME_BOMB_EXPLODE, true);
+                }
+            }
+
+            void Register()
+            {
+                OnEffectRemove += AuraEffectRemoveFn(spell_ticking_time_bomb_AuraScript::HandleOnEffectRemove, EFFECT_0, SPELL_AURA_PERIODIC_DUMMY, AURA_EFFECT_HANDLE_REAL);
+            }
+        };
+
+        AuraScript* GetAuraScript() const
+        {
+            return new spell_ticking_time_bomb_AuraScript();
         }
-        void AttackStart(Unit *who) { return; }
-        void EnterCombat(Unit *who) { }
-    };
 };
 
-#define SPELL_ENRAGE            42745
-#define SPELL_POUNCE            55077
-
-class npc_savage_worg : public CreatureScript
+enum Fixate
 {
-public:
-    npc_savage_worg() : CreatureScript("npc_savage_worg") { }
+    SPELL_FIXATE_TRIGGER = 40415
+};
+class spell_fixate : public SpellScriptLoader
+{
+    public:
+        spell_fixate() : SpellScriptLoader("spell_fixate") { }
 
-    struct npc_savage_worgAI : public ScriptedAI
-    {
-        npc_savage_worgAI(Creature *c) : ScriptedAI(c) { }
-
-        uint32 uiPounceTimer;
-
-        void Reset()
+        class spell_fixate_SpellScript : public SpellScript
         {
-            uiPounceTimer=0;
-        }
+            PrepareSpellScript(spell_fixate_SpellScript);
 
-        void EnterCombat(Unit *who)
-        {
-            me->CallForHelp(15);
-        }
-
-        void UpdateAI(const uint32 diff)
-        {
-            if (!UpdateVictim())
-                return;
-
-            if (uiPounceTimer<=diff)
+            bool Validate(SpellInfo const* /*spellEntry*/)
             {
-                if (Unit* player = SelectTarget(SELECT_TARGET_FARTHEST, 1, 100, true))
-                    DoCast(player, SPELL_POUNCE);
-                uiPounceTimer=30000;
-            } else uiPounceTimer-=diff;
+                return (bool) sSpellMgr->GetSpellInfo(SPELL_FIXATE_TRIGGER);
+            }
 
-            if (HealthBelowPct(40))
-                DoCast(me, SPELL_ENRAGE);
+            void HandleScriptEffect(SpellEffIndex /*effIndex*/)
+            {
+                // The unit has to cast the taunt on hisself, but we need the original caster for SPELL_AURA_MOD_TAUNT
+                GetCaster()->CastSpell(GetCaster(), SPELL_FIXATE_TRIGGER, true, 0, 0, GetHitUnit()->GetGUID());
+            }
 
-            DoMeleeAttackIfReady();
+            void Register()
+            {
+                OnEffectHitTarget += SpellEffectFn(spell_fixate_SpellScript::HandleScriptEffect, EFFECT_2, SPELL_EFFECT_SCRIPT_EFFECT);
+            }
+        };
+
+        SpellScript* GetSpellScript() const
+        {
+            return new spell_fixate_SpellScript();
         }
-    };
-
-    CreatureAI* GetAI(Creature* pCreature) const
-    {
-        return new npc_savage_worgAI(pCreature);
-    }
 };
 void AddSC_utgarde_keep()
 {
-    new npc_dark_ranger_marrah();
     new npc_dragonflayer_forge_master();
-    new npc_savage_worg();
+    new spell_ticking_time_bomb();
+    new spell_fixate();
 }

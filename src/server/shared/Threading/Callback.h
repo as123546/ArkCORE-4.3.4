@@ -1,25 +1,18 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef _CALLBACK_H
@@ -33,94 +26,181 @@ typedef ACE_Future<QueryResult> QueryResultFuture;
 typedef ACE_Future<PreparedQueryResult> PreparedQueryResultFuture;
 
 /*! A simple template using ACE_Future to manage callbacks from the thread and object that
- issued the request. <ParamType> is variable type of parameter that is used as parameter
- for the callback function.
- */
-template<typename Result, typename ParamType>
-class QueryCallback {
-public:
-	QueryCallback() {
-	}
+    issued the request. <ParamType> is variable type of parameter that is used as parameter
+    for the callback function.
+*/
+#define CALLBACK_STAGE_INVALID uint8(-1)
 
-	void SetFutureResult(ACE_Future<Result> value) {
-		result = value;
-	}
+template <typename Result, typename ParamType, bool chain = false>
+class QueryCallback
+{
+    public:
+        QueryCallback() : _stage(chain ? 0 : CALLBACK_STAGE_INVALID)  {}
 
-	ACE_Future<Result> GetFutureResult() {
-		return result;
-	}
+        //! The parameter of this function should be a resultset returned from either .AsyncQuery or .AsyncPQuery
+        void SetFutureResult(ACE_Future<Result> value)
+        {
+            _result = value;
+        }
 
-	int IsReady() {
-		return result.ready();
-	}
+        ACE_Future<Result> GetFutureResult()
+        {
+            return _result;
+        }
 
-	void GetResult(Result& res) {
-		result.get(res);
-	}
+        int IsReady()
+        {
+            return _result.ready();
+        }
 
-	void FreeResult() {
-		result.cancel();
-	}
+        void GetResult(Result& res)
+        {
+            _result.get(res);
+        }
 
-	void SetParam(ParamType value) {
-		param = value;
-	}
+        void FreeResult()
+        {
+            _result.cancel();
+        }
 
-	ParamType GetParam() {
-		return param;
-	}
+        void SetParam(ParamType value)
+        {
+            _param = value;
+        }
 
-private:
-	ACE_Future<Result> result;
-	ParamType param;
+        ParamType GetParam()
+        {
+            return _param;
+        }
+
+        //! Resets the stage of the callback chain
+        void ResetStage()
+        {
+            if (!chain)
+                return;
+
+            _stage = 0;
+        }
+
+        //! Advances the callback chain to the next stage, so upper level code can act on its results accordingly
+        void NextStage()
+        {
+            if (!chain)
+                return;
+
+            ++_stage;
+        }
+
+        //! Returns the callback stage (or CALLBACK_STAGE_INVALID if invalid)
+        uint8 GetStage()
+        {
+            return _stage;
+        }
+
+        //! Resets all underlying variables (param, result and stage)
+        void Reset()
+        {
+            SetParam(NULL);
+            FreeResult();
+            ResetStage();
+        }
+
+    private:
+        ACE_Future<Result> _result;
+        ParamType _param;
+        uint8 _stage;
 };
 
-template<typename Result, typename ParamType1, typename ParamType2>
-class QueryCallback_2 {
-public:
-	QueryCallback_2() {
-	}
+template <typename Result, typename ParamType1, typename ParamType2, bool chain = false>
+class QueryCallback_2
+{
+    public:
+        QueryCallback_2() : _stage(chain ? 0 : CALLBACK_STAGE_INVALID) {}
 
-	void SetFutureResult(ACE_Future<Result> value) {
-		result = value;
-	}
+        //! The parameter of this function should be a resultset returned from either .AsyncQuery or .AsyncPQuery
+        void SetFutureResult(ACE_Future<Result> value)
+        {
+            _result = value;
+        }
 
-	ACE_Future<Result> GetFutureResult() {
-		return result;
-	}
+        ACE_Future<Result> GetFutureResult()
+        {
+            return _result;
+        }
 
-	int IsReady() {
-		return result.ready();
-	}
+        int IsReady()
+        {
+            return _result.ready();
+        }
 
-	void GetResult(Result& res) {
-		result.get(res);
-	}
+        void GetResult(Result& res)
+        {
+            _result.get(res);
+        }
 
-	void FreeResult() {
-		result.cancel();
-	}
+        void FreeResult()
+        {
+            _result.cancel();
+        }
 
-	void SetFirstParam(ParamType1 value) {
-		param_1 = value;
-	}
+        void SetFirstParam(ParamType1 value)
+        {
+            _param_1 = value;
+        }
 
-	void SetSecondParam(ParamType2 value) {
-		param_2 = value;
-	}
+        void SetSecondParam(ParamType2 value)
+        {
+            _param_2 = value;
+        }
 
-	ParamType1 GetFirstParam() {
-		return param_1;
-	}
+        ParamType1 GetFirstParam()
+        {
+            return _param_1;
+        }
 
-	ParamType2 GetSecondParam() {
-		return param_2;
-	}
+        ParamType2 GetSecondParam()
+        {
+            return _param_2;
+        }
 
-private:
-	ACE_Future<Result> result;
-	ParamType1 param_1;
-	ParamType2 param_2;
+        //! Resets the stage of the callback chain
+        void ResetStage()
+        {
+            if (!chain)
+                return;
+
+            _stage = 0;
+        }
+
+        //! Advances the callback chain to the next stage, so upper level code can act on its results accordingly
+        void NextStage()
+        {
+            if (!chain)
+                return;
+
+            ++_stage;
+        }
+
+        //! Returns the callback stage (or CALLBACK_STAGE_INVALID if invalid)
+        uint8 GetStage()
+        {
+            return _stage;
+        }
+
+        //! Resets all underlying variables (param, result and stage)
+        void Reset()
+        {
+            SetFirstParam(NULL);
+            SetSecondParam(NULL);
+            FreeResult();
+            ResetStage();
+        }
+
+    private:
+        ACE_Future<Result> _result;
+        ParamType1 _param_1;
+        ParamType2 _param_2;
+        uint8 _stage;
 };
 
 #endif

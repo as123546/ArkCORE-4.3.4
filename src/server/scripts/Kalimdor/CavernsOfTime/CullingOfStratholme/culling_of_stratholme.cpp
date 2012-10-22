@@ -1,7 +1,5 @@
 /*
- * Copyright (C) 2008 - 2012 TrinityCore <http://www.trinitycore.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -17,71 +15,74 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
+#include "ScriptedGossip.h"
 #include "culling_of_stratholme.h"
 #include "ScriptedEscortAI.h"
+#include "PassiveAI.h"
 
 enum Says
 {
     //First Act - Uther and Jaina Dialog
-    SAY_PHASE101                                = -1595070, //Arthas
-    SAY_PHASE102                                = -1595071, //Uther
-    SAY_PHASE103                                = -1595072, //Arthas
-    SAY_PHASE104                                = -1595073, //Arthas
-    SAY_PHASE105                                = -1595074, //Uther
-    SAY_PHASE106                                = -1595075, //Arthas
-    SAY_PHASE107                                = -1595076, //Uther
-    SAY_PHASE108                                = -1595077, //Arthas
-    SAY_PHASE109                                = -1595078, //Arthas
-    SAY_PHASE110                                = -1595079, //Uther
-    SAY_PHASE111                                = -1595080, //Arthas
-    SAY_PHASE112                                = -1595081, //Uther
-    SAY_PHASE113                                = -1595082, //Jaina
-    SAY_PHASE114                                = -1595083, //Arthas
-    SAY_PHASE115                                = -1595084, //Uther
-    SAY_PHASE116                                = -1595085, //Arthas
-    SAY_PHASE117                                = -1595086, //Jaina
-    SAY_PHASE118                                = -1595087, //Arthas
+    SAY_PHASE101                                = -1595070,  //Arthas
+    SAY_PHASE102                                = -1595071,  //Uther
+    SAY_PHASE103                                = -1595072,  //Arthas
+    SAY_PHASE104                                = -1595073,  //Arthas
+    SAY_PHASE105                                = -1595074,  //Uther
+    SAY_PHASE106                                = -1595075,  //Arthas
+    SAY_PHASE107                                = -1595076,  //Uther
+    SAY_PHASE108                                = -1595077,  //Arthas
+    SAY_PHASE109                                = -1595078,  //Arthas
+    SAY_PHASE110                                = -1595079,  //Uther
+    SAY_PHASE111                                = -1595080,  //Arthas
+    SAY_PHASE112                                = -1595081,  //Uther
+    SAY_PHASE113                                = -1595082,  //Jaina
+    SAY_PHASE114                                = -1595083,  //Arthas
+    SAY_PHASE115                                = -1595084,  //Uther
+    SAY_PHASE116                                = -1595085,  //Arthas
+    SAY_PHASE117                                = -1595086,  //Jaina
+    SAY_PHASE118                                = -1595087,  //Arthas
     //Second Act - City Streets
-    SAY_PHASE201                                = -1595088, //Arthas
-    SAY_PHASE202                                = -1595089, //Cityman
-    SAY_PHASE203                                = -1595090, //Arthas
-    SAY_PHASE204                                = -1595091, //Crazyman
-    SAY_PHASE205                                = -1595092, //Arthas
-    SAY_PHASE206                                = -1595009, //Malganis
-    SAY_PHASE207                                = -1595010, //Malganis
-    SAY_PHASE208                                = -1595093, //Arthas
-    SAY_PHASE209                                = -1595094, //Arthas
-    SAY_PHASE210                                = -1595095, //Arthas
+    SAY_PHASE201                                = -1595088,  //Arthas
+    SAY_PHASE202                                = -1595089,  //Cityman
+    SAY_PHASE203                                = -1595090,  //Arthas
+    SAY_PHASE204                                = -1595091,  //Crazyman
+    SAY_PHASE205                                = -1595092,  //Arthas
+    SAY_PHASE206                                = -1595009,  //Malganis
+    SAY_PHASE207                                = -1595010,  //Malganis
+    SAY_PHASE208                                = -1595093,  //Arthas
+    SAY_PHASE209                                = -1595094,  //Arthas
+    SAY_PHASE210                                = -1595095,  //Arthas
     //Third Act - Town Hall
-    SAY_PHASE301                               = -1595096, //Arthas
-    SAY_PHASE302                               = -1595097, //Drakonian
-    SAY_PHASE303                               = -1595098, //Arthas
-    SAY_PHASE304                               = -1595099, //Arthas
-    SAY_PHASE305                               = -1595100, //Drakonian
-    SAY_PHASE306                               = -1595101, //Arthas
-    SAY_PHASE307                               = -1595102, //Arthas
-    SAY_PHASE308                               = -1595103, //Arthas
-    SAY_PHASE309                               = -1595104, //Arthas
-    SAY_PHASE310                               = -1595105, //Arthas
-    SAY_PHASE311                               = -1595106, //Arthas
-    SAY_PHASE312                               = -1595107, //Arthas
-    SAY_PHASE313                               = -1595108, //Arthas
-    SAY_PHASE314                               = -1595000, //Epoch
-    SAY_PHASE315                               = -1595109, //Arthas
+    SAY_PHASE301                               = -1595096,  //Arthas
+    SAY_PHASE302                               = -1595097,  //Drakonian
+    SAY_PHASE303                               = -1595098,  //Arthas
+    SAY_PHASE304                               = -1595099,  //Arthas
+    SAY_PHASE305                               = -1595100,  //Drakonian
+    SAY_PHASE306                               = -1595101,  //Arthas
+    SAY_PHASE307                               = -1595102,  //Arthas
+    SAY_PHASE308                               = -1595103,  //Arthas
+    SAY_PHASE309                               = -1595104,  //Arthas
+    SAY_PHASE310                               = -1595105,  //Arthas
+    SAY_PHASE311                               = -1595106,  //Arthas
+    SAY_PHASE312                               = -1595107,  //Arthas
+    SAY_PHASE313                               = -1595108,  //Arthas
+    SAY_PHASE314                               = -1595000,  //Epoch
+    SAY_PHASE315                               = -1595109,  //Arthas
     //Fourth Act - Fire Corridor
-    SAY_PHASE401                               = -1595110, //Arthas
-    SAY_PHASE402                               = -1595111, //Arthas
-    SAY_PHASE403                               = -1595112, //Arthas
-    SAY_PHASE404                               = -1595113, //Arthas
-    SAY_PHASE405                               = -1595114, //Arthas
-    SAY_PHASE406                               = -1595115, //Arthas
-    SAY_PHASE407                               = -1595116, //Arthas
+    SAY_PHASE401                               = -1595110,  //Arthas
+    SAY_PHASE402                               = -1595111,  //Arthas
+    SAY_PHASE403                               = -1595112,  //Arthas
+    SAY_PHASE404                               = -1595113,  //Arthas
+    SAY_PHASE405                               = -1595114,  //Arthas
+    SAY_PHASE406                               = -1595115,  //Arthas
+    SAY_PHASE407                               = -1595116,  //Arthas
     //Fifth Act - Mal'Ganis Fight
-    SAY_PHASE501                               = -1595117, //Arthas
-    SAY_PHASE502                               = -1595118, //Arthas
-    SAY_PHASE503                               = -1595119, //Arthas
-    SAY_PHASE504                               = -1595120, //Arthas
+    SAY_PHASE501                               = -1595117,  //Arthas
+    SAY_PHASE502                               = -1595118,  //Arthas
+    SAY_PHASE503                               = -1595119,  //Arthas
+    SAY_PHASE504                               = -1595120,  //Arthas
 };
 
 enum NPCs
@@ -236,53 +237,53 @@ public:
     bool OnGossipSelect(Player* player, Creature* creature, uint32 /*sender*/, uint32 action)
     {
         player->PlayerTalkClass->ClearMenus();
-        npc_arthasAI* pAI = CAST_AI(npc_arthas::npc_arthasAI, creature->AI());
+        npc_arthasAI* ai = CAST_AI(npc_arthas::npc_arthasAI, creature->AI());
 
-        if (!pAI)
+        if (!ai)
             return false;
 
         switch (action)
         {
             case GOSSIP_ACTION_INFO_DEF:
-                pAI->Start(true, true, player->GetGUID(), 0, false, false);
-                pAI->SetDespawnAtEnd(false);
-                pAI->bStepping = false;
-                pAI->uiStep = 1;
+                ai->Start(true, true, player->GetGUID(), 0, false, false);
+                ai->SetDespawnAtEnd(false);
+                ai->bStepping = false;
+                ai->uiStep = 1;
                 break;
             case GOSSIP_ACTION_INFO_DEF+1:
-                pAI->bStepping = true;
-                pAI->uiStep = 24;
+                ai->bStepping = true;
+                ai->uiStep = 24;
                 break;
             case GOSSIP_ACTION_INFO_DEF+2:
-                pAI->SetHoldState(false);
-                pAI->bStepping = false;
-                pAI->uiStep = 61;
+                ai->SetHoldState(false);
+                ai->bStepping = false;
+                ai->uiStep = 61;
                 break;
             case GOSSIP_ACTION_INFO_DEF+3:
-                pAI->SetHoldState(false);
+                ai->SetHoldState(false);
                 break;
             case GOSSIP_ACTION_INFO_DEF+4:
-                pAI->bStepping = true;
-                pAI->uiStep = 84;
+                ai->bStepping = true;
+                ai->uiStep = 84;
                 break;
             case GOSSIP_ACTION_INFO_DEF+5:
-                pAI->bStepping = true;
-                pAI->uiStep = 85;
+                ai->bStepping = true;
+                ai->uiStep = 85;
                 break;
         }
         player->CLOSE_GOSSIP_MENU();
-        pAI->SetDespawnAtFar(true);
+        ai->SetDespawnAtFar(true);
         creature->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
         return true;
     }
 
     bool OnGossipHello(Player* player, Creature* creature)
     {
-        npc_arthasAI* pAI = CAST_AI(npc_arthas::npc_arthasAI, creature->AI());
+        npc_arthasAI* ai = CAST_AI(npc_arthas::npc_arthasAI, creature->AI());
 
-        if (pAI && pAI->bStepping == false)
+        if (ai && ai->bStepping == false)
         {
-            switch (pAI->uiGossipStep)
+            switch (ai->uiGossipStep)
             {
                 case 0: //This one is a workaround since the very beggining of the script is wrong.
                 {
@@ -416,7 +417,7 @@ public:
                 if (Creature* temp = me->SummonCreature((uint32)RiftAndSpawnsLocations[i][0], RiftAndSpawnsLocations[timeRiftID][1], RiftAndSpawnsLocations[timeRiftID][2], RiftAndSpawnsLocations[timeRiftID][3], RiftAndSpawnsLocations[timeRiftID][4], TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 900000))
                 {
                     guidVector[i-timeRiftID-1] = temp->GetGUID();
-                    temp->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_OOC_NOT_ATTACKABLE | UNIT_FLAG_PASSIVE);
+                    temp->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC | UNIT_FLAG_IMMUNE_TO_NPC);
                     temp->SetReactState(REACT_PASSIVE);
                     temp->GetMotionMaster()->MovePoint(0, RiftAndSpawnsLocations[i][1], RiftAndSpawnsLocations[i][2], RiftAndSpawnsLocations[i][3]);
                     if ((uint32)RiftAndSpawnsLocations[i][0] == NPC_EPOCH)
@@ -448,9 +449,9 @@ public:
             ++uiStep;
         }
 
-        void WaypointReached(uint32 uiPointId)
+        void WaypointReached(uint32 waypointId)
         {
-            switch (uiPointId)
+            switch (waypointId)
             {
                 case 0:
                 case 1:
@@ -581,20 +582,23 @@ public:
                     {
                         //After reset
                         case 0:
-                            if (Unit* pJaina = GetClosestCreatureWithEntry(me, NPC_JAINA, 50.0f))
-                                uiJainaGUID = pJaina->GetGUID();
-                            else if (Unit* pJaina = me->SummonCreature(NPC_JAINA, 1895.48f, 1292.66f, 143.706f, 0.023475f, TEMPSUMMON_DEAD_DESPAWN, 180000))
+                        {
+                            Unit* pJaina = GetClosestCreatureWithEntry(me, NPC_JAINA, 50.0f);
+                            if (!pJaina)
+                                pJaina = me->SummonCreature(NPC_JAINA, 1895.48f, 1292.66f, 143.706f, 0.023475f, TEMPSUMMON_DEAD_DESPAWN, 180000);
+                            if (pJaina)
                                 uiJainaGUID = pJaina->GetGUID();
                             bStepping = false;
                             JumpToNextStep(0);
                             break;
+                        }
                         //After waypoint 0
                         case 1:
-                            me->RemoveUnitMovementFlag(MOVEMENTFLAG_WALKING);
+                            me->SetWalk(false);
                             if (Unit* pUther = me->SummonCreature(NPC_UTHER, 1794.357f, 1272.183f, 140.558f, 1.37f, TEMPSUMMON_DEAD_DESPAWN, 180000))
                             {
                                 uiUtherGUID = pUther->GetGUID();
-                                pUther->RemoveUnitMovementFlag(MOVEMENTFLAG_WALKING);
+                                pUther->SetWalk(false);
                                 pUther->GetMotionMaster()->MovePoint(0, 1897.018f, 1287.487f, 143.481f);
                                 pUther->SetTarget(me->GetGUID());
                                 me->SetTarget(uiUtherGUID);
@@ -679,7 +683,7 @@ public:
                         case 17:
                             if (Creature* pUther = Unit::GetCreature(*me, uiUtherGUID))
                             {
-                                pUther->AddUnitMovementFlag(MOVEMENTFLAG_WALKING);
+                                pUther->SetWalk(true);
                                 pUther->GetMotionMaster()->MovePoint(0, 1794.357f, 1272.183f, 140.558f);
                             }
                             JumpToNextStep(1000);
@@ -688,7 +692,7 @@ public:
                             if (Creature* pJaina = Unit::GetCreature(*me, uiJainaGUID))
                             {
                                 me->SetTarget(uiJainaGUID);
-                                pJaina->AddUnitMovementFlag(MOVEMENTFLAG_WALKING);
+                                pJaina->SetWalk(true);
                                 pJaina->GetMotionMaster()->MovePoint(0, 1794.357f, 1272.183f, 140.558f);
                             }
                             JumpToNextStep(1000);
@@ -754,7 +758,7 @@ public:
                             if (Creature* pCityman = Unit::GetCreature(*me, uiCitymenGUID[0]))
                             {
                                 pCityman->SetTarget(me->GetGUID());
-                                pCityman->AddUnitMovementFlag(MOVEMENTFLAG_WALKING);
+                                pCityman->SetWalk(true);
                                 pCityman->GetMotionMaster()->MovePoint(0, 2088.625f, 1279.191f, 140.743f);
                             }
                             JumpToNextStep(2000);
@@ -831,9 +835,10 @@ public:
                         case 37:
                             if (Creature* pMalganis = Unit::GetCreature(*me, uiMalganisGUID))
                             {
-                                if (Creature* pZombie = GetClosestCreatureWithEntry(pMalganis, NPC_CITY_MAN, 100.0f))
-                                    pZombie->UpdateEntry(NPC_ZOMBIE, 0);
-                                else if (Creature* pZombie = GetClosestCreatureWithEntry(pMalganis, NPC_CITY_MAN2, 100.0f))
+                                Creature* pZombie = GetClosestCreatureWithEntry(pMalganis, NPC_CITY_MAN, 100.0f);
+                                if (!pZombie)
+                                    pZombie = GetClosestCreatureWithEntry(pMalganis, NPC_CITY_MAN2, 100.0f);
+                                if (pZombie)
                                     pZombie->UpdateEntry(NPC_ZOMBIE, 0);
                                 else //There's no one else to transform
                                     uiStep++;
@@ -927,7 +932,7 @@ public:
                                 if (Unit* pBoss = me->SummonCreature(uiBossID, 2232.19f, 1331.933f, 126.662f, 3.15f, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 900000))
                                 {
                                     uiBossGUID = pBoss->GetGUID();
-                                    pBoss->AddUnitMovementFlag(MOVEMENTFLAG_WALKING);
+                                    pBoss->SetWalk(true);
                                     pBoss->GetMotionMaster()->MovePoint(0, 2194.110f, 1332.00f, 130.00f);
                                 }
                             }
@@ -1001,7 +1006,7 @@ public:
                             {
                                 pDisguised2->UpdateEntry(NPC_INFINITE_HUNTER, 0);
                                 //Make them unattackable
-                                pDisguised2->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_OOC_NOT_ATTACKABLE | UNIT_FLAG_PASSIVE);
+                                pDisguised2->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC | UNIT_FLAG_IMMUNE_TO_NPC);
                                 pDisguised2->SetReactState(REACT_PASSIVE);
                             }
                             JumpToNextStep(2000);
@@ -1011,7 +1016,7 @@ public:
                             {
                                 pDisguised1->UpdateEntry(NPC_INFINITE_AGENT, 0);
                                 //Make them unattackable
-                                pDisguised1->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_OOC_NOT_ATTACKABLE | UNIT_FLAG_PASSIVE);
+                                pDisguised1->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC | UNIT_FLAG_IMMUNE_TO_NPC);
                                 pDisguised1->SetReactState(REACT_PASSIVE);
                             }
                             JumpToNextStep(2000);
@@ -1021,7 +1026,7 @@ public:
                             {
                                 pDisguised0->UpdateEntry(NPC_INFINITE_ADVERSARY, 0);
                                 //Make them unattackable
-                                pDisguised0->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_OOC_NOT_ATTACKABLE | UNIT_FLAG_PASSIVE);
+                                pDisguised0->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC | UNIT_FLAG_IMMUNE_TO_NPC);
                                 pDisguised0->SetReactState(REACT_PASSIVE);
                             }
                             JumpToNextStep(2000);
@@ -1035,7 +1040,7 @@ public:
                             for (uint32 i = 0; i< ENCOUNTER_DRACONIAN_NUMBER; ++i)
                                 if (Creature* temp = Unit::GetCreature(*me, uiInfiniteDraconianGUID[i]))
                                 {
-                                    temp->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_OOC_NOT_ATTACKABLE | UNIT_FLAG_PASSIVE);
+                                    temp->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC | UNIT_FLAG_IMMUNE_TO_NPC);
                                     temp->SetReactState(REACT_AGGRESSIVE);
                                 }
                             JumpToNextStep(5000);
@@ -1093,10 +1098,11 @@ public:
                                     if (Creature* pEpoch = Unit::GetCreature(*me, uiEpochGUID))
                                     {
                                         //Make Epoch attackable
-                                        pEpoch->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_OOC_NOT_ATTACKABLE | UNIT_FLAG_PASSIVE);
+                                        pEpoch->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC | UNIT_FLAG_IMMUNE_TO_NPC);
                                         pEpoch->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                                         pEpoch->SetReactState(REACT_AGGRESSIVE);
                                     }
+
                                 }
                             JumpToNextStep(1000);
                             break;
@@ -1147,7 +1153,7 @@ public:
                         case 87:
                             if (Creature* pMalganis = Unit::GetCreature(*me, uiMalganisGUID))
                             {
-                                pMalganis->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_OOC_NOT_ATTACKABLE | UNIT_FLAG_UNK_6 | UNIT_FLAG_PASSIVE | UNIT_FLAG_UNK_15);
+                                pMalganis->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC | UNIT_FLAG_UNK_6 | UNIT_FLAG_IMMUNE_TO_NPC | UNIT_FLAG_UNK_15);
                                 pMalganis->SetReactState(REACT_AGGRESSIVE);
                             }
                             JumpToNextStep(1000);
@@ -1201,6 +1207,7 @@ public:
                 DoCast(me, SPELL_HOLY_LIGHT);
         }
     };
+
 };
 
 class npc_crate_helper : public CreatureScript
@@ -1215,7 +1222,7 @@ class npc_crate_helper : public CreatureScript
                 _marked = false;
             }
 
-            void SpellHit(Unit* /*caster*/, SpellEntry const* spell)
+            void SpellHit(Unit* /*caster*/, SpellInfo const* spell)
             {
                 if (spell->Id == SPELL_ARCANE_DISRUPTION && !_marked)
                 {

@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
- *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
- *
- * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -27,7 +23,8 @@ SDComment:
 SDCategory:
 Script Data End */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "utgarde_pinnacle.h"
 
 enum Spells
@@ -50,10 +47,10 @@ enum OrbSpells
 //not in db
 enum Yells
 {
-    SAY_AGGRO                                = -1575015,
-    SAY_SLAY_1                               = -1575016,
-    SAY_SLAY_2                               = -1575017,
-    SAY_DEATH                                = -1575018
+    SAY_AGGRO                                = -1575000,
+    SAY_SLAY_1                               = -1575001,
+    SAY_SLAY_2                               = -1575002,
+    SAY_DEATH                                = -1575003
 };
 
 enum Creatures
@@ -98,9 +95,9 @@ public:
 
     struct boss_palehoofAI : public ScriptedAI
     {
-        boss_palehoofAI(Creature* c) : ScriptedAI(c)
+        boss_palehoofAI(Creature* creature) : ScriptedAI(creature)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
         uint32 uiArcingSmashTimer;
@@ -115,15 +112,11 @@ public:
 
         void Reset()
         {
-            uiArcingSmashTimer = 7*IN_MILLISECONDS;
-            uiImpaleTimer = 10*IN_MILLISECONDS;
-            uiWhiteringRoarTimer = 15*IN_MILLISECONDS;
+            uiArcingSmashTimer = 15000;
+            uiImpaleTimer = 12000;
+            uiWhiteringRoarTimer = 10000;
 
-            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE|UNIT_FLAG_NOT_SELECTABLE|UNIT_FLAG_NOT_ATTACKABLE_1|UNIT_FLAG_OOC_NOT_ATTACKABLE);
-            me->SetStandState(UNIT_STAND_STATE_STAND);
-            DoCast(me, SPELL_FREEZE);
-
-            me->SetReactState(REACT_DEFENSIVE);
+            me->GetMotionMaster()->MoveTargetedHome();
 
             for (uint32 i = 0; i < 4; i++)
                 DoneAdds[i] = false;
@@ -135,29 +128,24 @@ public:
             {
                 instance->SetData(DATA_GORTOK_PALEHOOF_EVENT, NOT_STARTED);
 
-                Creature* temp;
-                if ((temp = Unit::GetCreature((*me), instance->GetData64(DATA_MOB_FRENZIED_WORGEN))) && !temp->isAlive())
-                {
+                Creature* temp = Unit::GetCreature((*me), instance->GetData64(DATA_MOB_FRENZIED_WORGEN));
+                if (temp && !temp->isAlive())
                     temp->Respawn();
-                    temp->AI()->EnterEvadeMode();
-                }
-                if ((temp = Unit::GetCreature((*me), instance->GetData64(DATA_MOB_FEROCIOUS_RHINO))) && !temp->isAlive())
-                {
-                    temp->Respawn();
-                    temp->AI()->EnterEvadeMode();
-                }
-                if ((temp = Unit::GetCreature((*me), instance->GetData64(DATA_MOB_MASSIVE_JORMUNGAR))) && !temp->isAlive())
-                {
-                    temp->Respawn();
-                    temp->AI()->EnterEvadeMode();
-                }
-                if ((temp = Unit::GetCreature((*me), instance->GetData64(DATA_MOB_RAVENOUS_FURBOLG))) && !temp->isAlive())
-                {
-                    temp->Respawn();
-                    temp->AI()->EnterEvadeMode();
-                }
 
-                if (GameObject* go = instance->instance->GetGameObject(instance->GetData64(DATA_GORTOK_PALEHOOF_SPHERE)))
+                temp = Unit::GetCreature((*me), instance->GetData64(DATA_MOB_FEROCIOUS_RHINO));
+                if (temp && !temp->isAlive())
+                    temp->Respawn();
+
+                temp = Unit::GetCreature((*me), instance->GetData64(DATA_MOB_MASSIVE_JORMUNGAR));
+                if (temp && !temp->isAlive())
+                    temp->Respawn();
+
+                temp = Unit::GetCreature((*me), instance->GetData64(DATA_MOB_RAVENOUS_FURBOLG));
+                if (temp && !temp->isAlive())
+                    temp->Respawn();
+
+                GameObject* go = instance->instance->GetGameObject(instance->GetData64(DATA_GORTOK_PALEHOOF_SPHERE));
+                if (go)
                 {
                     go->SetGoState(GO_STATE_READY);
                     go->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
@@ -165,35 +153,33 @@ public:
             }
         }
 
-        void SetInCombat()
-        {
-            Map *map = me->GetMap();
-            if (!map->IsDungeon())
-                return;
-
-            Map::PlayerList const &PlayerList = map->GetPlayers();
-            for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
-            {
-                if (Player* i_pl = i->getSource())
-                    if (!i_pl->isGameMaster() && i_pl->isAlive() && me->GetDistance(i_pl) <= 100)
-                    {
-                        me->SetInCombatWith(i_pl);
-                        i_pl->SetInCombatWith(me);
-                        me->AddThreat(i_pl, 1.0f);
-                    }
-            }
-        }
-
-        void EnterCombat(Unit* who)
+        void EnterCombat(Unit* /*who*/)
         {
             DoScriptText(SAY_AGGRO, me);
-            SetInCombat();
+        }
+
+        void AttackStart(Unit* who)
+        {
+            if (!who)
+                return;
+
+            if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
+                return;
+
+            if (me->Attack(who, true))
+            {
+                me->AddThreat(who, 0.0f);
+                me->SetInCombatWith(who);
+                who->SetInCombatWith(me);
+                DoStartMovement(who);
+            }
         }
 
         void UpdateAI(const uint32 diff)
         {
             if (currentPhase != PHASE_GORTOK_PALEHOOF)
                 return;
+
             //Return since we have no target
             if (!UpdateVictim())
                 return;
@@ -205,26 +191,26 @@ public:
             if (uiArcingSmashTimer <= diff)
             {
                 DoCast(me, SPELL_ARCING_SMASH);
-                uiArcingSmashTimer = urand(9*IN_MILLISECONDS, 12*IN_MILLISECONDS);
+                uiArcingSmashTimer = urand(13000, 17000);
             } else uiArcingSmashTimer -= diff;
 
             if (uiImpaleTimer <= diff)
             {
               if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
-                  DoCast(target, DUNGEON_MODE(SPELL_IMPALE, H_SPELL_IMPALE));
-              uiImpaleTimer = urand(9*IN_MILLISECONDS, 12*IN_MILLISECONDS);
+                  DoCast(target, SPELL_IMPALE);
+              uiImpaleTimer = urand(8000, 12000);
             } else uiImpaleTimer -= diff;
 
             if (uiWhiteringRoarTimer <= diff)
             {
-                DoCast(me, DUNGEON_MODE(SPELL_WITHERING_ROAR, H_SPELL_WITHERING_ROAR));
-                uiWhiteringRoarTimer = urand(12*IN_MILLISECONDS, 16*IN_MILLISECONDS);
+                DoCast(me, SPELL_WITHERING_ROAR);
+                uiWhiteringRoarTimer = urand(8000, 12000);
             } else uiWhiteringRoarTimer -= diff;
 
             DoMeleeAttackIfReady();
         }
 
-        void JustDied(Unit* killer)
+        void JustDied(Unit* /*killer*/)
         {
             DoScriptText(SAY_DEATH, me);
             if (instance)
@@ -234,7 +220,7 @@ public:
                 temp->DisappearAndDie();
         }
 
-        void KilledUnit(Unit* victim)
+        void KilledUnit(Unit* /*victim*/)
         {
             DoScriptText(RAND(SAY_SLAY_1, SAY_SLAY_2), me);
         }
@@ -255,14 +241,16 @@ public:
                 uint8 next = urand(0, 3);
                 for (uint8 i = 0; i < 16; i++)
                 {
-                    if (!DoneAdds[i%4] && next == 0)
+                    if (!DoneAdds[i % 4])
+                    {
+                        if (next == 0)
                         {
                             move = (Phase)(i % 4);
                             break;
-                    } else if (!DoneAdds[i%4] && next > 0)
-                    {
+                        }
+                        else if (next > 0)
                             --next;
-                }
+                    }
                 }
                 ++AddCount;
                 DoneAdds[move] = true;
@@ -278,7 +266,15 @@ public:
             }
             currentPhase = move;
         }
+
+        void JustReachedHome()
+        {
+            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE|UNIT_FLAG_NOT_SELECTABLE|UNIT_FLAG_NOT_ATTACKABLE_1|UNIT_FLAG_IMMUNE_TO_PC);
+            me->SetStandState(UNIT_STAND_STATE_STAND);
+            DoCast(me, SPELL_FREEZE);
+        }
     };
+
 };
 
 //ravenous furbolg's spells
@@ -287,8 +283,6 @@ enum RavenousSpells
     SPELL_CHAIN_LIGHTING                        = 48140,
     H_SPELL_CHAIN_LIGHTING                      = 59273,
     SPELL_CRAZED                                = 48139,
-    SPELL_CRAZED_SCRIPT                         = 48146,
-    SPELL_CRAZED_TAUNT                          = 48147,
     SPELL_TERRIFYING_ROAR                       = 48144
 };
 
@@ -304,9 +298,9 @@ public:
 
     struct mob_ravenous_furbolgAI : public ScriptedAI
     {
-        mob_ravenous_furbolgAI(Creature* c) : ScriptedAI(c)
+        mob_ravenous_furbolgAI(Creature* creature) : ScriptedAI(creature)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
         uint32 uiChainLightingTimer;
@@ -317,15 +311,11 @@ public:
 
         void Reset()
         {
-            uiChainLightingTimer = 5*IN_MILLISECONDS;
-            uiCrazedTimer = 10*IN_MILLISECONDS;
-            uiTerrifyingRoarTimer = 15*IN_MILLISECONDS;
+            uiChainLightingTimer = 5000;
+            uiCrazedTimer = 10000;
+            uiTerrifyingRoarTimer = 15000;
 
-            me->SetReactState(REACT_DEFENSIVE);
-
-            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE|UNIT_FLAG_NOT_SELECTABLE|UNIT_FLAG_NOT_ATTACKABLE_1|UNIT_FLAG_OOC_NOT_ATTACKABLE);
-            me->SetStandState(UNIT_STAND_STATE_STAND);
-            DoCast(me, SPELL_FREEZE);
+            me->GetMotionMaster()->MoveTargetedHome();
 
             if (instance)
                 if (instance->GetData(DATA_GORTOK_PALEHOOF_EVENT) == IN_PROGRESS)
@@ -336,12 +326,6 @@ public:
                 }
         }
 
-        void SpellHitTarget(Unit* target, const SpellEntry* spell)
-        {
-            if (spell->Id == SPELL_CRAZED_SCRIPT)
-                target->CastSpell(me, SPELL_CRAZED_TAUNT, true);
-        }
-
         void UpdateAI(const uint32 diff)
         {
             //Return since we have no target
@@ -350,30 +334,43 @@ public:
 
             if (uiChainLightingTimer <= diff)
             {
-                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
-                    DoCast(target, DUNGEON_MODE(SPELL_CHAIN_LIGHTING, H_SPELL_CHAIN_LIGHTING));
-                uiChainLightingTimer = 5*IN_MILLISECONDS + rand()%5*IN_MILLISECONDS;
+                DoCast(me->getVictim(), SPELL_CHAIN_LIGHTING);
+                uiChainLightingTimer = 5000 + rand() % 5000;
             } else uiChainLightingTimer -=  diff;
 
             if (uiCrazedTimer <= diff)
             {
-                if (!me->IsNonMeleeSpellCasted(false))
-                {
                 DoCast(me, SPELL_CRAZED);
-                    uiCrazedTimer = 20*IN_MILLISECONDS;
-                }
+                uiCrazedTimer = 8000 + rand() % 4000;
             } else uiCrazedTimer -=  diff;
 
             if (uiTerrifyingRoarTimer <= diff)
             {
                 DoCast(me, SPELL_TERRIFYING_ROAR);
-                uiTerrifyingRoarTimer = 15*IN_MILLISECONDS + rand()%5*IN_MILLISECONDS;
+                uiTerrifyingRoarTimer = 10000 + rand() % 10000;
             } else uiTerrifyingRoarTimer -=  diff;
 
             DoMeleeAttackIfReady();
         }
 
-        void JustDied(Unit* killer)
+        void AttackStart(Unit* who)
+        {
+            if (!who)
+                return;
+
+            if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
+                return;
+
+            if (me->Attack(who, true))
+            {
+                me->AddThreat(who, 0.0f);
+                me->SetInCombatWith(who);
+                who->SetInCombatWith(me);
+                DoStartMovement(who);
+            }
+        }
+
+        void JustDied(Unit* /*killer*/)
         {
             if (instance)
             {
@@ -382,7 +379,15 @@ public:
                     CAST_AI(boss_palehoof::boss_palehoofAI, pPalehoof->AI())->NextPhase();
             }
         }
+
+        void JustReachedHome()
+        {
+            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_NOT_ATTACKABLE_1 | UNIT_FLAG_IMMUNE_TO_PC);
+            me->SetStandState(UNIT_STAND_STATE_STAND);
+            DoCast(me, SPELL_FREEZE);
+        }
     };
+
 };
 
 //frenzied worgen's spells
@@ -406,28 +411,24 @@ public:
 
     struct mob_frenzied_worgenAI : public ScriptedAI
     {
-        mob_frenzied_worgenAI(Creature* c) : ScriptedAI(c)
+        mob_frenzied_worgenAI(Creature* creature) : ScriptedAI(creature)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
         uint32 uiMortalWoundTimer;
         uint32 uiEnrage1Timer;
-        bool uiEnraged;
+        uint32 uiEnrage2Timer;
 
         InstanceScript* instance;
 
         void Reset()
         {
-            uiMortalWoundTimer = 5*IN_MILLISECONDS;
-            uiEnrage1Timer = 10*IN_MILLISECONDS;
-            uiEnraged = false;
+            uiMortalWoundTimer = 5000;
+            uiEnrage1Timer = 15000;
+            uiEnrage2Timer = 10000;
 
-            me->SetReactState(REACT_DEFENSIVE);
-
-            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE|UNIT_FLAG_NOT_SELECTABLE|UNIT_FLAG_NOT_ATTACKABLE_1|UNIT_FLAG_OOC_NOT_ATTACKABLE);
-            me->SetStandState(UNIT_STAND_STATE_STAND);
-            DoCast(me, SPELL_FREEZE);
+            me->GetMotionMaster()->MoveTargetedHome();
 
             if (instance)
                 if (instance->GetData(DATA_GORTOK_PALEHOOF_EVENT) == IN_PROGRESS)
@@ -446,26 +447,45 @@ public:
 
             if (uiMortalWoundTimer <= diff)
             {
-                DoCast(me->getVictim(), DUNGEON_MODE(SPELL_MORTAL_WOUND, H_SPELL_MORTAL_WOUND));
-                uiMortalWoundTimer = 5*IN_MILLISECONDS + rand()%4*IN_MILLISECONDS;
+                DoCast(me->getVictim(), SPELL_MORTAL_WOUND);
+                uiMortalWoundTimer = 3000 + rand() % 4000;
             } else uiMortalWoundTimer -= diff;
 
             if (uiEnrage1Timer <= diff)
             {
                 DoCast(me, SPELL_ENRAGE_1);
-                uiEnrage1Timer = 15*IN_MILLISECONDS;
+                uiEnrage1Timer = 15000;
             } else uiEnrage1Timer -= diff;
 
-            if (!uiEnraged && (HealthBelowPct(33)))
+            if (uiEnrage2Timer <= diff)
             {
                 DoCast(me, SPELL_ENRAGE_2);
-                uiEnraged = true;
-            }
+                uiEnrage2Timer = 10000;
+            } else uiEnrage2Timer -= diff;
 
             DoMeleeAttackIfReady();
         }
 
-        void JustDied(Unit* killer)
+        void AttackStart(Unit* who)
+        {
+            if (!who)
+                return;
+
+            if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
+                return;
+
+            if (me->Attack(who, true))
+            {
+                me->AddThreat(who, 0.0f);
+                me->SetInCombatWith(who);
+                who->SetInCombatWith(me);
+                DoStartMovement(who);
+            }
+            if (instance)
+                instance->SetData(DATA_GORTOK_PALEHOOF_EVENT, IN_PROGRESS);
+        }
+
+        void JustDied(Unit* /*killer*/)
         {
             if (instance)
             {
@@ -474,7 +494,15 @@ public:
                     CAST_AI(boss_palehoof::boss_palehoofAI, pPalehoof->AI())->NextPhase();
             }
         }
+
+        void JustReachedHome()
+        {
+            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_NOT_ATTACKABLE_1 | UNIT_FLAG_IMMUNE_TO_PC);
+            me->SetStandState(UNIT_STAND_STATE_STAND);
+            DoCast(me, SPELL_FREEZE);
+        }
     };
+
 };
 
 //ferocious rhino's spells
@@ -499,9 +527,9 @@ public:
 
     struct mob_ferocious_rhinoAI : public ScriptedAI
     {
-        mob_ferocious_rhinoAI(Creature* c) : ScriptedAI(c)
+        mob_ferocious_rhinoAI(Creature* creature) : ScriptedAI(creature)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
         uint32 uiStompTimer;
@@ -512,15 +540,11 @@ public:
 
         void Reset()
         {
-            uiStompTimer = 5*IN_MILLISECONDS;
-            uiGoreTimer = 10*IN_MILLISECONDS;
-            uiGrievousWoundTimer = 12*IN_MILLISECONDS;
+            uiStompTimer = 10000;
+            uiGoreTimer = 15000;
+            uiGrievousWoundTimer = 20000;
 
-            me->SetReactState(REACT_DEFENSIVE);
-
-            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE|UNIT_FLAG_NOT_SELECTABLE|UNIT_FLAG_NOT_ATTACKABLE_1|UNIT_FLAG_OOC_NOT_ATTACKABLE);
-            me->SetStandState(UNIT_STAND_STATE_STAND);
-            DoCast(me, SPELL_FREEZE);
+            me->GetMotionMaster()->MoveTargetedHome();
 
             if (instance)
                 if (instance->GetData(DATA_GORTOK_PALEHOOF_EVENT) == IN_PROGRESS)
@@ -540,26 +564,43 @@ public:
             if (uiStompTimer <= diff)
             {
                 DoCast(me->getVictim(), SPELL_STOMP);
-                uiStompTimer = 8*IN_MILLISECONDS + rand()%4*IN_MILLISECONDS;
+                uiStompTimer = 8000 + rand() % 4000;
             } else uiStompTimer -= diff;
 
             if (uiGoreTimer <= diff)
             {
-                DoCast(me->getVictim(), DUNGEON_MODE(SPELL_GORE, H_SPELL_GORE));
-                uiGoreTimer = 12*IN_MILLISECONDS + rand()%3*IN_MILLISECONDS;
+                DoCast(me->getVictim(), SPELL_GORE);
+                uiGoreTimer = 13000 + rand() % 4000;
             } else uiGoreTimer -= diff;
 
             if (uiGrievousWoundTimer <= diff)
             {
                 if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
-                    DoCast(target, DUNGEON_MODE(SPELL_GRIEVOUS_WOUND, H_SPELL_GRIEVOUS_WOUND));
-                uiGrievousWoundTimer = 12*IN_MILLISECONDS + rand()%3*IN_MILLISECONDS;
+                    DoCast(target, SPELL_GRIEVOUS_WOUND);
+                uiGrievousWoundTimer = 18000 + rand() % 4000;
             } else uiGrievousWoundTimer -= diff;
 
             DoMeleeAttackIfReady();
         }
 
-        void JustDied(Unit* killer)
+        void AttackStart(Unit* who)
+        {
+            if (!who)
+                return;
+
+            if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
+                return;
+
+            if (me->Attack(who, true))
+            {
+                me->AddThreat(who, 0.0f);
+                me->SetInCombatWith(who);
+                who->SetInCombatWith(me);
+                DoStartMovement(who);
+            }
+        }
+
+        void JustDied(Unit* /*killer*/)
         {
             if (instance)
             {
@@ -568,7 +609,15 @@ public:
                     CAST_AI(boss_palehoof::boss_palehoofAI, pPalehoof->AI())->NextPhase();
             }
         }
+
+        void JustReachedHome()
+        {
+            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_NOT_ATTACKABLE_1 | UNIT_FLAG_IMMUNE_TO_PC);
+            me->SetStandState(UNIT_STAND_STATE_STAND);
+            DoCast(me, SPELL_FREEZE);
+        }
     };
+
 };
 
 //massive jormungar's spells
@@ -598,9 +647,9 @@ public:
 
     struct mob_massive_jormungarAI : public ScriptedAI
     {
-        mob_massive_jormungarAI(Creature* c) : ScriptedAI(c)
+        mob_massive_jormungarAI(Creature* creature) : ScriptedAI(creature)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
         uint32 uiAcidSpitTimer;
@@ -611,15 +660,11 @@ public:
 
         void Reset()
         {
-            uiAcidSpitTimer = 5*IN_MILLISECONDS;
-            uiAcidSplatterTimer = 12*IN_MILLISECONDS;
-            uiPoisonBreathTimer = 15*IN_MILLISECONDS;
+            uiAcidSpitTimer = 3000;
+            uiAcidSplatterTimer = 12000;
+            uiPoisonBreathTimer = 10000;
 
-            me->SetReactState(REACT_DEFENSIVE);
-
-            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE|UNIT_FLAG_NOT_SELECTABLE|UNIT_FLAG_NOT_ATTACKABLE_1|UNIT_FLAG_OOC_NOT_ATTACKABLE);
-            me->SetStandState(UNIT_STAND_STATE_STAND);
-            DoCast(me, SPELL_FREEZE);
+            me->GetMotionMaster()->MoveTargetedHome();
 
             if (instance)
                 if (instance->GetData(DATA_GORTOK_PALEHOOF_EVENT) == IN_PROGRESS)
@@ -638,35 +683,45 @@ public:
 
             if (uiAcidSpitTimer <= diff)
             {
-                DoCast(me->getVictim(), SPELL_ACID_SPIT);
-                uiAcidSpitTimer = 5*IN_MILLISECONDS + rand()%3*IN_MILLISECONDS;
+                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
+                    DoCast(target, SPELL_ACID_SPIT);
+                uiAcidSpitTimer = 2000 + rand() % 2000;
             } else uiAcidSpitTimer -= diff;
 
             if (uiAcidSplatterTimer <= diff)
             {
-                if (!me->IsNonMeleeSpellCasted(false))
-                {
-                    DoCast(me, DUNGEON_MODE(SPELL_ACID_SPLATTER, H_SPELL_ACID_SPLATTER)); //for 2 seconds only?
-                    uiAcidSplatterTimer = 25*IN_MILLISECONDS + rand()%5*IN_MILLISECONDS;
-                    for (uint8 i = 0; i < 6; ++i)
-                        DoSpawnCreature(CREATURE_JORMUNGAR_WORM, 0, 0, 0, 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 10000);
-                }
+                DoCast(me, SPELL_POISON_BREATH);
+                uiAcidSplatterTimer = 10000 + rand() % 4000;
             } else uiAcidSplatterTimer -= diff;
 
             if (uiPoisonBreathTimer <= diff)
             {
-                if (!me->IsNonMeleeSpellCasted(false))
-                {
                 if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
-                    DoCast(target, DUNGEON_MODE(SPELL_POISON_BREATH, H_SPELL_POISON_BREATH));
-                    uiPoisonBreathTimer = 15*IN_MILLISECONDS + rand()%5*IN_MILLISECONDS;
-                }
+                    DoCast(target, SPELL_POISON_BREATH);
+                uiPoisonBreathTimer = 8000 + rand() % 4000;
             } else uiPoisonBreathTimer -= diff;
 
             DoMeleeAttackIfReady();
         }
 
-        void JustDied(Unit* killer)
+        void AttackStart(Unit* who)
+        {
+            if (!who)
+                return;
+
+            if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
+                return;
+
+            if (me->Attack(who, true))
+            {
+                me->AddThreat(who, 0.0f);
+                me->SetInCombatWith(who);
+                who->SetInCombatWith(me);
+                DoStartMovement(who);
+            }
+        }
+
+        void JustDied(Unit* /*killer*/)
         {
             if (instance)
             {
@@ -675,7 +730,15 @@ public:
                     CAST_AI(boss_palehoof::boss_palehoofAI, pPalehoof->AI())->NextPhase();
             }
         }
+
+        void JustReachedHome()
+        {
+            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_NOT_ATTACKABLE_1 | UNIT_FLAG_IMMUNE_TO_PC);
+            me->SetStandState(UNIT_STAND_STATE_STAND);
+            DoCast(me, SPELL_FREEZE);
+        }
     };
+
 };
 
 class mob_palehoof_orb : public CreatureScript
@@ -690,9 +753,9 @@ public:
 
     struct mob_palehoof_orbAI : public ScriptedAI
     {
-        mob_palehoof_orbAI(Creature* c) : ScriptedAI(c)
+        mob_palehoof_orbAI(Creature* creature) : ScriptedAI(creature)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
         InstanceScript* instance;
@@ -702,32 +765,11 @@ public:
         void Reset()
         {
             currentPhase = PHASE_NONE;
-            SummonTimer=5*IN_MILLISECONDS;
-            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE|UNIT_FLAG_NON_ATTACKABLE|UNIT_FLAG_NOT_ATTACKABLE_1|UNIT_FLAG_OOC_NOT_ATTACKABLE);
-            me->SetDisplayId(11686);
+            SummonTimer = 5000;
+            //! HACK: Creature's can't have MOVEMENTFLAG_FLYING
             me->AddUnitMovementFlag(MOVEMENTFLAG_FLYING);
             me->RemoveAurasDueToSpell(SPELL_ORB_VISUAL);
             me->SetSpeed(MOVE_FLIGHT, 0.5f);
-            me->SetReactState(REACT_PASSIVE);
-        }
-
-        void SetInCombat()
-        {
-            Map *map = me->GetMap();
-            if (!map->IsDungeon())
-                return;
-
-            Map::PlayerList const &PlayerList = map->GetPlayers();
-            for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
-            {
-                if (Player* i_pl = i->getSource())
-                    if (!i_pl->isGameMaster() && i_pl->isAlive() && me->GetDistance(i_pl) <= 100)
-                    {
-                        me->SetInCombatWith(i_pl);
-                        i_pl->SetInCombatWith(me);
-                        me->AddThreat(i_pl, 1.0f);
-                    }
-            }
         }
 
         void UpdateAI(const uint32 diff)
@@ -739,7 +781,7 @@ public:
             {
                 if (currentPhase<5&&currentPhase >= 0)
                 {
-                   Creature* pNext;
+                   Creature* pNext = NULL;
                    switch (currentPhase)
                    {
                         case PHASE_FRENZIED_WORGEN: pNext = Unit::GetCreature((*me), instance ? instance->GetData64(DATA_MOB_FRENZIED_WORGEN) : 0); break;
@@ -747,16 +789,17 @@ public:
                         case PHASE_MASSIVE_JORMUNGAR: pNext = Unit::GetCreature((*me), instance ? instance->GetData64(DATA_MOB_MASSIVE_JORMUNGAR) : 0); break;
                         case PHASE_FEROCIOUS_RHINO: pNext = Unit::GetCreature((*me), instance ? instance->GetData64(DATA_MOB_FEROCIOUS_RHINO) : 0); break;
                         case PHASE_GORTOK_PALEHOOF: pNext = Unit::GetCreature((*me), instance ? instance->GetData64(DATA_GORTOK_PALEHOOF) : 0); break;
+                        default: break;
                    }
 
                    if (pNext)
                    {
                         pNext->RemoveAurasDueToSpell(SPELL_FREEZE);
-                        pNext->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_ATTACKABLE_1 | UNIT_FLAG_OOC_NOT_ATTACKABLE);
-                        ((Unit*)pNext)->SetStandState(UNIT_STAND_STATE_STAND);
-                        pNext->SetReactState(REACT_AGGRESSIVE);
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
-                            pNext->AI()->AttackStart(target);
+                        pNext->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_ATTACKABLE_1 | UNIT_FLAG_IMMUNE_TO_PC);
+                        pNext->SetStandState(UNIT_STAND_STATE_STAND);
+                        pNext->SetInCombatWithZone();
+                        pNext->Attack(pNext->SelectNearestTarget(100), true);
+
                    }
                    currentPhase = PHASE_NONE;
                 }
@@ -767,10 +810,9 @@ public:
         {
             if (type != POINT_MOTION_TYPE)
                 return;
-            if (id<0 || id>4)
+            if (id > 4)
                 return;
-            Creature* pNext;
-            me->SetSpeed(MOVE_FLIGHT , 3.0f);
+            Creature* pNext = NULL;
             switch (id)
             {
                 case PHASE_FRENZIED_WORGEN: pNext = Unit::GetCreature((*me), instance ? instance->GetData64(DATA_MOB_FRENZIED_WORGEN) : 0); break;
@@ -778,15 +820,15 @@ public:
                 case PHASE_MASSIVE_JORMUNGAR: pNext = Unit::GetCreature((*me), instance ? instance->GetData64(DATA_MOB_MASSIVE_JORMUNGAR) : 0); break;
                 case PHASE_FEROCIOUS_RHINO: pNext = Unit::GetCreature((*me), instance ? instance->GetData64(DATA_MOB_FEROCIOUS_RHINO) : 0); break;
                 case PHASE_GORTOK_PALEHOOF: pNext = Unit::GetCreature((*me), instance ? instance->GetData64(DATA_GORTOK_PALEHOOF) : 0); break;
+                default: break;
             }
             if (pNext)
-                DoCast(pNext, SPELL_ORB_CHANNEL, false); //cant cast on not attackable unit?
-
+                DoCast(pNext, SPELL_ORB_CHANNEL, false);
             currentPhase = (Phase)id;
-            SummonTimer=5*IN_MILLISECONDS;
-            SetInCombat();
+            SummonTimer = 5000;
         }
     };
+
 };
 
 class go_palehoof_sphere : public GameObjectScript
@@ -794,7 +836,7 @@ class go_palehoof_sphere : public GameObjectScript
 public:
     go_palehoof_sphere() : GameObjectScript("go_palehoof_sphere") { }
 
-    bool OnGossipHello(Player* player, GameObject* go)
+    bool OnGossipHello(Player* /*player*/, GameObject* go)
     {
         InstanceScript* instance = go->GetInstanceScript();
 
@@ -808,6 +850,7 @@ public:
         }
         return true;
     }
+
 };
 
 void AddSC_boss_palehoof()

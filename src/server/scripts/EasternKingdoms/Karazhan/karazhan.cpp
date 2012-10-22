@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2008-2010 TrinityCore <http://www.trinitycore.org/>
+ /*
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -17,25 +17,27 @@
  */
 
 /* ScriptData
- SDName: Karazhan
- SD%Complete: 100
- SDComment: Support for Barnes (Opera controller) and Berthold (Doorman), Support for Quest 9645.
- SDCategory: Karazhan
- EndScriptData */
+SDName: Karazhan
+SD%Complete: 100
+SDComment: Support for Barnes (Opera controller) and Berthold (Doorman), Support for Quest 9645.
+SDCategory: Karazhan
+EndScriptData */
 
 /* ContentData
- npc_barnes
- npc_berthold
- npc_image_of_medivh
- EndContentData */
+npc_barnes
+npc_berthold
+npc_image_of_medivh
+EndContentData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
+#include "ScriptedGossip.h"
 #include "karazhan.h"
 #include "ScriptedEscortAI.h"
 
 /*######
- # npc_barnesAI
- ######*/
+# npc_barnesAI
+######*/
 
 #define GOSSIP_READY        "I'm not an actor."
 
@@ -52,28 +54,46 @@
 #define OZ_GM_GOSSIP2       "[GM] Change event to EVENT_HOOD"
 #define OZ_GM_GOSSIP3       "[GM] Change event to EVENT_RAJ"
 
-struct Dialogue {
+struct Dialogue
+{
     int32 textid;
     uint32 timer;
 };
 
-static Dialogue OzDialogue[] = { { -1532103, 6000 }, { -1532104, 18000 }, {
-        -1532105, 9000 }, { -1532106, 15000 } };
+static Dialogue OzDialogue[]=
+{
+    {-1532103, 6000},
+    {-1532104, 18000},
+    {-1532105, 9000},
+    {-1532106, 15000}
+};
 
-static Dialogue HoodDialogue[] = { { -1532107, 6000 }, { -1532108, 10000 }, {
-        -1532109, 14000 }, { -1532110, 15000 } };
+static Dialogue HoodDialogue[]=
+{
+    {-1532107, 6000},
+    {-1532108, 10000},
+    {-1532109, 14000},
+    {-1532110, 15000}
+};
 
-static Dialogue RAJDialogue[] = { { -1532111, 5000 }, { -1532112, 7000 }, {
-        -1532113, 14000 }, { -1532114, 14000 } };
+static Dialogue RAJDialogue[]=
+{
+    {-1532111, 5000},
+    {-1532112, 7000},
+    {-1532113, 14000},
+    {-1532114, 14000}
+};
 
 // Entries and spawn locations for creatures in Oz event
-float Spawns[6][2] = { { 17535, -10896 }, // Dorothee
-        { 17546, -10891 }, // Roar
-        { 17547, -10884 }, // Tinhead
-        { 17543, -10902 }, // Strawman
-        { 17603, -10892 }, // Grandmother
-        { 17534, -10900 }, // Julianne
-        };
+float Spawns[6][2]=
+{
+    {17535, -10896},                                        // Dorothee
+    {17546, -10891},                                        // Roar
+    {17547, -10884},                                        // Tinhead
+    {17543, -10902},                                        // Strawman
+    {17603, -10892},                                        // Grandmother
+    {17534, -10900},                                        // Julianne
+};
 
 #define CREATURE_SPOTLIGHT  19525
 
@@ -84,21 +104,21 @@ float Spawns[6][2] = { { 17535, -10896 }, // Dorothee
 #define SPAWN_Y             -1758
 #define SPAWN_O             4.738f
 
-class npc_barnes: public CreatureScript {
+class npc_barnes : public CreatureScript
+{
 public:
-    npc_barnes() :
-            CreatureScript("npc_barnes") {
-    }
+    npc_barnes() : CreatureScript("npc_barnes") { }
 
-    struct npc_barnesAI: public npc_escortAI {
-        npc_barnesAI(Creature* c) :
-                npc_escortAI(c) {
+    struct npc_barnesAI : public npc_escortAI
+    {
+        npc_barnesAI(Creature* creature) : npc_escortAI(creature)
+        {
             RaidWiped = false;
             m_uiEventId = 0;
-            pInstance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
-        InstanceScript* pInstance;
+        InstanceScript* instance;
 
         uint64 m_uiSpotlightGUID;
 
@@ -110,7 +130,8 @@ public:
         bool PerformanceReady;
         bool RaidWiped;
 
-        void Reset() {
+        void Reset()
+        {
             m_uiSpotlightGUID = 0;
 
             TalkCount = 0;
@@ -119,138 +140,143 @@ public:
 
             PerformanceReady = false;
 
-            if (pInstance)
-                m_uiEventId = pInstance->GetData(DATA_OPERA_PERFORMANCE);
+            if (instance)
+                m_uiEventId = instance->GetData(DATA_OPERA_PERFORMANCE);
         }
 
-        void StartEvent() {
-            if (!pInstance)
+        void StartEvent()
+        {
+            if (!instance)
                 return;
 
-            pInstance->SetData(TYPE_OPERA, IN_PROGRESS);
+            instance->SetData(TYPE_OPERA, IN_PROGRESS);
 
             //resets count for this event, in case earlier failed
             if (m_uiEventId == EVENT_OZ)
-                pInstance->SetData(DATA_OPERA_OZ_DEATHCOUNT, IN_PROGRESS);
+                instance->SetData(DATA_OPERA_OZ_DEATHCOUNT, IN_PROGRESS);
 
             Start(false, false);
         }
 
-        void EnterCombat(Unit* /*who*/) {
-        }
+        void EnterCombat(Unit* /*who*/) {}
 
-        void WaypointReached(uint32 i) {
-            if (!pInstance)
+        void WaypointReached(uint32 waypointId)
+        {
+            if (!instance)
                 return;
 
-            switch (i) {
-            case 0:
-                DoCast(me, SPELL_TUXEDO, false);
-                pInstance->DoUseDoorOrButton(
-                        pInstance->GetData64(DATA_GO_STAGEDOORLEFT));
-                break;
-            case 4:
-                TalkCount = 0;
-                SetEscortPaused(true);
+            switch (waypointId)
+            {
+                case 0:
+                    DoCast(me, SPELL_TUXEDO, false);
+                    instance->DoUseDoorOrButton(instance->GetData64(DATA_GO_STAGEDOORLEFT));
+                    break;
+                case 4:
+                    TalkCount = 0;
+                    SetEscortPaused(true);
 
-                if (Creature* pSpotlight = me->SummonCreature(CREATURE_SPOTLIGHT,
+                    if (Creature* pSpotlight = me->SummonCreature(CREATURE_SPOTLIGHT,
                         me->GetPositionX(), me->GetPositionY(), me->GetPositionZ(), 0.0f,
-                        TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 60000)) {
-                    pSpotlight->SetFlag(UNIT_FIELD_FLAGS,
-                            UNIT_FLAG_NOT_SELECTABLE);
-                    pSpotlight->CastSpell(pSpotlight, SPELL_SPOTLIGHT, false);
-                    m_uiSpotlightGUID = pSpotlight->GetGUID();
-                }
-                break;
-            case 8:
-                pInstance->DoUseDoorOrButton(
-                        pInstance->GetData64(DATA_GO_STAGEDOORLEFT));
-                PerformanceReady = true;
-                break;
-            case 9:
-                PrepareEncounter();
-                pInstance->DoUseDoorOrButton(
-                        pInstance->GetData64(DATA_GO_CURTAINS));
-                break;
+                        TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 60000))
+                    {
+                        pSpotlight->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+                        pSpotlight->CastSpell(pSpotlight, SPELL_SPOTLIGHT, false);
+                        m_uiSpotlightGUID = pSpotlight->GetGUID();
+                    }
+                    break;
+                case 8:
+                    instance->DoUseDoorOrButton(instance->GetData64(DATA_GO_STAGEDOORLEFT));
+                    PerformanceReady = true;
+                    break;
+                case 9:
+                    PrepareEncounter();
+                    instance->DoUseDoorOrButton(instance->GetData64(DATA_GO_CURTAINS));
+                    break;
             }
         }
 
-        void Talk(uint32 count) {
+        void Talk(uint32 count)
+        {
             int32 text = 0;
 
-            switch (m_uiEventId) {
-            case EVENT_OZ:
-                if (OzDialogue[count].textid)
-                    text = OzDialogue[count].textid;
-                if (OzDialogue[count].timer)
-                    TalkTimer = OzDialogue[count].timer;
-                break;
+            switch (m_uiEventId)
+            {
+                case EVENT_OZ:
+                    if (OzDialogue[count].textid)
+                         text = OzDialogue[count].textid;
+                    if (OzDialogue[count].timer)
+                        TalkTimer = OzDialogue[count].timer;
+                    break;
 
-            case EVENT_HOOD:
-                if (HoodDialogue[count].textid)
-                    text = HoodDialogue[count].textid;
-                if (HoodDialogue[count].timer)
-                    TalkTimer = HoodDialogue[count].timer;
-                break;
+                case EVENT_HOOD:
+                    if (HoodDialogue[count].textid)
+                        text = HoodDialogue[count].textid;
+                    if (HoodDialogue[count].timer)
+                        TalkTimer = HoodDialogue[count].timer;
+                    break;
 
-            case EVENT_RAJ:
-                if (RAJDialogue[count].textid)
-                    text = RAJDialogue[count].textid;
-                if (RAJDialogue[count].timer)
-                    TalkTimer = RAJDialogue[count].timer;
-                break;
+                case EVENT_RAJ:
+                     if (RAJDialogue[count].textid)
+                         text = RAJDialogue[count].textid;
+                    if (RAJDialogue[count].timer)
+                        TalkTimer = RAJDialogue[count].timer;
+                    break;
             }
 
             if (text)
-                DoScriptText(text, me);
+                 DoScriptText(text, me);
         }
 
-        void PrepareEncounter() {
-            sLog->outDebug(
-                    LOG_FILTER_TSCR,
-                    "TSCR: Barnes Opera Event - Introduction complete - preparing encounter %d",
-                    m_uiEventId);
+        void PrepareEncounter()
+        {
+            sLog->outDebug(LOG_FILTER_TSCR, "Barnes Opera Event - Introduction complete - preparing encounter %d", m_uiEventId);
             uint8 index = 0;
             uint8 count = 0;
 
-            switch (m_uiEventId) {
-            case EVENT_OZ:
-                index = 0;
-                count = 4;
-                break;
-            case EVENT_HOOD:
-                index = 4;
-                count = index + 1;
-                break;
-            case EVENT_RAJ:
-                index = 5;
-                count = index + 1;
-                break;
+            switch (m_uiEventId)
+            {
+                case EVENT_OZ:
+                    index = 0;
+                    count = 4;
+                    break;
+                case EVENT_HOOD:
+                    index = 4;
+                    count = index+1;
+                    break;
+                case EVENT_RAJ:
+                    index = 5;
+                    count = index+1;
+                    break;
             }
 
-            for (; index < count; ++index) {
-                uint32 entry = ((uint32) Spawns[index][0]);
+            for (; index < count; ++index)
+            {
+                uint32 entry = ((uint32)Spawns[index][0]);
                 float PosX = Spawns[index][1];
 
-                if (Creature* pCreature = me->SummonCreature(entry, PosX, SPAWN_Y, SPAWN_Z, SPAWN_O, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, HOUR*2*IN_MILLISECONDS)) {
+                if (Creature* creature = me->SummonCreature(entry, PosX, SPAWN_Y, SPAWN_Z, SPAWN_O, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, HOUR*2*IN_MILLISECONDS))
+                {
                     // In case database has bad flags
-                    pCreature->SetUInt32Value(UNIT_FIELD_FLAGS, 0);
-                    pCreature->SetFlag(UNIT_FIELD_FLAGS,
-                            UNIT_FLAG_NON_ATTACKABLE);
+                    creature->SetUInt32Value(UNIT_FIELD_FLAGS, 0);
+                    creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                 }
             }
 
             RaidWiped = false;
         }
 
-        void UpdateAI(const uint32 diff) {
+        void UpdateAI(const uint32 diff)
+        {
             npc_escortAI::UpdateAI(diff);
 
-            if (HasEscortState(STATE_ESCORT_PAUSED)) {
-                if (TalkTimer <= diff) {
-                    if (TalkCount > 3) {
+            if (HasEscortState(STATE_ESCORT_PAUSED))
+            {
+                if (TalkTimer <= diff)
+                {
+                    if (TalkCount > 3)
+                    {
                         if (Creature* pSpotlight = Unit::GetCreature(*me, m_uiSpotlightGUID))
-                            pSpotlight->ForcedDespawn();
+                            pSpotlight->DespawnOrUnsummon();
 
                         SetEscortPaused(false);
                         return;
@@ -258,161 +284,166 @@ public:
 
                     Talk(TalkCount);
                     ++TalkCount;
-                } else
-                    TalkTimer -= diff;
+                } else TalkTimer -= diff;
             }
 
-            if (PerformanceReady) {
-                if (!RaidWiped) {
-                    if (WipeTimer <= diff) {
-                        Map* pMap = me->GetMap();
-                        if (!pMap->IsDungeon())
+            if (PerformanceReady)
+            {
+                if (!RaidWiped)
+                {
+                    if (WipeTimer <= diff)
+                    {
+                        Map* map = me->GetMap();
+                        if (!map->IsDungeon())
                             return;
 
-                        Map::PlayerList const &PlayerList = pMap->GetPlayers();
+                        Map::PlayerList const &PlayerList = map->GetPlayers();
                         if (PlayerList.isEmpty())
                             return;
 
                         RaidWiped = true;
-                        for (Map::PlayerList::const_iterator i =
-                                PlayerList.begin(); i != PlayerList.end();
-                                ++i) {
-                            if (i->getSource()->isAlive()
-                                    && !i->getSource()->isGameMaster()) {
+                        for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
+                        {
+                            if (i->getSource()->isAlive() && !i->getSource()->isGameMaster())
+                            {
                                 RaidWiped = false;
                                 break;
                             }
                         }
 
-                        if (RaidWiped) {
+                        if (RaidWiped)
+                        {
                             RaidWiped = true;
                             EnterEvadeMode();
                             return;
                         }
 
                         WipeTimer = 15000;
-                    } else
-                        WipeTimer -= diff;
+                    } else WipeTimer -= diff;
                 }
+
             }
         }
     };
 
-    bool OnGossipSelect(Player* pPlayer, Creature* pCreature,
-            uint32 /*uiSender*/, uint32 uiAction) {
-        pPlayer->PlayerTalkClass->ClearMenus();
-        npc_barnesAI* pBarnesAI =
-                CAST_AI(npc_barnes::npc_barnesAI, pCreature->AI());
+    bool OnGossipSelect(Player* player, Creature* creature, uint32 /*sender*/, uint32 action)
+    {
+        player->PlayerTalkClass->ClearMenus();
+        npc_barnesAI* pBarnesAI = CAST_AI(npc_barnes::npc_barnesAI, creature->AI());
 
-        switch (uiAction) {
-        case GOSSIP_ACTION_INFO_DEF + 1:
-            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, OZ_GOSSIP2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
-            pPlayer->SEND_GOSSIP_MENU(8971, pCreature->GetGUID());
-            break;
-        case GOSSIP_ACTION_INFO_DEF + 2:
-            pPlayer->CLOSE_GOSSIP_MENU();
-            pBarnesAI->StartEvent();
-            break;
-        case GOSSIP_ACTION_INFO_DEF + 3:
-            pPlayer->CLOSE_GOSSIP_MENU();
-            pBarnesAI->m_uiEventId = EVENT_OZ;
-            sLog->outString(
-                    "TSCR: player (GUID " UI64FMTD ") manually set Opera event to EVENT_OZ",
-                    pPlayer->GetGUID());
-            break;
-        case GOSSIP_ACTION_INFO_DEF + 4:
-            pPlayer->CLOSE_GOSSIP_MENU();
-            pBarnesAI->m_uiEventId = EVENT_HOOD;
-            sLog->outString(
-                    "TSCR: player (GUID " UI64FMTD ") manually set Opera event to EVENT_HOOD",
-                    pPlayer->GetGUID());
-            break;
-        case GOSSIP_ACTION_INFO_DEF + 5:
-            pPlayer->CLOSE_GOSSIP_MENU();
-            pBarnesAI->m_uiEventId = EVENT_RAJ;
-            sLog->outString(
-                    "TSCR: player (GUID " UI64FMTD ") manually set Opera event to EVENT_RAJ",
-                    pPlayer->GetGUID());
-            break;
+        switch (action)
+        {
+            case GOSSIP_ACTION_INFO_DEF+1:
+                player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, OZ_GOSSIP2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
+                player->SEND_GOSSIP_MENU(8971, creature->GetGUID());
+                break;
+            case GOSSIP_ACTION_INFO_DEF+2:
+                player->CLOSE_GOSSIP_MENU();
+                pBarnesAI->StartEvent();
+                break;
+            case GOSSIP_ACTION_INFO_DEF+3:
+                player->CLOSE_GOSSIP_MENU();
+                pBarnesAI->m_uiEventId = EVENT_OZ;
+                sLog->outInfo(LOG_FILTER_TSCR, "TSCR: player (GUID " UI64FMTD ") manually set Opera event to EVENT_OZ", player->GetGUID());
+                break;
+            case GOSSIP_ACTION_INFO_DEF+4:
+                player->CLOSE_GOSSIP_MENU();
+                pBarnesAI->m_uiEventId = EVENT_HOOD;
+                sLog->outInfo(LOG_FILTER_TSCR, "TSCR: player (GUID " UI64FMTD ") manually set Opera event to EVENT_HOOD", player->GetGUID());
+                break;
+            case GOSSIP_ACTION_INFO_DEF+5:
+                player->CLOSE_GOSSIP_MENU();
+                pBarnesAI->m_uiEventId = EVENT_RAJ;
+                sLog->outInfo(LOG_FILTER_TSCR, "TSCR: player (GUID " UI64FMTD ") manually set Opera event to EVENT_RAJ", player->GetGUID());
+                break;
         }
 
         return true;
     }
 
-    bool OnGossipHello(Player* pPlayer, Creature* pCreature) {
-        if (InstanceScript* pInstance = pCreature->GetInstanceScript()) {
+    bool OnGossipHello(Player* player, Creature* creature)
+    {
+        if (InstanceScript* instance = creature->GetInstanceScript())
+        {
             // Check for death of Moroes and if opera event is not done already
-            if (pInstance->GetData(TYPE_MOROES) == DONE
-                    && pInstance->GetData(TYPE_OPERA) != DONE) {
-                pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, OZ_GOSSIP1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
+            if (instance->GetData(TYPE_MOROES) == DONE && instance->GetData(TYPE_OPERA) != DONE)
+            {
+                player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, OZ_GOSSIP1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
 
-                if (pPlayer->isGameMaster()) {
-                    pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_DOT, OZ_GM_GOSSIP1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3);
-                    pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_DOT, OZ_GM_GOSSIP2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 4);
-                    pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_DOT, OZ_GM_GOSSIP3, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 5);
+                if (player->isGameMaster())
+                {
+                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_DOT, OZ_GM_GOSSIP1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3);
+                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_DOT, OZ_GM_GOSSIP2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 4);
+                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_DOT, OZ_GM_GOSSIP3, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 5);
                 }
 
-                if (npc_barnesAI* pBarnesAI = CAST_AI(npc_barnes::npc_barnesAI, pCreature->AI())) {
+                if (npc_barnesAI* pBarnesAI = CAST_AI(npc_barnes::npc_barnesAI, creature->AI()))
+                {
                     if (!pBarnesAI->RaidWiped)
-                        pPlayer->SEND_GOSSIP_MENU(8970, pCreature->GetGUID());
+                        player->SEND_GOSSIP_MENU(8970, creature->GetGUID());
                     else
-                        pPlayer->SEND_GOSSIP_MENU(8975, pCreature->GetGUID());
+                        player->SEND_GOSSIP_MENU(8975, creature->GetGUID());
 
                     return true;
                 }
             }
         }
 
-        pPlayer->SEND_GOSSIP_MENU(8978, pCreature->GetGUID());
+        player->SEND_GOSSIP_MENU(8978, creature->GetGUID());
         return true;
     }
 
-    CreatureAI* GetAI(Creature* pCreature) const {
-        return new npc_barnesAI(pCreature);
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return new npc_barnesAI(creature);
     }
+
 };
 
 /*###
- # npc_berthold
- ####*/
+# npc_berthold
+####*/
 
-enum eBerthold {
-    SPELL_TELEPORT = 39567
+enum eBerthold
+{
+    SPELL_TELEPORT           = 39567
 };
 
 #define GOSSIP_ITEM_TELEPORT    "Teleport me to the Guardian's Library"
 
-class npc_berthold: public CreatureScript {
+class npc_berthold : public CreatureScript
+{
 public:
-    npc_berthold() :
-            CreatureScript("npc_berthold") {
-    }
+    npc_berthold() : CreatureScript("npc_berthold") { }
 
-    bool OnGossipSelect(Player* pPlayer, Creature* /*pCreature*/,
-            uint32 /*uiSender*/, uint32 uiAction) {
-        pPlayer->PlayerTalkClass->ClearMenus();
-        if (uiAction == GOSSIP_ACTION_INFO_DEF + 1)
-            pPlayer->CastSpell(pPlayer, SPELL_TELEPORT, true);
+    bool OnGossipSelect(Player* player, Creature* /*creature*/, uint32 /*sender*/, uint32 action)
+    {
+        player->PlayerTalkClass->ClearMenus();
+        if (action == GOSSIP_ACTION_INFO_DEF + 1)
+            player->CastSpell(player, SPELL_TELEPORT, true);
 
-        pPlayer->CLOSE_GOSSIP_MENU();
+        player->CLOSE_GOSSIP_MENU();
         return true;
     }
 
-    bool OnGossipHello(Player* pPlayer, Creature* pCreature) {
-        if (InstanceScript* pInstance = pCreature->GetInstanceScript()) {
+    bool OnGossipHello(Player* player, Creature* creature)
+    {
+        if (InstanceScript* instance = creature->GetInstanceScript())
+        {
             // Check if Shade of Aran event is done
-            if (pInstance->GetData(TYPE_ARAN) == DONE)
-                pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_TELEPORT, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
+            if (instance->GetData(TYPE_ARAN) == DONE)
+                player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_TELEPORT, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
         }
 
-        pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetGUID());
+        player->SEND_GOSSIP_MENU(player->GetGossipTextId(creature), creature->GetGUID());
         return true;
     }
+
 };
 
 /*###
- # npc_image_of_medivh
- ####*/
+# npc_image_of_medivh
+####*/
 
 #define SAY_DIALOG_MEDIVH_1         "You've got my attention, dragon. You'll find I'm not as easily scared as the villagers below."
 #define SAY_DIALOG_ARCANAGOS_2      "Your dabbling in the arcane has gone too far, Medivh. You've attracted the attention of powers beyond your understanding. You must leave Karazhan at once!"
@@ -430,26 +461,27 @@ public:
 #define SPELL_CONFLAGRATION_BLAST   30977
 #define SPELL_MANA_SHIELD           31635
 
-static float MedivPos[4] = { -11161.49f, -1902.24f, 91.48f, 1.94f };
-static float ArcanagosPos[4] = { -11169.75f, -1881.48f, 95.39f, 4.83f };
+static float MedivPos[4] = {-11161.49f, -1902.24f, 91.48f, 1.94f};
+static float ArcanagosPos[4] = {-11169.75f, -1881.48f, 95.39f, 4.83f};
 
-class npc_image_of_medivh: public CreatureScript {
+class npc_image_of_medivh : public CreatureScript
+{
 public:
-    npc_image_of_medivh() :
-            CreatureScript("npc_image_of_medivh") {
+    npc_image_of_medivh() : CreatureScript("npc_image_of_medivh") { }
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return new npc_image_of_medivhAI(creature);
     }
 
-    CreatureAI* GetAI(Creature* pCreature) const {
-        return new npc_image_of_medivhAI(pCreature);
-    }
-
-    struct npc_image_of_medivhAI: public ScriptedAI {
-        npc_image_of_medivhAI(Creature* c) :
-                ScriptedAI(c) {
-            pInstance = c->GetInstanceScript();
+    struct npc_image_of_medivhAI : public ScriptedAI
+    {
+        npc_image_of_medivhAI(Creature* creature) : ScriptedAI(creature)
+        {
+            instance = creature->GetInstanceScript();
         }
 
-        InstanceScript *pInstance;
+        InstanceScript* instance;
 
         uint64 ArcanagosGUID;
 
@@ -460,79 +492,77 @@ public:
 
         bool EventStarted;
 
-        void Reset() {
+        void Reset()
+        {
             ArcanagosGUID = 0;
 
-            if (pInstance && pInstance->GetData64(DATA_IMAGE_OF_MEDIVH) == 0) {
-                pInstance->SetData64(DATA_IMAGE_OF_MEDIVH, me->GetGUID());
-                (*me).GetMotionMaster()->MovePoint(1, MedivPos[0], MedivPos[1],
-                        MedivPos[2]);
+            if (instance && instance->GetData64(DATA_IMAGE_OF_MEDIVH) == 0)
+            {
+                instance->SetData64(DATA_IMAGE_OF_MEDIVH, me->GetGUID());
+                (*me).GetMotionMaster()->MovePoint(1, MedivPos[0], MedivPos[1], MedivPos[2]);
                 Step = 0;
-            } else {
-                me->DealDamage(me, me->GetHealth(), NULL, DIRECT_DAMAGE,
-                        SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+            }else
+            {
+                me->DealDamage(me, me->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
                 me->RemoveCorpse();
             }
         }
-        void EnterCombat(Unit* /*who*/) {
-        }
+        void EnterCombat(Unit* /*who*/) {}
 
-        void MovementInform(uint32 type, uint32 id) {
+        void MovementInform(uint32 type, uint32 id)
+        {
             if (type != POINT_MOTION_TYPE)
                 return;
-            if (id == 1) {
+            if (id == 1)
+            {
                 StartEvent();
                 me->SetOrientation(MedivPos[3]);
                 me->SetOrientation(MedivPos[3]);
             }
         }
 
-        void StartEvent() {
+        void StartEvent()
+        {
             Step = 1;
             EventStarted = true;
-            Creature* Arcanagos = me->SummonCreature(MOB_ARCANAGOS,
-                    ArcanagosPos[0], ArcanagosPos[1], ArcanagosPos[2], 0,
-                    TEMPSUMMON_CORPSE_TIMED_DESPAWN, 20000);
+            Creature* Arcanagos = me->SummonCreature(MOB_ARCANAGOS, ArcanagosPos[0], ArcanagosPos[1], ArcanagosPos[2], 0, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 20000);
             if (!Arcanagos)
                 return;
             ArcanagosGUID = Arcanagos->GetGUID();
-            Arcanagos->AddUnitMovementFlag(MOVEMENTFLAG_LEVITATING);
-            (*Arcanagos).GetMotionMaster()->MovePoint(0, ArcanagosPos[0],
-                    ArcanagosPos[1], ArcanagosPos[2]);
+            Arcanagos->SetDisableGravity(true);
+            (*Arcanagos).GetMotionMaster()->MovePoint(0, ArcanagosPos[0], ArcanagosPos[1], ArcanagosPos[2]);
             Arcanagos->SetOrientation(ArcanagosPos[3]);
             me->SetOrientation(MedivPos[3]);
             YellTimer = 10000;
         }
 
-        uint32 NextStep(uint32 Step) {
-            Unit* arca = Unit::GetUnit((*me), ArcanagosGUID);
-            Map* pMap = me->GetMap();
-            switch (Step) {
-            case 0:
-                return 9999999;
+        uint32 NextStep(uint32 Step)
+        {
+            Unit* arca = Unit::GetUnit(*me, ArcanagosGUID);
+            Map* map = me->GetMap();
+            switch (Step)
+            {
+            case 0: return 9999999;
             case 1:
-                me->MonsterYell(SAY_DIALOG_MEDIVH_1, LANG_UNIVERSAL, NULL);
+                me->MonsterYell(SAY_DIALOG_MEDIVH_1, LANG_UNIVERSAL, 0);
                 return 10000;
             case 2:
                 if (arca)
-                    CAST_CRE(arca)->MonsterYell(SAY_DIALOG_ARCANAGOS_2,
-                            LANG_UNIVERSAL, NULL);
+                    CAST_CRE(arca)->MonsterYell(SAY_DIALOG_ARCANAGOS_2, LANG_UNIVERSAL, 0);
                 return 20000;
             case 3:
-                me->MonsterYell(SAY_DIALOG_MEDIVH_3, LANG_UNIVERSAL, NULL);
+                me->MonsterYell(SAY_DIALOG_MEDIVH_3, LANG_UNIVERSAL, 0);
                 return 10000;
             case 4:
                 if (arca)
-                    CAST_CRE(arca)->MonsterYell(SAY_DIALOG_ARCANAGOS_4,
-                            LANG_UNIVERSAL, NULL);
+                    CAST_CRE(arca)->MonsterYell(SAY_DIALOG_ARCANAGOS_4, LANG_UNIVERSAL, 0);
                 return 20000;
             case 5:
-                me->MonsterYell(SAY_DIALOG_MEDIVH_5, LANG_UNIVERSAL, NULL);
+                me->MonsterYell(SAY_DIALOG_MEDIVH_5, LANG_UNIVERSAL, 0);
                 return 20000;
             case 6:
                 if (arca)
-                    CAST_CRE(arca)->MonsterYell(SAY_DIALOG_ARCANAGOS_6,
-                            LANG_UNIVERSAL, NULL);
+                    CAST_CRE(arca)->MonsterYell(SAY_DIALOG_ARCANAGOS_6, LANG_UNIVERSAL, 0);
                 return 10000;
             case 7:
                 FireArcanagosTimer = 500;
@@ -550,74 +580,76 @@ public:
                 return 1000;
             case 11:
                 if (arca)
-                    CAST_CRE(arca)->MonsterYell(SAY_DIALOG_ARCANAGOS_8,
-                            LANG_UNIVERSAL, NULL);
+                    CAST_CRE(arca)->MonsterYell(SAY_DIALOG_ARCANAGOS_8, LANG_UNIVERSAL, 0);
                 return 5000;
             case 12:
-                arca->GetMotionMaster()->MovePoint(0, -11010.82f, -1761.18f,
-                        156.47f);
+                arca->GetMotionMaster()->MovePoint(0, -11010.82f, -1761.18f, 156.47f);
                 arca->setActive(true);
                 arca->InterruptNonMeleeSpells(true);
                 arca->SetSpeed(MOVE_FLIGHT, 2.0f);
                 return 10000;
             case 13:
-                me->MonsterYell(SAY_DIALOG_MEDIVH_9, LANG_UNIVERSAL, NULL);
+                me->MonsterYell(SAY_DIALOG_MEDIVH_9, LANG_UNIVERSAL, 0);
                 return 10000;
             case 14:
                 me->SetVisible(false);
                 me->ClearInCombat();
 
-                if (pMap->IsDungeon()) {
-                    InstanceMap::PlayerList const &PlayerList =
-                            pMap->GetPlayers();
-                    for (InstanceMap::PlayerList::const_iterator i =
-                            PlayerList.begin(); i != PlayerList.end(); ++i) {
-                        if (i->getSource()->isAlive()) {
-                            if (i->getSource()->GetQuestStatus(9645)
-                                    == QUEST_STATUS_INCOMPLETE)
+                if (map->IsDungeon())
+                {
+                    InstanceMap::PlayerList const &PlayerList = map->GetPlayers();
+                    for (InstanceMap::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
+                    {
+                        if (i->getSource()->isAlive())
+                        {
+                            if (i->getSource()->GetQuestStatus(9645) == QUEST_STATUS_INCOMPLETE)
                                 i->getSource()->CompleteQuest(9645);
                         }
                     }
                 }
                 return 50000;
             case 15:
-                arca->DealDamage(arca, arca->GetHealth(), NULL, DIRECT_DAMAGE,
-                        SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+                arca->DealDamage(arca, arca->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
                 return 5000;
-            default:
-                return 9999999;
+            default : return 9999999;
             }
+
         }
 
-        void UpdateAI(const uint32 diff) {
-            if (YellTimer <= diff) {
+        void UpdateAI(const uint32 diff)
+        {
+
+            if (YellTimer <= diff)
+            {
                 if (EventStarted)
                     YellTimer = NextStep(Step++);
-            } else
-                YellTimer -= diff;
+            } else YellTimer -= diff;
 
-            if (Step >= 7 && Step <= 12) {
-                Unit* arca = Unit::GetUnit((*me), ArcanagosGUID);
+            if (Step >= 7 && Step <= 12)
+            {
+                Unit* arca = Unit::GetUnit(*me, ArcanagosGUID);
 
-                if (FireArcanagosTimer <= diff) {
+                if (FireArcanagosTimer <= diff)
+                {
                     if (arca)
                         arca->CastSpell(me, SPELL_FIRE_BALL, false);
                     FireArcanagosTimer = 6000;
-                } else
-                    FireArcanagosTimer -= diff;
+                } else FireArcanagosTimer -= diff;
 
-                if (FireMedivhTimer <= diff) {
+                if (FireMedivhTimer <= diff)
+                {
                     if (arca)
                         DoCast(arca, SPELL_FIRE_BALL);
                     FireMedivhTimer = 5000;
-                } else
-                    FireMedivhTimer -= diff;
+                } else FireMedivhTimer -= diff;
             }
         }
     };
+
 };
 
-void AddSC_karazhan() {
+void AddSC_karazhan()
+{
     new npc_barnes();
     new npc_berthold();
     new npc_image_of_medivh();

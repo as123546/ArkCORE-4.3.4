@@ -1,7 +1,5 @@
 /*
- * Copyright (C) 2008 - 2012 TrinityCore <http://www.trinitycore.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -34,61 +32,59 @@
 
 class TCSoapRunnable: public ACE_Based::Runnable
 {
-public:
-    TCSoapRunnable ()
-    {
-    }
-    void run ();
-    void setListenArguments (std::string host, uint16 port)
-    {
-        m_host = host;
-        m_port = port;
-    }
-private:
-    void process_message (ACE_Message_Block* mb);
+    public:
+        TCSoapRunnable() { }
+        void run();
+        void setListenArguments(std::string host, uint16 port)
+        {
+            m_host = host;
+            m_port = port;
+        }
+    private:
+        void process_message(ACE_Message_Block* mb);
 
-    std::string m_host;
-    uint16 m_port;
+        std::string m_host;
+        uint16 m_port;
 };
 
 class SOAPCommand
 {
-public:
-    SOAPCommand () :
-            pendingCommands(0, USYNC_THREAD, "pendingCommands")
-    {
-    }
+    public:
+        SOAPCommand():
+            pendingCommands(0, USYNC_THREAD, "pendingCommands"), m_success(false)
+        {
+        }
 
-    ~SOAPCommand ()
-    {
-    }
+        ~SOAPCommand()
+        {
+        }
 
-    void appendToPrintBuffer (const char* msg)
-    {
-        m_printBuffer += msg;
-    }
+        void appendToPrintBuffer(const char* msg)
+        {
+            m_printBuffer += msg;
+        }
 
-    ACE_Semaphore pendingCommands;
+        ACE_Semaphore pendingCommands;
 
-    void setCommandSuccess (bool val)
-    {
-        m_success = val;
-    }
+        void setCommandSuccess(bool val)
+        {
+            m_success = val;
+        }
 
-    bool hasCommandSucceeded () const
-    {
-        return m_success;
-    }
+        bool hasCommandSucceeded() const
+        {
+            return m_success;
+        }
 
-    static void print (void* callbackArg, const char* msg)
-    {
-        ((SOAPCommand*) callbackArg)->appendToPrintBuffer(msg);
-    }
+        static void print(void* callbackArg, const char* msg)
+        {
+            ((SOAPCommand*)callbackArg)->appendToPrintBuffer(msg);
+        }
 
-    static void commandFinished (void* callbackArg, bool success);
+        static void commandFinished(void* callbackArg, bool success);
 
-    bool m_success;
-    std::string m_printBuffer;
+        bool m_success;
+        std::string m_printBuffer;
 };
 
 #endif

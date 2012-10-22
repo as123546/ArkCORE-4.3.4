@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
- *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
- *
- * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -19,7 +15,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "violet_hold.h"
 
 enum Spells
@@ -51,15 +48,7 @@ enum Yells
     SAY_WHISPER                                 = -1608044
 };
 
-enum eActions
-{
-    ACTION_VOID_DEAD,
-};
-
-enum eAchievements
-{
-    ACHIEVEMENTS_THE_VOID_DANCE                 = 2153,
-};
+#define DATA_VOID_DANCE                         2153
 
 class boss_zuramat : public CreatureScript
 {
@@ -73,23 +62,20 @@ public:
 
     struct boss_zuramatAI : public ScriptedAI
     {
-        boss_zuramatAI(Creature* c) : ScriptedAI(c), Summons(me)
+        boss_zuramatAI(Creature* creature) : ScriptedAI(creature)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
         InstanceScript* instance;
-        SummonList Summons;
 
         uint32 SpellVoidShiftTimer;
         uint32 SpellSummonVoidTimer;
         uint32 SpellShroudOfDarknessTimer;
-
-        bool bVoidWalkerKilled;
+        bool voidDance;
 
         void Reset()
         {
-            Summons.DespawnAll();
             if (instance)
             {
                 if (instance->GetData(DATA_WAVE_COUNT) == 6)
@@ -101,23 +87,12 @@ public:
             SpellShroudOfDarknessTimer = 22000;
             SpellVoidShiftTimer = 15000;
             SpellSummonVoidTimer = 12000;
-
-            bVoidWalkerKilled = false;
-        }
-
-        void DoAction(int32 const action)
-        {
-            switch (action)
-            {
-            case ACTION_VOID_DEAD:
-                bVoidWalkerKilled = true;
-                break;
-            }
+            voidDance = true;
         }
 
         void AttackStart(Unit* who)
         {
-            if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_OOC_NOT_ATTACKABLE) || me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
+            if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC) || me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
                 return;
 
             if (me->Attack(who, true))
@@ -177,6 +152,20 @@ public:
             DoMeleeAttackIfReady();
         }
 
+        void SummonedCreatureDies(Creature* summoned, Unit* /*who*/)
+        {
+            if (summoned->GetEntry() == CREATURE_VOID_SENTRY)
+                voidDance = false;
+        }
+
+        uint32 GetData(uint32 type)
+        {
+            if (type == DATA_VOID_DANCE)
+                return voidDance ? 1 : 0;
+
+            return 0;
+        }
+
         void JustDied(Unit* /*killer*/)
         {
             DoScriptText(SAY_DEATH, me);
@@ -185,26 +174,15 @@ public:
             {
                 if (instance->GetData(DATA_WAVE_COUNT) == 6)
                 {
-                    if (IsHeroic() && instance->GetData(DATA_1ST_BOSS_EVENT) == DONE)
-                        me->RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
-
                     instance->SetData(DATA_1ST_BOSS_EVENT, DONE);
                     instance->SetData(DATA_WAVE_COUNT, 7);
                 }
                 else if (instance->GetData(DATA_WAVE_COUNT) == 12)
                 {
-                    if (IsHeroic() && instance->GetData(DATA_2ND_BOSS_EVENT) == DONE)
-                        me->RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
-
                     instance->SetData(DATA_2ND_BOSS_EVENT, DONE);
                     instance->SetData(DATA_WAVE_COUNT, 13);
                 }
-
-                if (GetDifficulty() == DUNGEON_DIFFICULTY_HEROIC && !bVoidWalkerKilled)
-                    instance->DoCompleteAchievement(ACHIEVEMENTS_THE_VOID_DANCE);
             }
-
-            Summons.DespawnAll();
         }
 
         void KilledUnit(Unit* victim)
@@ -217,73 +195,36 @@ public:
 
         void JustSummoned(Creature* summon)
         {
-            Summons.Summon(summon);
+            summon->AI()->AttackStart(me->getVictim());
+            summon->AI()->DoCastAOE(SPELL_ZURAMAT_ADD_2);
+            summon->SetPhaseMask(17, true);
         }
     };
+
 };
 
-class npc_void_sentry : public CreatureScript
+class achievement_void_dance : public AchievementCriteriaScript
 {
-public:
-    npc_void_sentry() : CreatureScript("npc_void_sentry") { }
-
-    CreatureAI* GetAI(Creature* pCreature) const
-    {
-        return new npc_void_sentryAI (pCreature);
-    }
-
-    struct npc_void_sentryAI : public ScriptedAI
-    {
-        npc_void_sentryAI(Creature* c) : ScriptedAI(c)
+    public:
+        achievement_void_dance() : AchievementCriteriaScript("achievement_void_dance")
         {
-            m_pInstance = c->GetInstanceScript();
-            me->setFaction(14);
-
-            if (m_pInstance)
-                if (Creature* Zuramat = Creature::GetCreature((*me), m_pInstance->GetData64(DATA_ZURAMAT)))
-                    Zuramat->AI()->JustSummoned(me);
         }
 
-        InstanceScript* m_pInstance;
-
-        Unit* SelectPlayerTargetInRange(float range)
+        bool OnCheck(Player* /*player*/, Unit* target)
         {
-            Player* target = NULL;
-            Trinity::AnyPlayerInObjectRangeCheck u_check(me, range, true);
-            Trinity::PlayerSearcher<Trinity::AnyPlayerInObjectRangeCheck> searcher(me, target, u_check);
-            me->VisitNearbyObject(range, searcher);
-            return target;
-        }
+            if (!target)
+                return false;
 
-        void Reset()
-        {
-            if (Unit* target = SelectPlayerTargetInRange(100.0f))
-                me->AI()->AttackStart(target);
+            if (Creature* Zuramat = target->ToCreature())
+                if (Zuramat->AI()->GetData(DATA_VOID_DANCE))
+                    return true;
 
-            DoCastAOE(DUNGEON_MODE(SPELL_ZURAMAT_ADD_2, H_SPELL_ZURAMAT_ADD_2), true);
-            me->SetPhaseMask(17, true);
+            return false;
         }
-
-        void JustDied(Unit* /*killer*/)
-        {
-            if (Creature* Zuramat = Creature::GetCreature((*me), m_pInstance->GetData64(DATA_ZURAMAT)))
-                Zuramat->AI()->DoAction(ACTION_VOID_DEAD);
-        }
-
-        void UpdateAI(const uint32 diff)
-        {
-            if (!UpdateVictim())
-                return;
-        }
-    };
 };
-
-/*
-UPDATE creature_template SET scriptname = 'npc_void_sentry' WHERE entry = 29364;
-*/
 
 void AddSC_boss_zuramat()
 {
     new boss_zuramat();
-    new npc_void_sentry();
+    new achievement_void_dance();
 }

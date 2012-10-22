@@ -1,27 +1,19 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 /* ScriptData
@@ -31,7 +23,8 @@ SDComment: Should reset if raid are out of room.
 SDCategory: Tempest Keep, The Eye
 EndScriptData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "the_eye.h"
 
 enum eEnums
@@ -61,12 +54,12 @@ class boss_void_reaver : public CreatureScript
 
         struct boss_void_reaverAI : public ScriptedAI
         {
-            boss_void_reaverAI(Creature* pCreature) : ScriptedAI(pCreature)
+            boss_void_reaverAI(Creature* creature) : ScriptedAI(creature)
             {
-                pInstance = pCreature->GetInstanceScript();
+                instance = creature->GetInstanceScript();
             }
 
-            InstanceScript* pInstance;
+            InstanceScript* instance;
 
             uint32 Pounding_Timer;
             uint32 ArcaneOrb_Timer;
@@ -84,30 +77,30 @@ class boss_void_reaver : public CreatureScript
 
                 Enraged = false;
 
-                        if (pInstance && me->isAlive())
-                            pInstance->SetData(DATA_VOIDREAVEREVENT, NOT_STARTED);
+                if (instance && me->isAlive())
+                    instance->SetData(DATA_VOIDREAVEREVENT, NOT_STARTED);
             }
 
-            void KilledUnit(Unit * /*victim*/)
+            void KilledUnit(Unit* /*victim*/)
             {
                 DoScriptText(RAND(SAY_SLAY1, SAY_SLAY2, SAY_SLAY3), me);
             }
 
-            void JustDied(Unit * /*victim*/)
+            void JustDied(Unit* /*killer*/)
             {
                 DoScriptText(SAY_DEATH, me);
                 DoZoneInCombat();
 
-                if (pInstance)
-                    pInstance->SetData(DATA_VOIDREAVEREVENT, DONE);
+                if (instance)
+                    instance->SetData(DATA_VOIDREAVEREVENT, DONE);
             }
 
-            void EnterCombat(Unit * /*who*/)
+            void EnterCombat(Unit* /*who*/)
             {
                 DoScriptText(SAY_AGGRO, me);
 
-                if (pInstance)
-                    pInstance->SetData(DATA_VOIDREAVEREVENT, IN_PROGRESS);
+                if (instance)
+                    instance->SetData(DATA_VOIDREAVEREVENT, IN_PROGRESS);
             }
 
             void UpdateAI(const uint32 diff)
@@ -126,30 +119,27 @@ class boss_void_reaver : public CreatureScript
                 // Arcane Orb
                 if (ArcaneOrb_Timer <= diff)
                 {
-                    Unit *pTarget = NULL;
-                    std::list<HostileReference *> t_list = me->getThreatManager().getThreatList();
-                    std::vector<Unit *> target_list;
-                    for (std::list<HostileReference *>::const_iterator itr = t_list.begin(); itr!= t_list.end(); ++itr)
+                    Unit* target = NULL;
+                    std::list<HostileReference*> t_list = me->getThreatManager().getThreatList();
+                    std::vector<Unit*> target_list;
+                    for (std::list<HostileReference*>::const_iterator itr = t_list.begin(); itr!= t_list.end(); ++itr)
                     {
-                        pTarget = Unit::GetUnit(*me, (*itr)->getUnitGuid());
-                        if (!pTarget)
+                        target = Unit::GetUnit(*me, (*itr)->getUnitGuid());
+                        if (!target)
                             continue;
-                        // exclude pets & totems
-                        if (pTarget->GetTypeId() != TYPEID_PLAYER)
-                            continue;
-                        //18 yard radius minimum
-                        if (pTarget && pTarget->GetTypeId() == TYPEID_PLAYER && pTarget->isAlive() && !pTarget->IsWithinDist(me, 18, false))
-                            target_list.push_back(pTarget);
-                        pTarget = NULL;
+                        // exclude pets & totems, 18 yard radius minimum
+                        if (target->GetTypeId() == TYPEID_PLAYER && target->isAlive() && !target->IsWithinDist(me, 18, false))
+                            target_list.push_back(target);
+                        target = NULL;
                     }
 
-                    if (target_list.size())
-                        pTarget = *(target_list.begin()+rand()%target_list.size());
+                    if (!target_list.empty())
+                        target = *(target_list.begin()+rand()%target_list.size());
                     else
-                        pTarget = me->getVictim();
+                        target = me->getVictim();
 
-                    if (pTarget)
-                        me->CastSpell(pTarget->GetPositionX(), pTarget->GetPositionY(), pTarget->GetPositionZ(), SPELL_ARCANE_ORB, false, NULL, NULL, NULL, pTarget);
+                    if (target)
+                        me->CastSpell(target, SPELL_ARCANE_ORB, false, NULL, NULL, 0);
                     ArcaneOrb_Timer = 3000;
                 }
                 else
@@ -190,3 +180,4 @@ void AddSC_boss_void_reaver()
 {
     new boss_void_reaver();
 }
+

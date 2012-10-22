@@ -1,76 +1,68 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 /* ScriptData
- SDName: Guards
- SD%Complete: 100
- SDComment:
- SDCategory: Guards
- EndScriptData */
+SDName: Guards
+SD%Complete: 100
+SDComment:
+SDCategory: Guards
+EndScriptData */
 
 /* ContentData
- guard_generic
- guard_shattrath_aldor
- guard_shattrath_scryer
- EndContentData */
+guard_generic
+guard_shattrath_aldor
+guard_shattrath_scryer
+EndContentData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "GuardAI.h"
 
 enum GuardGeneric
 {
-    GENERIC_CREATURE_COOLDOWN = 5000,
+    GENERIC_CREATURE_COOLDOWN       = 5000,
 
-    SAY_GUARD_SIL_AGGRO1 = -1070001, SAY_GUARD_SIL_AGGRO2 = -1070002, SAY_GUARD_SIL_AGGRO3 = -1070003,
+    SAY_GUARD_SIL_AGGRO1            = -1070001,
+    SAY_GUARD_SIL_AGGRO2            = -1070002,
+    SAY_GUARD_SIL_AGGRO3            = -1070003,
 
-    NPC_CENARION_HOLD_INFANTRY = 15184, NPC_STORMWIND_CITY_GUARD = 68, NPC_STORMWIND_CITY_PATROLLER = 1976, NPC_ORGRIMMAR_GRUNT = 3296
+    NPC_CENARION_HOLD_INFANTRY      = 15184,
+    NPC_STORMWIND_CITY_GUARD        = 68,
+    NPC_STORMWIND_CITY_PATROLLER    = 1976,
+    NPC_ORGRIMMAR_GRUNT             = 3296
 };
 
-class guard_generic: public CreatureScript
+class guard_generic : public CreatureScript
 {
 public:
-    guard_generic () :
-            CreatureScript("guard_generic")
-    {
-    }
+    guard_generic() : CreatureScript("guard_generic") { }
 
-    struct guard_genericAI: public GuardAI
+    struct guard_genericAI : public GuardAI
     {
-        guard_genericAI (Creature* creature) :
-                GuardAI(creature)
-        {
-        }
+        guard_genericAI(Creature* creature) : GuardAI(creature) {}
 
-        void Reset ()
+        void Reset()
         {
             globalCooldown = 0;
             buffTimer = 0;
         }
 
-        void EnterCombat (Unit* who)
+        void EnterCombat(Unit* who)
         {
             if (me->GetEntry() == NPC_CENARION_HOLD_INFANTRY)
                 DoScriptText(RAND(SAY_GUARD_SIL_AGGRO1, SAY_GUARD_SIL_AGGRO2, SAY_GUARD_SIL_AGGRO3), me, who);
@@ -78,9 +70,9 @@ public:
                 DoCast(who, spell->Id);
         }
 
-        void UpdateAI (const uint32 diff)
+        void UpdateAI(const uint32 diff)
         {
-            //Always decrease our global cooldown first
+             //Always decrease our global cooldown first
             if (globalCooldown > diff)
                 globalCooldown -= diff;
             else
@@ -92,7 +84,7 @@ public:
                 if (buffTimer <= diff)
                 {
                     //Find a spell that targets friendly and applies an aura (these are generally buffs)
-                    SpellInfo const *info = SelectSpell(me, 0, 0, SELECT_TARGET_ANY_FRIEND, 0, 0, 0, 0, SELECT_EFFECT_AURA);
+                    SpellInfo const* info = SelectSpell(me, 0, 0, SELECT_TARGET_ANY_FRIEND, 0, 0, 0, 0, SELECT_EFFECT_AURA);
 
                     if (info && !globalCooldown)
                     {
@@ -104,12 +96,9 @@ public:
 
                         //Set our timer to 10 minutes before rebuff
                         buffTimer = 600000;
-                    }          //Try again in 30 seconds
-                    else
-                        buffTimer = 30000;
-                }
-                else
-                    buffTimer -= diff;
+                    }                                                   //Try again in 30 seconds
+                    else buffTimer = 30000;
+                } else buffTimer -= diff;
             }
 
             //Return since we have no target
@@ -123,7 +112,7 @@ public:
                 if (me->IsWithinMeleeRange(me->getVictim()))
                 {
                     bool healing = false;
-                    SpellInfo const *info = NULL;
+                    SpellInfo const* info = NULL;
 
                     //Select a healing spell if less than 30% hp
                     if (me->HealthBelowPct(30))
@@ -159,7 +148,7 @@ public:
                 if (!me->IsNonMeleeSpellCasted(false))
                 {
                     bool healing = false;
-                    SpellInfo const *info = NULL;
+                    SpellInfo const* info = NULL;
 
                     //Select a healing spell if less than 30% hp ONLY 33% of the time
                     if (me->HealthBelowPct(30) && 33 > urand(0, 99))
@@ -189,8 +178,8 @@ public:
 
                         //Set our global cooldown
                         globalCooldown = GENERIC_CREATURE_COOLDOWN;
-                    }          //If no spells available and we arn't moving run to target
-                    else if (me->GetMotionMaster()->GetCurrentMovementGeneratorType() != TARGETED_MOTION_TYPE)
+                    }                                               //If no spells available and we arn't moving run to target
+                    else if (me->GetMotionMaster()->GetCurrentMovementGeneratorType() != CHASE_MOTION_TYPE)
                     {
                         //Cancel our current spell and then mutate new movement generator
                         me->InterruptNonMeleeSpells(false);
@@ -203,39 +192,43 @@ public:
             DoMeleeAttackIfReady();
         }
 
-        void DoReplyToTextEmote (uint32 emote)
+        void DoReplyToTextEmote(uint32 emote)
         {
             switch (emote)
             {
-            case TEXTEMOTE_KISS:
-                me->HandleEmoteCommand(EMOTE_ONESHOT_BOW);
-                break;
-            case TEXTEMOTE_WAVE:
-                me->HandleEmoteCommand(EMOTE_ONESHOT_WAVE);
-                break;
-            case TEXTEMOTE_SALUTE:
-                me->HandleEmoteCommand(EMOTE_ONESHOT_SALUTE);
-                break;
-            case TEXTEMOTE_SHY:
-                me->HandleEmoteCommand(EMOTE_ONESHOT_FLEX);
-                break;
-            case TEXTEMOTE_RUDE:
-            case TEXTEMOTE_CHICKEN:
-                me->HandleEmoteCommand(EMOTE_ONESHOT_POINT);
-                break;
+                case TEXT_EMOTE_KISS:
+                    me->HandleEmoteCommand(EMOTE_ONESHOT_BOW);
+                    break;
+
+                case TEXT_EMOTE_WAVE:
+                    me->HandleEmoteCommand(EMOTE_ONESHOT_WAVE);
+                    break;
+
+                case TEXT_EMOTE_SALUTE:
+                    me->HandleEmoteCommand(EMOTE_ONESHOT_SALUTE);
+                    break;
+
+                case TEXT_EMOTE_SHY:
+                    me->HandleEmoteCommand(EMOTE_ONESHOT_FLEX);
+                    break;
+
+                case TEXT_EMOTE_RUDE:
+                case TEXT_EMOTE_CHICKEN:
+                    me->HandleEmoteCommand(EMOTE_ONESHOT_POINT);
+                    break;
             }
         }
 
-        void ReceiveEmote (Player* player, uint32 textEmote)
+        void ReceiveEmote(Player* player, uint32 textEmote)
         {
             switch (me->GetEntry())
             {
-            case NPC_STORMWIND_CITY_GUARD:
-            case NPC_STORMWIND_CITY_PATROLLER:
-            case NPC_ORGRIMMAR_GRUNT:
-                break;
-            default:
-                return;
+                case NPC_STORMWIND_CITY_GUARD:
+                case NPC_STORMWIND_CITY_PATROLLER:
+                case NPC_ORGRIMMAR_GRUNT:
+                    break;
+                default:
+                    return;
             }
 
             if (!me->IsFriendlyTo(player))
@@ -249,33 +242,30 @@ public:
         uint32 buffTimer;
     };
 
-    CreatureAI *GetAI (Creature* creature) const
+    CreatureAI* GetAI(Creature* creature) const
     {
-        return new guard_genericAI(creature);
+       return new guard_genericAI(creature);
     }
 };
 
 enum GuardShattrath
 {
-    SPELL_BANISHED_SHATTRATH_A = 36642, SPELL_BANISHED_SHATTRATH_S = 36671, SPELL_BANISH_TELEPORT = 36643, SPELL_EXILE = 39533
+    SPELL_BANISHED_SHATTRATH_A = 36642,
+    SPELL_BANISHED_SHATTRATH_S = 36671,
+    SPELL_BANISH_TELEPORT      = 36643,
+    SPELL_EXILE                = 39533
 };
 
-class guard_shattrath_scryer: public CreatureScript
+class guard_shattrath_scryer : public CreatureScript
 {
 public:
-    guard_shattrath_scryer () :
-            CreatureScript("guard_shattrath_scryer")
-    {
-    }
+    guard_shattrath_scryer() : CreatureScript("guard_shattrath_scryer") { }
 
-    struct guard_shattrath_scryerAI: public GuardAI
+    struct guard_shattrath_scryerAI : public GuardAI
     {
-        guard_shattrath_scryerAI (Creature* creature) :
-                GuardAI(creature)
-        {
-        }
+        guard_shattrath_scryerAI(Creature* creature) : GuardAI(creature) {}
 
-        void Reset ()
+        void Reset()
         {
             banishTimer = 5000;
             exileTimer = 8500;
@@ -283,7 +273,7 @@ public:
             canTeleport = false;
         }
 
-        void UpdateAI (const uint32 diff)
+        void UpdateAI(const uint32 diff)
         {
             if (!UpdateVictim())
                 return;
@@ -300,9 +290,7 @@ public:
                     playerGUID = 0;
                     exileTimer = 8500;
                     canTeleport = false;
-                }
-                else
-                    exileTimer -= diff;
+                } else exileTimer -= diff;
             }
             else if (banishTimer <= diff)
             {
@@ -315,9 +303,7 @@ public:
                     if (playerGUID)
                         canTeleport = true;
                 }
-            }
-            else
-                banishTimer -= diff;
+            } else banishTimer -= diff;
 
             DoMeleeAttackIfReady();
         }
@@ -329,28 +315,22 @@ public:
         bool canTeleport;
     };
 
-    CreatureAI *GetAI (Creature *creature) const
+    CreatureAI* GetAI(Creature* creature) const
     {
         return new guard_shattrath_scryerAI(creature);
     }
 };
 
-class guard_shattrath_aldor: public CreatureScript
+class guard_shattrath_aldor : public CreatureScript
 {
 public:
-    guard_shattrath_aldor () :
-            CreatureScript("guard_shattrath_aldor")
-    {
-    }
+    guard_shattrath_aldor() : CreatureScript("guard_shattrath_aldor") { }
 
-    struct guard_shattrath_aldorAI: public GuardAI
+    struct guard_shattrath_aldorAI : public GuardAI
     {
-        guard_shattrath_aldorAI (Creature* creature) :
-                GuardAI(creature)
-        {
-        }
+        guard_shattrath_aldorAI(Creature* creature) : GuardAI(creature) {}
 
-        void Reset ()
+        void Reset()
         {
             banishTimer = 5000;
             exileTimer = 8500;
@@ -358,7 +338,7 @@ public:
             canTeleport = false;
         }
 
-        void UpdateAI (const uint32 diff)
+        void UpdateAI(const uint32 diff)
         {
             if (!UpdateVictim())
                 return;
@@ -375,9 +355,7 @@ public:
                     playerGUID = 0;
                     exileTimer = 8500;
                     canTeleport = false;
-                }
-                else
-                    exileTimer -= diff;
+                } else exileTimer -= diff;
             }
             else if (banishTimer <= diff)
             {
@@ -390,9 +368,7 @@ public:
                     if (playerGUID)
                         canTeleport = true;
                 }
-            }
-            else
-                banishTimer -= diff;
+            } else banishTimer -= diff;
 
             DoMeleeAttackIfReady();
         }
@@ -403,13 +379,13 @@ public:
         bool canTeleport;
     };
 
-    CreatureAI *GetAI (Creature *creature) const
+    CreatureAI* GetAI(Creature* creature) const
     {
         return new guard_shattrath_aldorAI(creature);
     }
 };
 
-void AddSC_guards ()
+void AddSC_guards()
 {
     new guard_generic;
     new guard_shattrath_aldor;

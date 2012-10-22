@@ -1,110 +1,112 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* ScriptData
- SDName: Boss_Drakkisath
- SD%Complete: 100
- SDComment:
- SDCategory: Blackrock Spire
- EndScriptData */
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
+#include "blackrock_spire.h"
 
-#include "ScriptPCH.h"
+enum Spells
+{
+    SPELL_FIRENOVA                  = 23462,
+    SPELL_CLEAVE                    = 20691,
+    SPELL_CONFLIGURATION            = 16805,
+    SPELL_THUNDERCLAP               = 15548, //Not sure if right ID. 23931 would be a harder possibility.
+};
 
-#define SPELL_FIRENOVA                  23462
-#define SPELL_CLEAVE                    20691
-#define SPELL_CONFLIGURATION            16805
-#define SPELL_THUNDERCLAP               15548               //Not sure if right ID. 23931 would be a harder possibility.
-class boss_drakkisath: public CreatureScript {
+enum Events
+{
+    EVENT_FIRE_NOVA                = 1,
+    EVENT_CLEAVE                   = 2,
+    EVENT_CONFLIGURATION           = 3,
+    EVENT_THUNDERCLAP              = 4,
+};
+
+class boss_drakkisath : public CreatureScript
+{
 public:
-    boss_drakkisath() :
-            CreatureScript("boss_drakkisath") {
+    boss_drakkisath() : CreatureScript("boss_drakkisath") { }
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return new boss_drakkisathAI(creature);
     }
 
-    CreatureAI* GetAI(Creature* pCreature) const {
-        return new boss_drakkisathAI(pCreature);
-    }
+    struct boss_drakkisathAI : public BossAI
+    {
+        boss_drakkisathAI(Creature* creature) : BossAI(creature, DATA_GENERAL_DRAKKISATH) {}
 
-    struct boss_drakkisathAI: public ScriptedAI {
-        boss_drakkisathAI(Creature *c) :
-                ScriptedAI(c) {
+        void Reset()
+        {
+            _Reset();
         }
 
-        uint32 FireNova_Timer;
-        uint32 Cleave_Timer;
-        uint32 Confliguration_Timer;
-        uint32 Thunderclap_Timer;
-
-        void Reset() {
-            FireNova_Timer = 6000;
-            Cleave_Timer = 8000;
-            Confliguration_Timer = 15000;
-            Thunderclap_Timer = 17000;
+        void EnterCombat(Unit* /*who*/)
+        {
+            _EnterCombat();
+            events.ScheduleEvent(EVENT_FIRE_NOVA, 6 * IN_MILLISECONDS);
+            events.ScheduleEvent(EVENT_CLEAVE,    8 * IN_MILLISECONDS);
+            events.ScheduleEvent(EVENT_CONFLIGURATION, 15 * IN_MILLISECONDS);
+            events.ScheduleEvent(EVENT_THUNDERCLAP,    17 * IN_MILLISECONDS);
         }
 
-        void EnterCombat(Unit * /*who*/) {
+        void JustDied(Unit* /*killer*/)
+        {
+            _JustDied();
         }
 
-        void UpdateAI(const uint32 diff) {
-            //Return since we have no target
+        void UpdateAI(const uint32 diff)
+        {
             if (!UpdateVictim())
                 return;
 
-            //FireNova_Timer
-            if (FireNova_Timer <= diff) {
-                DoCast(me->getVictim(), SPELL_FIRENOVA);
-                FireNova_Timer = 10000;
-            } else
-                FireNova_Timer -= diff;
+            events.Update(diff);
 
-            //Cleave_Timer
-            if (Cleave_Timer <= diff) {
-                DoCast(me->getVictim(), SPELL_CLEAVE);
-                Cleave_Timer = 8000;
-            } else
-                Cleave_Timer -= diff;
+            if (me->HasUnitState(UNIT_STATE_CASTING))
+                return;
 
-            //Confliguration_Timer
-            if (Confliguration_Timer <= diff) {
-                DoCast(me->getVictim(), SPELL_CONFLIGURATION);
-                Confliguration_Timer = 18000;
-            } else
-                Confliguration_Timer -= diff;
-
-            //Thunderclap_Timer
-            if (Thunderclap_Timer <= diff) {
-                DoCast(me->getVictim(), SPELL_THUNDERCLAP);
-                Thunderclap_Timer = 20000;
-            } else
-                Thunderclap_Timer -= diff;
-
+            while (uint32 eventId = events.ExecuteEvent())
+            {
+                switch (eventId)
+                {
+                    case EVENT_FIRE_NOVA:
+                        DoCast(me->getVictim(), SPELL_FIRENOVA);
+                        events.ScheduleEvent(EVENT_FIRE_NOVA, 10 * IN_MILLISECONDS);
+                        break;
+                    case EVENT_CLEAVE:
+                        DoCast(me->getVictim(), SPELL_CLEAVE);
+                        events.ScheduleEvent(EVENT_CLEAVE, 8 * IN_MILLISECONDS);
+                        break;
+                    case EVENT_CONFLIGURATION:
+                        DoCast(me->getVictim(), SPELL_CONFLIGURATION);
+                        events.ScheduleEvent(EVENT_CONFLIGURATION, 18 * IN_MILLISECONDS);
+                        break;
+                    case EVENT_THUNDERCLAP:
+                        DoCast(me->getVictim(), SPELL_THUNDERCLAP);
+                        events.ScheduleEvent(EVENT_THUNDERCLAP, 20 * IN_MILLISECONDS);
+                        break;
+                }
+            }
             DoMeleeAttackIfReady();
         }
     };
 };
 
-void AddSC_boss_drakkisath() {
+void AddSC_boss_drakkisath()
+{
     new boss_drakkisath();
 }

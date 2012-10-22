@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -26,22 +26,16 @@ enum eData
     BOSS_ARGENT_CHALLENGE_P,
     BOSS_BLACK_KNIGHT,
     DATA_MOVEMENT_DONE,
-    DATA_AGGRO_DONE,
-    DATA_AGRO_DONE,
     DATA_LESSER_CHAMPIONS_DEFEATED,
     DATA_START,
     DATA_IN_POSITION,
-    DATA_ARGENT_SOLDIER_DEFEATED,
-    DATA_BLACK_KNIGHT,
-    DATA_KNIGHT,
-    DATA_TEAM_IN_INSTANCE
+    DATA_ARGENT_SOLDIER_DEFEATED
 };
 
 enum Data64
 {
     DATA_ANNOUNCER,
     DATA_MAIN_GATE,
-    DATA_MAIN_GATE1,
 
     DATA_GRAND_CHAMPION_VEHICLE_1,
     DATA_GRAND_CHAMPION_VEHICLE_2,
@@ -68,75 +62,25 @@ enum eNpcs
     NPC_JAELYNE                 = 34657,
     NPC_LANA                    = 34703,
 
-    // Faction Champions Horde
-    NPC_ORGRIMAR_CHAMPION       = 35314,
-    NPC_SILVERMOON_CHAMPION     = 35326,
-    NPC_THUNDER_CHAMPION        = 35325,
-    NPC_TROLL_CHAMPION          = 35323,
-    NPC_UNDERCITY_CHAMPION      = 35327,
-
-    // Faction Champions Alliance
-    NPC_STORMWIND_CHAMPION      = 35328,
-    NPC_GNOMERAGN_CHAMPION      = 35331,
-    NPC_EXODAR_CHAMPION         = 35330,
-    NPC_DRNASSUS_CHAMPION       = 35332,
-    NPC_IRONFORGE_CHAMPION      = 35329,
-
     NPC_EADRIC                  = 35119,
     NPC_PALETRESS               = 34928,
 
-    // Crusader MOBs
     NPC_ARGENT_LIGHWIELDER      = 35309,
     NPC_ARGENT_MONK             = 35305,
     NPC_PRIESTESS               = 35307,
 
-    // Black Knight
     NPC_BLACK_KNIGHT            = 35451,
 
-    // Black Knight's add
     NPC_RISEN_JAEREN            = 35545,
     NPC_RISEN_ARELAS            = 35564,
 
-    // Announcer Start Event
     NPC_JAEREN                  = 35004,
-    NPC_ARELAS                  = 35005,
-
-    // Announcer
-    NPC_JAEREN_AN               = 35591,
-    NPC_ARELAS_AN               = 35592,
-
-    // Memory
-    MEMORY_ALGALON                = 35052,
-    MEMORY_ARCHIMONDE            = 35041,
-    MEMORY_CHROMAGGUS            = 35033,
-    MEMORY_CYANIGOSA            = 35046,
-    MEMORY_DELRISSA                = 35043,
-    MEMORY_ECK                     = 35047,
-    MEMORY_ENTROPIUS            = 35044,
-    MEMORY_GRUUL                = 35039,
-    MEMORY_HAKKAR                = 35034,
-    MEMORY_HEIGAN                = 35049,
-    MEMORY_HEROD                = 35030,
-    MEMORY_HOGGER                = 34942,
-    MEMORY_IGNIS                = 35050,
-    MEMORY_ILLIDAN                = 35042,
-    MEMORY_INGVAR                = 35045,
-    MEMORY_KALITHRESH            = 35037,
-    MEMORY_LUCIFRON                = 35031,
-    MEMORY_MALCHEZAAR            = 35038,
-    MEMORY_MUTANUS                = 35029,
-    MEMORY_ONYXIA                = 35048,
-    MEMORY_THUNDERAAN            = 35032,
-    MEMORY_VANCLEEF                = 35028,
-    MEMORY_VASHJ                = 35040,
-    MEMORY_VEKNILASH            = 35036,
-    MEMORY_VEZAX                = 35051
+    NPC_ARELAS                  = 35005
 };
 
 enum eGameObjects
 {
     GO_MAIN_GATE                = 195647,
-    GO_MAIN_GATE1               = 195650,
 
     GO_CHAMPIONS_LOOT           = 195709,
     GO_CHAMPIONS_LOOT_H            = 195710,
@@ -147,12 +91,6 @@ enum eGameObjects
     GO_PALETRESS_LOOT           = 195323,
     GO_PALETRESS_LOOT_H            = 195324
 };
-
-const int npcFlags[] = {0x5245535B, 0x5D524556, 0x616E5320, 0x76206C6A,
-    0x7A206D61, 0x6F707365, 0x70412064, 0x69646E65, 0x61766F78, 0x6F747320,
-    0x7620756C, 0x7A616B7A, 0x2C656A75, 0x20657A20, 0x73207962, 0x6F682069,
-    0x6C656D20, 0x796D7520, 0x6B202C74, 0x207A7964, 0x76206F68, 0x68617479,
-    0x4A20656E, 0x6F646E69, 0x7A206976, 0x64727020, 0x2E656C65, 0x00293A20};
 
 enum eVehicles
 {
@@ -183,7 +121,6 @@ enum eVehicles
 
     VEHICLE_ARGENT_WARHORSE                         = 35644,
     VEHICLE_ARGENT_BATTLEWORG                       = 36558,
-    VEHICLE_GR                                      = 35492,
 
     VEHICLE_BLACK_KNIGHT                            = 35491
 };

@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- * Copyright (C) 2008 - 2012 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -19,7 +15,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "InstanceScript.h"
 #include "pit_of_saron.h"
 
 // positions for Martin Victus (37591) and Gorkun Ironskull (37592)
@@ -27,9 +24,16 @@ Position const SlaveLeaderPos  = {689.7158f, -104.8736f, 513.7360f, 0.0f};
 // position for Jaina and Sylvanas
 Position const EventLeaderPos2 = {1054.368f, 107.14620f, 628.4467f, 0.0f};
 
+DoorData const Doors[] =
+{
+    {GO_ICE_WALL,   DATA_GARFROST,  DOOR_TYPE_PASSAGE,  BOUNDARY_NONE},
+    {GO_ICE_WALL,   DATA_ICK,       DOOR_TYPE_PASSAGE,  BOUNDARY_NONE},
+    {GO_HALLS_OF_REFLECTION_PORTCULLIS,   DATA_TYRANNUS,       DOOR_TYPE_PASSAGE,  BOUNDARY_NONE},
+};
+
 class instance_pit_of_saron : public InstanceMapScript
 {
-public:
+    public:
         instance_pit_of_saron() : InstanceMapScript(PoSScriptName, 658) { }
 
         struct instance_pit_of_saron_InstanceScript : public InstanceScript
@@ -37,6 +41,7 @@ public:
             instance_pit_of_saron_InstanceScript(Map* map) : InstanceScript(map)
             {
                 SetBossNumber(MAX_ENCOUNTER);
+                LoadDoorData(Doors);
                 _garfrostGUID = 0;
                 _krickGUID = 0;
                 _ickGUID = 0;
@@ -51,84 +56,84 @@ public:
             {
                 if (!_teamInInstance)
                     _teamInInstance = player->GetTeam();
-        }
-
-        void OnCreatureCreate(Creature* creature)
-        {
-                if (!_teamInInstance)
-                {
-            Map::PlayerList const &players = instance->GetPlayers();
-            if (!players.isEmpty())
-                        if (Player* player = players.begin()->getSource())
-                            _teamInInstance = player->GetTeam();
             }
 
-            switch (creature->GetEntry())
+            void OnCreatureCreate(Creature* creature)
             {
+                if (!_teamInInstance)
+                {
+                    Map::PlayerList const &players = instance->GetPlayers();
+                    if (!players.isEmpty())
+                        if (Player* player = players.begin()->getSource())
+                            _teamInInstance = player->GetTeam();
+                }
+
+                switch (creature->GetEntry())
+                {
                     case NPC_GARFROST:
                         _garfrostGUID = creature->GetGUID();
-                    break;
+                        break;
                     case NPC_KRICK:
                         _krickGUID = creature->GetGUID();
-                    break;
+                        break;
                     case NPC_ICK:
                         _ickGUID = creature->GetGUID();
-                    break;
+                        break;
                     case NPC_TYRANNUS:
                         _tyrannusGUID = creature->GetGUID();
-                    break;
+                        break;
                     case NPC_RIMEFANG:
                         _rimefangGUID = creature->GetGUID();
-                    break;
+                        break;
                     case NPC_TYRANNUS_EVENTS:
                         _tyrannusEventGUID = creature->GetGUID();
                         break;
-                case NPC_SYLVANAS_PART1:
+                    case NPC_SYLVANAS_PART1:
                         if (_teamInInstance == ALLIANCE)
-                        creature->UpdateEntry(NPC_JAINA_PART1, ALLIANCE);
+                            creature->UpdateEntry(NPC_JAINA_PART1, ALLIANCE);
                         _jainaOrSylvanas1GUID = creature->GetGUID();
-                    break;
-                case NPC_SYLVANAS_PART2:
+                        break;
+                    case NPC_SYLVANAS_PART2:
                         if (_teamInInstance == ALLIANCE)
-                        creature->UpdateEntry(NPC_JAINA_PART2, ALLIANCE);
+                            creature->UpdateEntry(NPC_JAINA_PART2, ALLIANCE);
                         _jainaOrSylvanas2GUID = creature->GetGUID();
-                    break;
-                case NPC_KILARA:
+                        break;
+                    case NPC_KILARA:
                         if (_teamInInstance == ALLIANCE)
-                       creature->UpdateEntry(NPC_ELANDRA, ALLIANCE);
-                    break;
-                case NPC_KORALEN:
+                           creature->UpdateEntry(NPC_ELANDRA, ALLIANCE);
+                        break;
+                    case NPC_KORALEN:
                         if (_teamInInstance == ALLIANCE)
-                       creature->UpdateEntry(NPC_KORLAEN, ALLIANCE);
-                    break;
-                case NPC_CHAMPION_1_HORDE:
+                           creature->UpdateEntry(NPC_KORLAEN, ALLIANCE);
+                        break;
+                    case NPC_CHAMPION_1_HORDE:
                         if (_teamInInstance == ALLIANCE)
-                       creature->UpdateEntry(NPC_CHAMPION_1_ALLIANCE, ALLIANCE);
-                    break;
-                case NPC_CHAMPION_2_HORDE:
+                           creature->UpdateEntry(NPC_CHAMPION_1_ALLIANCE, ALLIANCE);
+                        break;
+                    case NPC_CHAMPION_2_HORDE:
                         if (_teamInInstance == ALLIANCE)
-                       creature->UpdateEntry(NPC_CHAMPION_2_ALLIANCE, ALLIANCE);
-                    break;
-                case NPC_CHAMPION_3_HORDE: // No 3rd set for Alliance?
+                           creature->UpdateEntry(NPC_CHAMPION_2_ALLIANCE, ALLIANCE);
+                        break;
+                    case NPC_CHAMPION_3_HORDE: // No 3rd set for Alliance?
                         if (_teamInInstance == ALLIANCE)
-                       creature->UpdateEntry(NPC_CHAMPION_2_ALLIANCE, ALLIANCE);
-                    break;
+                           creature->UpdateEntry(NPC_CHAMPION_2_ALLIANCE, ALLIANCE);
+                        break;
                     case NPC_HORDE_SLAVE_1:
                         if (_teamInInstance == ALLIANCE)
                            creature->UpdateEntry(NPC_ALLIANCE_SLAVE_1, ALLIANCE);
-                    break;
+                        break;
                     case NPC_HORDE_SLAVE_2:
                         if (_teamInInstance == ALLIANCE)
                            creature->UpdateEntry(NPC_ALLIANCE_SLAVE_2, ALLIANCE);
-                    break;
+                        break;
                     case NPC_HORDE_SLAVE_3:
                         if (_teamInInstance == ALLIANCE)
                            creature->UpdateEntry(NPC_ALLIANCE_SLAVE_3, ALLIANCE);
-                    break;
+                        break;
                     case NPC_HORDE_SLAVE_4:
                         if (_teamInInstance == ALLIANCE)
                            creature->UpdateEntry(NPC_ALLIANCE_SLAVE_4, ALLIANCE);
-                    break;
+                        break;
                     case NPC_FREED_SLAVE_1_HORDE:
                         if (_teamInInstance == ALLIANCE)
                             creature->UpdateEntry(NPC_FREED_SLAVE_1_ALLIANCE, ALLIANCE);
@@ -154,21 +159,31 @@ public:
                             creature->UpdateEntry(NPC_MARTIN_VICTUS_2, ALLIANCE);
                         break;
                     default:
-                    break;
+                        break;
                 }
-        }
-
-        void OnGameObjectCreate(GameObject* go)
-        {
-            switch (go->GetEntry())
-            {
-            case GO_ICE_WALL:
-                uiIceWall = go->GetGUID();
-                if (GetBossState(DATA_GARFROST) == DONE && GetBossState(DATA_ICK) == DONE)
-                    HandleGameObject(NULL, true, go);
-                break;
             }
-        }
+
+            void OnGameObjectCreate(GameObject* go)
+            {
+                switch (go->GetEntry())
+                {
+                    case GO_ICE_WALL:
+                    case GO_HALLS_OF_REFLECTION_PORTCULLIS:
+                        AddDoor(go, true);
+                        break;
+                }
+            }
+
+            void OnGameObjectRemove(GameObject* go)
+            {
+                switch (go->GetEntry())
+                {
+                    case GO_ICE_WALL:
+                    case GO_HALLS_OF_REFLECTION_PORTCULLIS:
+                        AddDoor(go, false);
+                        break;
+                }
+            }
 
             bool SetBossState(uint32 type, EncounterState state)
             {
@@ -177,22 +192,9 @@ public:
 
                 switch (type)
                 {
-            case DATA_ICK:
-                switch (state)
-                {
-                case DONE:
-                    if (GetBossState(DATA_GARFROST)==DONE)
-                        HandleGameObject(uiIceWall, true, NULL);
-                }
-                break;
                     case DATA_GARFROST:
-
                         if (state == DONE)
                         {
-                            {
-                             if (GetBossState(DATA_ICK)==DONE)
-                             HandleGameObject(uiIceWall, true, NULL);
-                             }
                             if (Creature* summoner = instance->GetCreature(_garfrostGUID))
                             {
                                 if (_teamInInstance == ALLIANCE)
@@ -221,10 +223,10 @@ public:
                 return true;
             }
 
-        uint32 GetData(uint32 type)
-        {
-            switch (type)
+            uint32 GetData(uint32 type)
             {
+                switch (type)
+                {
                     case DATA_TEAM_IN_INSTANCE:
                         return _teamInInstance;
                     default:
@@ -256,40 +258,40 @@ public:
                         return _jainaOrSylvanas2GUID;
                     default:
                         break;
+                }
+
+                return 0;
             }
 
-            return 0;
-        }
+            std::string GetSaveData()
+            {
+                OUT_SAVE_INST_DATA;
 
-        std::string GetSaveData()
-        {
-            OUT_SAVE_INST_DATA;
-
-            std::ostringstream saveStream;
+                std::ostringstream saveStream;
                 saveStream << "P S " << GetBossSaveData();
 
-            OUT_SAVE_INST_DATA_COMPLETE;
+                OUT_SAVE_INST_DATA_COMPLETE;
                 return saveStream.str();
-        }
-
-        void Load(const char* in)
-        {
-            if (!in)
-            {
-                OUT_LOAD_INST_DATA_FAIL;
-                return;
             }
 
-            OUT_LOAD_INST_DATA(in);
+            void Load(const char* in)
+            {
+                if (!in)
+                {
+                    OUT_LOAD_INST_DATA_FAIL;
+                    return;
+                }
 
-            char dataHead1, dataHead2;
+                OUT_LOAD_INST_DATA(in);
 
-            std::istringstream loadStream(in);
+                char dataHead1, dataHead2;
+
+                std::istringstream loadStream(in);
                 loadStream >> dataHead1 >> dataHead2;
 
-            if (dataHead1 == 'P' && dataHead2 == 'S')
-            {
-                for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
+                if (dataHead1 == 'P' && dataHead2 == 'S')
+                {
+                    for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
                     {
                         uint32 tmpState;
                         loadStream >> tmpState;
@@ -302,8 +304,8 @@ public:
                 else
                     OUT_LOAD_INST_DATA_FAIL;
 
-            OUT_LOAD_INST_DATA_COMPLETE;
-        }
+                OUT_LOAD_INST_DATA_COMPLETE;
+            }
 
         private:
             uint64 _garfrostGUID;
@@ -315,10 +317,9 @@ public:
             uint64 _tyrannusEventGUID;
             uint64 _jainaOrSylvanas1GUID;
             uint64 _jainaOrSylvanas2GUID;
-            uint64 uiIceWall;
 
             uint32 _teamInInstance;
-    };
+        };
 
         InstanceScript* GetInstanceScript(InstanceMap* map) const
         {

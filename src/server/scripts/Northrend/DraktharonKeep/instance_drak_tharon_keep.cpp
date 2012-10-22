@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- * Copyright (C) 2008 - 2012 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -19,7 +15,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "InstanceScript.h"
 #include "drak_tharon_keep.h"
 
 #define MAX_ENCOUNTER     4
@@ -73,6 +70,7 @@ public:
 
         void Initialize()
         {
+            memset(&m_auiEncounter, 0, sizeof(m_auiEncounter));
             uiTrollgore = 0;
             uiNovos = 0;
             uiDred = 0;
@@ -87,7 +85,8 @@ public:
         bool IsEncounterInProgress() const
         {
             for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
-                if (m_auiEncounter[i] == IN_PROGRESS) return true;
+                if (m_auiEncounter[i] == IN_PROGRESS)
+                    return true;
 
             return false;
         }
@@ -126,8 +125,6 @@ public:
                     break;
                 case NPC_THARON_JA:
                     uiTharonJa = creature->GetGUID();
-                    creature->SetReactState(REACT_PASSIVE);
-                    creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_OOC_NOT_ATTACKABLE);
                     break;
             }
         }
@@ -194,28 +191,12 @@ public:
         {
             OUT_SAVE_INST_DATA;
 
-            std::string str_data;
-
             std::ostringstream saveStream;
             saveStream << "D K " << m_auiEncounter[0] << ' ' << m_auiEncounter[1] << ' '
                 << m_auiEncounter[2] << ' ' << m_auiEncounter[3];
 
-            str_data = saveStream.str();
-
             OUT_SAVE_INST_DATA_COMPLETE;
-            return str_data;
-        }
-
-        void Update(uint32 diff)
-        {
-            if (!instance->HavePlayers())
-                return;
-
-            if (GetData(DATA_TROLLGORE_EVENT) == DONE && GetData(DATA_NOVOS_EVENT) == DONE && GetData(DATA_DRED_EVENT) == DONE)
-                if (Creature* pTharonJa = instance->GetCreature(uiTharonJa)){
-                    pTharonJa->SetReactState(REACT_AGGRESSIVE);
-                    pTharonJa->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_OOC_NOT_ATTACKABLE);
-                }
+            return saveStream.str();
         }
 
         void Load(const char* in)

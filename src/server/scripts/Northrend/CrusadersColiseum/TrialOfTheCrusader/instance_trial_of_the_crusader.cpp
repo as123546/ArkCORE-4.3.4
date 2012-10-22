@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -16,7 +16,15 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+/* ScriptData
+SDName: instance_trial_of_the_crusader
+SD%Complete: 80%
+SDComment: by /dev/rsa
+SDCategory: Trial of the Crusader
+EndScriptData */
+
+#include "ScriptMgr.h"
+#include "InstanceScript.h"
 #include "trial_of_the_crusader.h"
 
 class instance_trial_of_the_crusader : public InstanceMapScript
@@ -26,7 +34,7 @@ class instance_trial_of_the_crusader : public InstanceMapScript
 
         struct instance_trial_of_the_crusader_InstanceMapScript : public InstanceScript
         {
-            instance_trial_of_the_crusader_InstanceMapScript(Map* pMap) : InstanceScript(pMap) {}
+            instance_trial_of_the_crusader_InstanceMapScript(Map* map) : InstanceScript(map) {}
 
             uint32 EncounterStatus[MAX_ENCOUNTERS];
             uint32 TrialCounter;
@@ -37,12 +45,9 @@ class instance_trial_of_the_crusader : public InstanceMapScript
             std::string SaveDataBuffer;
             bool   NeedSave;
 
-            uint32 DataDamageTwin;
-            uint32 FjolaCasting;
-            uint32 EydisCasting;
-
             uint64 BarrentGUID;
             uint64 TirionGUID;
+            uint64 TirionFordringGUID;
             uint64 FizzlebangGUID;
             uint64 GarroshGUID;
             uint64 VarianGUID;
@@ -81,8 +86,9 @@ class instance_trial_of_the_crusader : public InstanceMapScript
                 TrialCounter = 50;
                 EventStage = 0;
 
+                TirionFordringGUID = 0;
+
                 TributeChestGUID = 0;
-                DataDamageTwin = 0;
 
                 MainGateDoorGUID = 0;
                 EastPortcullisGUID = 0;
@@ -103,7 +109,7 @@ class instance_trial_of_the_crusader : public InstanceMapScript
 
             bool IsEncounterInProgress() const
             {
-                for (uint8 i = 0; i < MAX_ENCOUNTERS ; ++i)
+                for (uint8 i = 0; i < MAX_ENCOUNTERS; ++i)
                     if (EncounterStatus[i] == IN_PROGRESS)
                         return true;
                 return false;
@@ -143,6 +149,9 @@ class instance_trial_of_the_crusader : public InstanceMapScript
                         break;
                     case NPC_TIRION:
                         TirionGUID = creature->GetGUID();
+                        break;
+                    case NPC_TIRION_FORDRING:
+                        TirionFordringGUID = creature->GetGUID();
                         break;
                     case NPC_FIZZLEBANG:
                         FizzlebangGUID = creature->GetGUID();
@@ -205,8 +214,6 @@ class instance_trial_of_the_crusader : public InstanceMapScript
                             CrusadersCacheGUID = go->GetGUID();
                         break;
                     case GO_ARGENT_COLISEUM_FLOOR:
-                        // Set the floor faction depending on the raid faction. Avoids destroying the platafform by siege damage
-                        go->SetUInt32Value(GAMEOBJECT_FACTION, instance->GetPlayers().getFirst()->getSource()->GetTeam() == ALLIANCE ? GO_ALLIANCE_FACTION : GO_HORDE_FACTION);
                         FloorGUID = go->GetGUID();
                         break;
                     case GO_MAIN_GATE_DOOR:
@@ -237,10 +244,18 @@ class instance_trial_of_the_crusader : public InstanceMapScript
                 switch (type)
                 {
                     case TYPE_JARAXXUS:
+                        // Cleanup Icehowl
+                        if (Creature* icehowl = instance->GetCreature(IcehowlGUID))
+                            icehowl->DespawnOrUnsummon();
                         if (data == DONE)
                             EventStage = 2000;
                         break;
                     case TYPE_CRUSADERS:
+                        // Cleanup Jaraxxus
+                        if (Creature* jaraxxus = instance->GetCreature(JaraxxusGUID))
+                            jaraxxus->DespawnOrUnsummon();
+                        if (Creature* fizzlebang = instance->GetCreature(FizzlebangGUID))
+                            fizzlebang->DespawnOrUnsummon();
                         switch (data)
                         {
                             case IN_PROGRESS:
@@ -260,12 +275,11 @@ class instance_trial_of_the_crusader : public InstanceMapScript
                         }
                         break;
                     case TYPE_VALKIRIES:
+                        // Cleanup chest
+                        if (GameObject* cache = instance->GetGameObject(CrusadersCacheGUID))
+                            cache->Delete();
                         switch (data)
                         {
-                            case IN_PROGRESS:
-                                if (GameObject* chest = instance->GetGameObject(CrusadersCacheGUID))
-                                    chest->Delete();
-                                break;
                             case FAIL:
                                 if (EncounterStatus[TYPE_VALKIRIES] == NOT_STARTED)
                                     data = NOT_STARTED;
@@ -318,7 +332,8 @@ class instance_trial_of_the_crusader : public InstanceMapScript
                                 }
                                 if (tributeChest)
                                     if (Creature* tirion =  instance->GetCreature(TirionGUID))
-                                        if (GameObject* chest = tirion->SummonGameObject(tributeChest, 805.62f, 134.87f, 142.16f, 3.27f, 0, 0, 0, 0, 90000000))
+                                        // need proper location.this one is guessed based on videos
+                                        if (GameObject* chest = tirion->SummonGameObject(tributeChest, 643.814f, 136.027f, 141.295f, 0, 0, 0, 0, 0, 90000000))
                                             chest->SetRespawnTime(chest->GetRespawnDelay());
                                 break;
                         }
@@ -367,11 +382,6 @@ class instance_trial_of_the_crusader : public InstanceMapScript
                                 break;
                         }
                         break;
-                    case DATA_HEALTH_TWIN_SHARED:
-                        DataDamageTwin = data;
-                        data = NOT_STARTED;
-                        break;
-
                     //Achievements
                     case DATA_SNOBOLD_COUNT:
                         if (data == INCREASE)
@@ -402,7 +412,7 @@ class instance_trial_of_the_crusader : public InstanceMapScript
 
                 if (type < MAX_ENCOUNTERS)
                 {
-                    sLog->outDetail("[ToCr] EncounterStatus[type %u] %u = data %u;", type, EncounterStatus[type], data);
+                    sLog->outInfo(LOG_FILTER_TSCR, "[ToCr] EncounterStatus[type %u] %u = data %u;", type, EncounterStatus[type], data);
                     if (data == FAIL)
                     {
                         --TrialCounter;
@@ -430,6 +440,8 @@ class instance_trial_of_the_crusader : public InstanceMapScript
                         return BarrentGUID;
                     case NPC_TIRION:
                         return TirionGUID;
+                    case NPC_TIRION_FORDRING:
+                        return TirionFordringGUID;
                     case NPC_FIZZLEBANG:
                         return FizzlebangGUID;
                     case NPC_GARROSH:
@@ -583,8 +595,6 @@ class instance_trial_of_the_crusader : public InstanceMapScript
                                 break;
                         };
                         return EventNPCId;
-                    case DATA_HEALTH_TWIN_SHARED:
-                        return DataDamageTwin;
                     default:
                         break;
                 }
@@ -664,40 +674,31 @@ class instance_trial_of_the_crusader : public InstanceMapScript
                 switch (criteria_id)
                 {
                     case UPPER_BACK_PAIN_10_PLAYER:
-                        return (SnoboldCount >= 2 && instance->GetDifficulty() == RAID_DIFFICULTY_10MAN_NORMAL);
                     case UPPER_BACK_PAIN_10_PLAYER_HEROIC:
-                        return (SnoboldCount >= 2 && instance->GetDifficulty() == RAID_DIFFICULTY_10MAN_HEROIC);
+                        return SnoboldCount >= 2;
                     case UPPER_BACK_PAIN_25_PLAYER:
-                        return (SnoboldCount >= 4 && instance->GetDifficulty() == RAID_DIFFICULTY_25MAN_NORMAL);
                     case UPPER_BACK_PAIN_25_PLAYER_HEROIC:
-                        return (SnoboldCount >= 4 && instance->GetDifficulty() == RAID_DIFFICULTY_25MAN_HEROIC);
+                        return SnoboldCount >= 4;
                     case THREE_SIXTY_PAIN_SPIKE_10_PLAYER:
-                        return (MistressOfPainCount >= 2 && instance->GetDifficulty() == RAID_DIFFICULTY_10MAN_NORMAL);
                     case THREE_SIXTY_PAIN_SPIKE_10_PLAYER_HEROIC:
-                        return (MistressOfPainCount >= 2 && instance->GetDifficulty() == RAID_DIFFICULTY_10MAN_HEROIC);
                     case THREE_SIXTY_PAIN_SPIKE_25_PLAYER:
-                        return (MistressOfPainCount >= 2 && instance->GetDifficulty() == RAID_DIFFICULTY_25MAN_NORMAL);
                     case THREE_SIXTY_PAIN_SPIKE_25_PLAYER_HEROIC:
-                        return (MistressOfPainCount >= 2 && instance->GetDifficulty() == RAID_DIFFICULTY_25MAN_HEROIC);
+                        return MistressOfPainCount >= 2;
                     case A_TRIBUTE_TO_SKILL_10_PLAYER:
-                        return (TrialCounter >= 25 && instance->GetDifficulty() == RAID_DIFFICULTY_10MAN_HEROIC);
                     case A_TRIBUTE_TO_SKILL_25_PLAYER:
-                        return (TrialCounter >= 25 && instance->GetDifficulty() == RAID_DIFFICULTY_25MAN_HEROIC);
+                        return TrialCounter >= 25;
                     case A_TRIBUTE_TO_MAD_SKILL_10_PLAYER:
-                        return (TrialCounter >= 45 && instance->GetDifficulty() == RAID_DIFFICULTY_10MAN_HEROIC);
                     case A_TRIBUTE_TO_MAD_SKILL_25_PLAYER:
-                        return (TrialCounter >= 45 && instance->GetDifficulty() == RAID_DIFFICULTY_25MAN_HEROIC);
+                        return TrialCounter >= 45;
                     case A_TRIBUTE_TO_INSANITY_10_PLAYER:
-                        return (TrialCounter == 50 && instance->GetDifficulty() == RAID_DIFFICULTY_10MAN_HEROIC);
                     case A_TRIBUTE_TO_INSANITY_25_PLAYER:
-                        return (TrialCounter == 50 && instance->GetDifficulty() == RAID_DIFFICULTY_25MAN_HEROIC);
                     case REALM_FIRST_GRAND_CRUSADER:
-                        return (TrialCounter == 50 && instance->GetDifficulty() == RAID_DIFFICULTY_25MAN_HEROIC);
+                        return TrialCounter == 50;
                     case A_TRIBUTE_TO_IMMORTALITY_HORDE:
                     case A_TRIBUTE_TO_IMMORTALITY_ALLIANCE:
-                        return false;
+                        return TrialCounter == 50 && TributeToImmortalityElegible;
                     case A_TRIBUTE_TO_DEDICATED_INSANITY:
-                        return false;
+                        return false/*uiGrandCrusaderAttemptsLeft == 50 && !bHasAtAnyStagePlayerEquippedTooGoodItem*/;
                 }
 
                 return false;

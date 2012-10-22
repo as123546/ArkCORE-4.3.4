@@ -1,7 +1,5 @@
 /*
- * Copyright (C) 2008 - 2012 TrinityCore <http://www.trinitycore.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -17,33 +15,31 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "hyjal.h"
 #include "hyjal_trash.h"
 
-#define SPELL_RAIN_OF_FIRE 31340
-#define SPELL_DOOM 31347
-#define SPELL_HOWL_OF_AZGALOR 31344
-#define SPELL_CLEAVE 31345
-#define SPELL_BERSERK 26662
+enum Spells
+{
+    SPELL_RAIN_OF_FIRE          = 31340,
+    SPELL_DOOM                  = 31347,
+    SPELL_HOWL_OF_AZGALOR       = 31344,
+    SPELL_CLEAVE                = 31345,
+    SPELL_BERSERK               = 26662,
 
-#define SAY_ONDEATH "Your time is almost... up"
-#define SOUND_ONDEATH 11002
+    SPELL_THRASH                = 12787,
+    SPELL_CRIPPLE               = 31406,
+    SPELL_WARSTOMP              = 31408,
+};
 
-#define SAY_ONSLAY1 "Reesh, hokta!"
-#define SAY_ONSLAY2 "Don't fight it"
-#define SAY_ONSLAY3 "No one is going to save you"
-#define SOUND_ONSLAY1 11001
-#define SOUND_ONSLAY2 11048
-#define SOUND_ONSLAY3 11047
-
-#define SAY_DOOM1 "Just a taste... of what awaits you"
-#define SAY_DOOM2 "Suffer you despicable insect!"
-#define SOUND_DOOM1 11046
-#define SOUND_DOOM2 11000
-
-#define SAY_ONAGGRO "Abandon all hope! The legion has returned to finish what was begun so many years ago. This time there will be no escape!"
-#define SOUND_ONAGGRO 10999
+enum Texts
+{
+    SAY_ONDEATH             = 0,
+    SAY_ONSLAY              = 1,
+    SAY_DOOM                = 2, // Not used?
+    SAY_ONAGGRO             = 3,
+};
 
 class boss_azgalor : public CreatureScript
 {
@@ -57,11 +53,10 @@ public:
 
     struct boss_azgalorAI : public hyjal_trashAI
     {
-        boss_azgalorAI(Creature* c) : hyjal_trashAI(c)
+        boss_azgalorAI(Creature* creature) : hyjal_trashAI(creature)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
             go = false;
-            pos = 0;
         }
 
         uint32 RainTimer;
@@ -72,7 +67,6 @@ public:
         bool enraged;
 
         bool go;
-        uint32 pos;
 
         void Reset()
         {
@@ -92,46 +86,30 @@ public:
         {
             if (instance && IsEvent)
                 instance->SetData(DATA_AZGALOREVENT, IN_PROGRESS);
-            DoPlaySoundToSet(me, SOUND_ONAGGRO);
-            me->MonsterYell(SAY_ONAGGRO, LANG_UNIVERSAL, 0);
+            Talk(SAY_ONAGGRO);
         }
 
         void KilledUnit(Unit* /*victim*/)
         {
-            switch (urand(0, 2))
-            {
-                case 0:
-                    DoPlaySoundToSet(me, SOUND_ONSLAY1);
-                    me->MonsterYell(SAY_ONSLAY1, LANG_UNIVERSAL, 0);
-                    break;
-                case 1:
-                    DoPlaySoundToSet(me, SOUND_ONSLAY2);
-                    me->MonsterYell(SAY_ONSLAY2, LANG_UNIVERSAL, 0);
-                    break;
-                case 2:
-                    DoPlaySoundToSet(me, SOUND_ONSLAY3);
-                    me->MonsterYell(SAY_ONSLAY3, LANG_UNIVERSAL, 0);
-                    break;
-            }
+            Talk(SAY_ONSLAY);
         }
 
-        void WaypointReached(uint32 i)
+        void WaypointReached(uint32 waypointId)
         {
-            pos = i;
-            if (i == 7 && instance)
+            if (waypointId == 7 && instance)
             {
-                Unit* target = Unit::GetUnit((*me), instance->GetData64(DATA_THRALL));
+                Unit* target = Unit::GetUnit(*me, instance->GetData64(DATA_THRALL));
                 if (target && target->isAlive())
                     me->AddThreat(target, 0.0f);
             }
         }
 
-        void JustDied(Unit* victim)
+        void JustDied(Unit* killer)
         {
-            hyjal_trashAI::JustDied(victim);
+            hyjal_trashAI::JustDied(killer);
             if (instance && IsEvent)
                 instance->SetData(DATA_AZGALOREVENT, DONE);
-            DoPlaySoundToSet(me, SOUND_ONDEATH);
+            Talk(SAY_ONDEATH);
         }
 
         void UpdateAI(const uint32 diff)
@@ -145,14 +123,14 @@ public:
                     go = true;
                     if (instance)
                     {
-                        AddWaypoint(0, 5492.91f,   -2404.61f,   1462.63f);
-                        AddWaypoint(1, 5531.76f,   -2460.87f,   1469.55f);
-                        AddWaypoint(2, 5554.58f,   -2514.66f,   1476.12f);
-                        AddWaypoint(3, 5554.16f,   -2567.23f,   1479.90f);
-                        AddWaypoint(4, 5540.67f,   -2625.99f,   1480.89f);
-                        AddWaypoint(5, 5508.16f,   -2659.2f,   1480.15f);
-                        AddWaypoint(6, 5489.62f,   -2704.05f,   1482.18f);
-                        AddWaypoint(7, 5457.04f,   -2726.26f,   1485.10f);
+                        AddWaypoint(0, 5492.91f,    -2404.61f,    1462.63f);
+                        AddWaypoint(1, 5531.76f,    -2460.87f,    1469.55f);
+                        AddWaypoint(2, 5554.58f,    -2514.66f,    1476.12f);
+                        AddWaypoint(3, 5554.16f,    -2567.23f,    1479.90f);
+                        AddWaypoint(4, 5540.67f,    -2625.99f,    1480.89f);
+                        AddWaypoint(5, 5508.16f,    -2659.2f,    1480.15f);
+                        AddWaypoint(6, 5489.62f,    -2704.05f,    1482.18f);
+                        AddWaypoint(7, 5457.04f,    -2726.26f,    1485.10f);
                         Start(false, true);
                         SetDespawnAtEnd(false);
                     }
@@ -198,11 +176,8 @@ public:
             DoMeleeAttackIfReady();
         }
     };
-};
 
-#define SPELL_THRASH 12787
-#define SPELL_CRIPPLE 31406
-#define SPELL_WARSTOMP 31408
+};
 
 class mob_lesser_doomguard : public CreatureScript
 {
@@ -216,9 +191,9 @@ public:
 
     struct mob_lesser_doomguardAI : public hyjal_trashAI
     {
-        mob_lesser_doomguardAI(Creature* c) : hyjal_trashAI(c)
+        mob_lesser_doomguardAI(Creature* creature) : hyjal_trashAI(creature)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
             if (instance)
                 AzgalorGUID = instance->GetData64(DATA_AZGALOR);
         }
@@ -245,7 +220,7 @@ public:
         {
         }
 
-        void WaypointReached(uint32 /*i*/)
+        void WaypointReached(uint32 /*waypointId*/)
         {
         }
 
@@ -255,7 +230,7 @@ public:
                 AttackStart(who);
         }
 
-        void JustDied(Unit* /*victim*/)
+        void JustDied(Unit* /*killer*/)
         {
         }
 
@@ -295,6 +270,7 @@ public:
             DoMeleeAttackIfReady();
         }
     };
+
 };
 
 void AddSC_boss_azgalor()

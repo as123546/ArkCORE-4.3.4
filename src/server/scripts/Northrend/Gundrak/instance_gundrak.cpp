@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- * Copyright (C) 2008 - 2012 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -19,7 +15,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "InstanceScript.h"
 #include "gundrak.h"
 
 #define MAX_ENCOUNTER     5
@@ -37,16 +34,16 @@ class instance_gundrak : public InstanceMapScript
 public:
     instance_gundrak() : InstanceMapScript("instance_gundrak", 604) { }
 
-    InstanceScript* GetInstanceScript(InstanceMap* pMap) const
+    InstanceScript* GetInstanceScript(InstanceMap* map) const
     {
-        return new instance_gundrak_InstanceMapScript(pMap);
+        return new instance_gundrak_InstanceMapScript(map);
     }
 
     struct instance_gundrak_InstanceMapScript : public InstanceScript
     {
-        instance_gundrak_InstanceMapScript(Map* pMap) : InstanceScript(pMap)
+        instance_gundrak_InstanceMapScript(Map* map) : InstanceScript(map)
         {
-            bHeroicMode = pMap->IsHeroic();
+            bHeroicMode = map->IsHeroic();
         }
 
         bool bHeroicMode;
@@ -135,7 +132,8 @@ public:
        bool IsEncounterInProgress() const
         {
             for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
-                if (m_auiEncounter[i] == IN_PROGRESS) return true;
+                if (m_auiEncounter[i] == IN_PROGRESS)
+                    return true;
 
             return false;
         }
@@ -515,6 +513,7 @@ public:
              return GO_STATE_ACTIVE;
          }
     };
+
 };
 
 class go_gundrak_altar : public GameObjectScript
@@ -522,39 +521,40 @@ class go_gundrak_altar : public GameObjectScript
 public:
     go_gundrak_altar() : GameObjectScript("go_gundrak_altar") { }
 
-    bool OnGossipHello(Player * /*player*/, GameObject *pGO)
+    bool OnGossipHello(Player* /*player*/, GameObject* go)
     {
-        InstanceScript* pInstance = pGO->GetInstanceScript();
+        InstanceScript* instance = go->GetInstanceScript();
         uint64 uiStatue = 0;
 
-        pGO->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
-        pGO->SetGoState(GO_STATE_ACTIVE);
+        go->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
+        go->SetGoState(GO_STATE_ACTIVE);
 
-        if (pInstance)
+        if (instance)
         {
-            switch (pGO->GetEntry())
+            switch (go->GetEntry())
             {
                 case 192518:
-                    uiStatue = pInstance->GetData64(DATA_SLAD_RAN_STATUE);
+                    uiStatue = instance->GetData64(DATA_SLAD_RAN_STATUE);
                     break;
                 case 192519:
-                    uiStatue = pInstance->GetData64(DATA_MOORABI_STATUE);
+                    uiStatue = instance->GetData64(DATA_MOORABI_STATUE);
                     break;
                 case 192520:
-                    uiStatue = pInstance->GetData64(DATA_DRAKKARI_COLOSSUS_STATUE);
+                    uiStatue = instance->GetData64(DATA_DRAKKARI_COLOSSUS_STATUE);
                     break;
             }
 
-            if (!pInstance->GetData64(DATA_STATUE_ACTIVATE))
+            if (!instance->GetData64(DATA_STATUE_ACTIVATE))
             {
-                pInstance->SetData64(DATA_STATUE_ACTIVATE, uiStatue);
-                pGO->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
-                pGO->SetGoState(GO_STATE_ACTIVE);
+                instance->SetData64(DATA_STATUE_ACTIVATE, uiStatue);
+                go->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
+                go->SetGoState(GO_STATE_ACTIVE);
             }
             return true;
         }
         return false;
     }
+
 };
 
 void AddSC_instance_gundrak()

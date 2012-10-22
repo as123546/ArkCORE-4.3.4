@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- * Copyright (C) 2008 - 2012 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -40,14 +36,14 @@ enum InstanceData64
 
 enum InstanceNpcs
 {
-    NPC_MALYGOS                  = 28859,
+    NPC_MALYGOS             = 28859,
     NPC_VORTEX_TRIGGER      = 30090,
     NPC_PORTAL_TRIGGER      = 30118,
-    NPC_POWER_SPARK             = 30084,
+    NPC_POWER_SPARK         = 30084,
     NPC_HOVER_DISK_MELEE    = 30234,
     NPC_HOVER_DISK_CASTER   = 30248,
-    NPC_ARCANE_OVERLOAD         = 30282,
-    NPC_WYRMREST_SKYTALON       = 30161,
+    NPC_ARCANE_OVERLOAD     = 30282,
+    NPC_WYRMREST_SKYTALON   = 30161,
     NPC_ALEXSTRASZA         = 32295
 };
 

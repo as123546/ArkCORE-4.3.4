@@ -1,30 +1,26 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2011-2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ARKCORE_CREATUREAI_H
-#define ARKCORE_CREATUREAI_H
+#ifndef TRINITY_CREATUREAI_H
+#define TRINITY_CREATUREAI_H
 
+#include "Creature.h"
 #include "UnitAI.h"
 #include "Common.h"
 
@@ -40,203 +36,160 @@ class SpellInfo;
 //Spell targets used by SelectSpell
 enum SelectTargetType
 {
-    SELECT_TARGET_DONTCARE = 0,          //All target types allowed
+    SELECT_TARGET_DONTCARE = 0,                             //All target types allowed
 
-    SELECT_TARGET_SELF,          //Only Self casting
+    SELECT_TARGET_SELF,                                     //Only Self casting
 
-    SELECT_TARGET_SINGLE_ENEMY,          //Only Single Enemy
-    SELECT_TARGET_AOE_ENEMY,          //Only AoE Enemy
-    SELECT_TARGET_ANY_ENEMY,          //AoE or Single Enemy
+    SELECT_TARGET_SINGLE_ENEMY,                             //Only Single Enemy
+    SELECT_TARGET_AOE_ENEMY,                                //Only AoE Enemy
+    SELECT_TARGET_ANY_ENEMY,                                //AoE or Single Enemy
 
-    SELECT_TARGET_SINGLE_FRIEND,          //Only Single Friend
-    SELECT_TARGET_AOE_FRIEND,          //Only AoE Friend
-    SELECT_TARGET_ANY_FRIEND,
-//AoE or Single Friend
+    SELECT_TARGET_SINGLE_FRIEND,                            //Only Single Friend
+    SELECT_TARGET_AOE_FRIEND,                               //Only AoE Friend
+    SELECT_TARGET_ANY_FRIEND                                //AoE or Single Friend
 };
 
 //Spell Effects used by SelectSpell
 enum SelectEffect
 {
-    SELECT_EFFECT_DONTCARE = 0,          //All spell effects allowed
-    SELECT_EFFECT_DAMAGE,          //Spell does damage
-    SELECT_EFFECT_HEALING,          //Spell does healing
-    SELECT_EFFECT_AURA,
-//Spell applies an aura
+    SELECT_EFFECT_DONTCARE = 0,                             //All spell effects allowed
+    SELECT_EFFECT_DAMAGE,                                   //Spell does damage
+    SELECT_EFFECT_HEALING,                                  //Spell does healing
+    SELECT_EFFECT_AURA                                      //Spell applies an aura
 };
 
 enum SCEquip
 {
-    EQUIP_NO_CHANGE = -1, EQUIP_UNEQUIP = 0
+    EQUIP_NO_CHANGE = -1,
+    EQUIP_UNEQUIP   = 0
 };
 
-class CreatureAI: public UnitAI
+class CreatureAI : public UnitAI
 {
-protected:
-    Creature * const me;
+    protected:
+        Creature* const me;
 
-    bool UpdateVictim();
-    bool UpdateVictimWithGaze();
+        bool UpdateVictim();
+        bool UpdateVictimWithGaze();
 
-    void SetGazeOn(Unit *target);
+        void SetGazeOn(Unit* target);
 
-    Creature *DoSummon(uint32 uiEntry, const Position &pos, uint32 uiDespawntime = 30000, TempSummonType uiType = TEMPSUMMON_CORPSE_TIMED_DESPAWN);
-    Creature *DoSummon(uint32 uiEntry, WorldObject *obj, float fRadius = 5.0f, uint32 uiDespawntime = 30000, TempSummonType uiType = TEMPSUMMON_CORPSE_TIMED_DESPAWN);
-    Creature *DoSummonFlyer(uint32 uiEntry, WorldObject *obj, float fZ, float fRadius = 5.0f, uint32 uiDespawntime = 30000, TempSummonType uiType = TEMPSUMMON_CORPSE_TIMED_DESPAWN);
+        Creature* DoSummon(uint32 entry, Position const& pos, uint32 despawnTime = 30000, TempSummonType summonType = TEMPSUMMON_CORPSE_TIMED_DESPAWN);
+        Creature* DoSummon(uint32 entry, WorldObject* obj, float radius = 5.0f, uint32 despawnTime = 30000, TempSummonType summonType = TEMPSUMMON_CORPSE_TIMED_DESPAWN);
+        Creature* DoSummonFlyer(uint32 entry, WorldObject* obj, float flightZ, float radius = 5.0f, uint32 despawnTime = 30000, TempSummonType summonType = TEMPSUMMON_CORPSE_TIMED_DESPAWN);
 
-public:
-    void Talk(uint8 id, uint64 WhisperGuid = 0);
-    explicit CreatureAI(Creature *c) :
-            UnitAI((Unit*) c), me(c), m_MoveInLineOfSight_locked(false)
-    {
-    }
+    public:
+        void Talk(uint8 id, uint64 WhisperGuid = 0);
+        explicit CreatureAI(Creature* creature) : UnitAI(creature), me(creature), m_MoveInLineOfSight_locked(false) {}
 
-    virtual ~CreatureAI()
-    {
-    }
+        virtual ~CreatureAI() {}
 
-    /// == Reactions At =================================
+        /// == Reactions At =================================
 
-    // Called if IsVisible(Unit *who) is true at each *who move, reaction at visibility zone enter
-    void MoveInLineOfSight_Safe(Unit *who);
+        // Called if IsVisible(Unit* who) is true at each who move, reaction at visibility zone enter
+        void MoveInLineOfSight_Safe(Unit* who);
 
-    // Called in Creature::Update when deathstate = DEAD. Inherited classes may maniuplate the ability to respawn based on scripted events.
-    virtual bool CanRespawn()
-    {
-        return true;
-    }
+        // Called in Creature::Update when deathstate = DEAD. Inherited classes may maniuplate the ability to respawn based on scripted events.
+        virtual bool CanRespawn() { return true; }
 
-    // Called for reaction at stopping attack at no attackers or targets
-    virtual void EnterEvadeMode();
+        // Called for reaction at stopping attack at no attackers or targets
+        virtual void EnterEvadeMode();
 
-    // Called for reaction at enter to combat if not in combat yet (enemy can be NULL)
-    virtual void EnterCombat(Unit* /*enemy*/)
-    {
-    }
+        // Called for reaction at enter to combat if not in combat yet (enemy can be NULL)
+        virtual void EnterCombat(Unit* /*victim*/) {}
 
-    // Called when the creature is killed
-    virtual void JustDied(Unit *)
-    {
-    }
+        // Called when the creature is killed
+        virtual void JustDied(Unit* /*killer*/) {}
 
-    // Called when the creature kills a unit
-    virtual void KilledUnit(Unit *)
-    {
-    }
+        // Called when the creature kills a unit
+        virtual void KilledUnit(Unit* /*victim*/) {}
 
-    // Called when the creature summon successfully other creature
-    virtual void JustSummoned(Creature*)
-    {
-    }
-    virtual void IsSummonedBy(Unit * /*summoner*/)
-    {
-    }
+        // Called when the creature summon successfully other creature
+        virtual void JustSummoned(Creature* /*summon*/) {}
+        virtual void IsSummonedBy(Unit* /*summoner*/) {}
 
-    virtual void SummonedCreatureDespawn(Creature* /*unit*/)
-    {
-    }
-    virtual void SummonedCreatureDies(Creature* /*unit*/, Unit* /*killer*/)
-    {
-    }
+        virtual void SummonedCreatureDespawn(Creature* /*summon*/) {}
+        virtual void SummonedCreatureDies(Creature* /*summon*/, Unit* /*killer*/) {}
 
-    // Called when hit by a spell
-    virtual void SpellHit(Unit*, const SpellInfo*)
-    {
-    }
+        // Called when hit by a spell
+        virtual void SpellHit(Unit* /*caster*/, SpellInfo const* /*spell*/) {}
 
-    // Called when spell hits a target
-    virtual void SpellHitTarget(Unit* /*target*/, const SpellInfo*)
-    {
-    }
+        // Called when spell hits a target
+        virtual void SpellHitTarget(Unit* /*target*/, SpellInfo const* /*spell*/) {}
 
-    // Called to get trigger target for aura effect
-    virtual Unit * GetAuraEffectTriggerTarget(uint32 /*spellId*/, uint8 /*effIndex*/)
-    {
-        return NULL;
-    }
+        // Called when the creature is target of hostile action: swing, hostile spell landed, fear/etc)
+        //virtual void AttackedBy(Unit* attacker);
+        virtual bool IsEscorted() { return false; }
 
-    // Called when the creature is target of hostile action: swing, hostile spell landed, fear/etc)
-    //virtual void AttackedBy(Unit* attacker);
-    virtual bool IsEscorted()
-    {
-        return false;
-    }
+        // Called when creature is spawned or respawned (for reseting variables)
+        virtual void JustRespawned() { Reset(); }
 
-    // Called when creature is spawned or respawned (for reseting variables)
-    virtual void JustRespawned()
-    {
-        Reset();
-    }
+        // Called at waypoint reached or point movement finished
+        virtual void MovementInform(uint32 /*type*/, uint32 /*id*/) {}
 
-    // Called at waypoint reached or point movement finished
-    virtual void MovementInform(uint32 /*MovementType*/, uint32 /*Data*/)
-    {
-    }
+        void OnCharmed(bool apply);
 
-    void OnCharmed(bool apply);
+        // Called at reaching home after evade
+        virtual void JustReachedHome() {}
 
-    //virtual void SpellClick(Player *player) {}
+        void DoZoneInCombat(Creature* creature = NULL, float maxRangeToNearestTarget = 50.0f);
 
-    // Called at reaching home after evade
-    virtual void JustReachedHome()
-    {
-    }
+        // Called at text emote receive from player
+        virtual void ReceiveEmote(Player* /*player*/, uint32 /*emoteId*/) {}
 
-    void DoZoneInCombat(Creature* pUnit = NULL);
-    void DoAttackerAreaInCombat(Unit* attacker, float range, Unit* pUnit = NULL);
-    void DoAttackerGroupInCombat(Player* attacker);
+        // Called when owner takes damage
+        virtual void OwnerDamagedBy(Unit* /*attacker*/) {}
 
-    // Called at text emote receive from player
-    virtual void ReceiveEmote(Player* /*pPlayer*/, uint32 /*text_emote*/)
-    {
-    }
+        // Called when owner attacks something
+        virtual void OwnerAttacked(Unit* /*target*/) {}
 
-    /// == Triggered Actions Requested ==================
+        /// == Triggered Actions Requested ==================
 
-    // Called when creature attack expected (if creature can and no have current victim)
-    // Note: for reaction at hostile action must be called AttackedBy function.
-    //virtual void AttackStart(Unit *) {}
+        // Called when creature attack expected (if creature can and no have current victim)
+        // Note: for reaction at hostile action must be called AttackedBy function.
+        //virtual void AttackStart(Unit*) {}
 
-    // Called at World update tick
-    //virtual void UpdateAI(const uint32 /*diff*/) {}
+        // Called at World update tick
+        //virtual void UpdateAI(const uint32 /*diff*/) {}
 
-    /// == State checks =================================
+        /// == State checks =================================
 
-    // Is unit visible for MoveInLineOfSight
-    //virtual bool IsVisible(Unit *) const { return false; }
+        // Is unit visible for MoveInLineOfSight
+        //virtual bool IsVisible(Unit*) const { return false; }
 
-    // called when the corpse of this creature gets removed
-    virtual void CorpseRemoved(uint32 & /*respawnDelay*/)
-    {
-    }
+        // called when the corpse of this creature gets removed
+        virtual void CorpseRemoved(uint32& /*respawnDelay*/) {}
 
-    // Called when victim entered water and creature can not enter water
-    //virtual bool canReachByRangeAttack(Unit*) { return false; }
+        // Called when victim entered water and creature can not enter water
+        //virtual bool canReachByRangeAttack(Unit*) { return false; }
 
-    /// == Fields =======================================
+        /// == Fields =======================================
 
-    // Pointer to controlled by AI creature
-    //Creature* const me;
+        // Pointer to controlled by AI creature
+        //Creature* const me;
 
-    virtual void PassengerBoarded(Unit * /*who*/, int8 /*seatId*/, bool /*apply*/)
-    {
-    }
+        virtual void PassengerBoarded(Unit* /*passenger*/, int8 /*seatId*/, bool /*apply*/) {}
 
-    virtual bool CanSeeAlways(WorldObject const* obj)
-    {
-        return false;
-    }
-protected:
-    virtual void MoveInLineOfSight(Unit *);
+        virtual void OnSpellClick(Unit* /*clicker*/) { }
 
-    bool _EnterEvadeMode();
+        virtual bool CanSeeAlways(WorldObject const* /*obj*/) { return false; }
+    protected:
+        virtual void MoveInLineOfSight(Unit* /*who*/);
 
-private:
-    bool m_MoveInLineOfSight_locked;
+        bool _EnterEvadeMode();
+
+    private:
+        bool m_MoveInLineOfSight_locked;
 };
 
 enum Permitions
 {
-    PERMIT_BASE_NO = -1, PERMIT_BASE_IDLE = 1, PERMIT_BASE_REACTIVE = 100, PERMIT_BASE_PROACTIVE = 200, PERMIT_BASE_FACTION_SPECIFIC = 400, PERMIT_BASE_SPECIAL = 800
+    PERMIT_BASE_NO                 = -1,
+    PERMIT_BASE_IDLE               = 1,
+    PERMIT_BASE_REACTIVE           = 100,
+    PERMIT_BASE_PROACTIVE          = 200,
+    PERMIT_BASE_FACTION_SPECIFIC   = 400,
+    PERMIT_BASE_SPECIAL            = 800
 };
 
 #endif

@@ -1,29 +1,24 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2011-2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ARKCORECORE_DYNAMICOBJECT_H
-#define ARKCORECORE_DYNAMICOBJECT_H
+#ifndef TRINITYCORE_DYNAMICOBJECT_H
+#define TRINITYCORE_DYNAMICOBJECT_H
 
 #include "Object.h"
 
@@ -31,73 +26,50 @@ class Unit;
 class Aura;
 class SpellInfo;
 
-class DynamicObject: public WorldObject, public GridObject<DynamicObject>
+enum DynamicObjectType
 {
-public:
-    explicit DynamicObject ();
-    ~DynamicObject ();
+    DYNAMIC_OBJECT_PORTAL           = 0x0,      // unused
+    DYNAMIC_OBJECT_AREA_SPELL       = 0x1,
+    DYNAMIC_OBJECT_FARSIGHT_FOCUS   = 0x2
+};
 
-    void AddToWorld ();
-    void RemoveFromWorld ();
+class DynamicObject : public WorldObject, public GridObject<DynamicObject>
+{
+    public:
+        DynamicObject(bool isWorldObject);
+        ~DynamicObject();
 
-    bool Create (uint32 guidlow, Unit *caster, uint32 spellId, const Position &pos, float radius, bool active);
-    void Update (uint32 p_time);
-    void Remove ();
-    void SetDuration (int32 newDuration);
-    int32 GetDuration () const;
-    void Delay (int32 delaytime);
-    void SetAura (Aura * aura);
-    void RemoveAura ();
-    void SetCasterViewpoint ();
-    void RemoveCasterViewpoint ();
-    Unit * GetCaster () const
-    {
-        return m_caster;
-    }
-    void BindToCaster ();
-    void UnbindFromCaster ();
-    uint32 GetSpellId () const
-    {
-        return GetUInt32Value(DYNAMICOBJECT_SPELLID);
-    }
-    uint64 GetCasterGUID () const
-    {
-        return GetUInt64Value(DYNAMICOBJECT_CASTER);
-    }
-    float GetRadius () const
-    {
-        return GetFloatValue(DYNAMICOBJECT_RADIUS);
-    }
-    Aura* GetAura ()
-    {
-        return m_aura;
-    }
+        void AddToWorld();
+        void RemoveFromWorld();
 
-    void Say (int32 textId, uint32 language, uint64 TargetGuid)
-    {
-        MonsterSay(textId, language, TargetGuid);
-    }
-    void Yell (int32 textId, uint32 language, uint64 TargetGuid)
-    {
-        MonsterYell(textId, language, TargetGuid);
-    }
-    void TextEmote (int32 textId, uint64 TargetGuid)
-    {
-        MonsterTextEmote(textId, TargetGuid);
-    }
-    void Whisper (int32 textId, uint64 receiver)
-    {
-        MonsterWhisper(textId, receiver);
-    }
-    void YellToZone (int32 textId, uint32 language, uint64 TargetGuid)
-    {
-        MonsterYellToZone(textId, language, TargetGuid);
-    }
+        bool CreateDynamicObject(uint32 guidlow, Unit* caster, SpellInfo const* spell, Position const& pos, float radius, DynamicObjectType type);
+        void Update(uint32 p_time);
+        void Remove();
+        void SetDuration(int32 newDuration);
+        int32 GetDuration() const;
+        void Delay(int32 delaytime);
+        void SetAura(Aura* aura);
+        void RemoveAura();
+        void SetCasterViewpoint();
+        void RemoveCasterViewpoint();
+        Unit* GetCaster() const { return _caster; }
+        void BindToCaster();
+        void UnbindFromCaster();
+        uint32 GetSpellId() const {  return GetUInt32Value(DYNAMICOBJECT_SPELLID); }
+        uint64 GetCasterGUID() const { return GetUInt64Value(DYNAMICOBJECT_CASTER); }
+        float GetRadius() const { return GetFloatValue(DYNAMICOBJECT_RADIUS); }
 
-protected:
-    int32 m_duration;          // for non-aura dynobjects
-    Aura * m_aura;
-    Unit * m_caster;
-    bool m_isViewpoint;
+        void Say(int32 textId, uint32 language, uint64 targetGuid) { MonsterSay(textId, language, targetGuid); }
+        void Yell(int32 textId, uint32 language, uint64 targetGuid) { MonsterYell(textId, language, targetGuid); }
+        void TextEmote(int32 textId, uint64 targetGuid) { MonsterTextEmote(textId, targetGuid); }
+        void Whisper(int32 textId, uint64 receiver) { MonsterWhisper(textId, receiver); }
+        void YellToZone(int32 textId, uint32 language, uint64 targetGuid) { MonsterYellToZone(textId, language, targetGuid); }
+
+    protected:
+        Aura* _aura;
+        Aura* _removedAura;
+        Unit* _caster;
+        int32 _duration; // for non-aura dynobjects
+        bool _isViewpoint;
 };
 #endif

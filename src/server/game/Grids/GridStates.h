@@ -1,81 +1,72 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2011-2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ARKCORE_GRIDSTATES_H
-#define ARKCORE_GRIDSTATES_H
+#ifndef TRINITY_GRIDSTATES_H
+#define TRINITY_GRIDSTATES_H
 
 #include "Map.h"
 #include "Object.h"
 
 class GridState
 {
-public:
-#ifdef ARKCORE_DEBUG
+    public:
+#ifdef TRINITY_DEBUG
 #define MAGIC_TESTVAL 0xFBE823BA
-    GridState()
-    {   i_Magic = MAGIC_TESTVAL;}
-    bool checkMagic()
-    {
-        if (i_Magic != MAGIC_TESTVAL)
+        GridState() { i_Magic = MAGIC_TESTVAL; }
+        bool checkMagic()
         {
-            sLog->outError("!!! GridState: Magic value gone !!!");
-            return false;
+            if (i_Magic != MAGIC_TESTVAL)
+            {
+                sLog->outError(LOG_FILTER_GENERAL, "!!! GridState: Magic value gone !!!");
+                return false;
+            }
+            return true;
         }
-        return true;
-    }
-    void setMagic()
-    {   i_Magic = MAGIC_TESTVAL;}
-    unsigned int i_Magic;
+        void setMagic() { i_Magic = MAGIC_TESTVAL; }
+        unsigned int i_Magic;
 #endif
-    virtual void Update (Map &, NGridType&, GridInfo &, const uint32 &x, const uint32 &y, const uint32 &t_diff) const = 0;
+        virtual ~GridState() {};
+        virtual void Update(Map &, NGridType&, GridInfo &, const uint32 t_diff) const = 0;
 };
 
-class InvalidState: public GridState
+class InvalidState : public GridState
 {
-public:
-
-    void Update (Map &, NGridType &, GridInfo &, const uint32 &x, const uint32 &y, const uint32 &t_diff) const;
+    public:
+        void Update(Map &, NGridType &, GridInfo &, const uint32 t_diff) const;
 };
 
-class ActiveState: public GridState
+class ActiveState : public GridState
 {
-public:
-
-    void Update (Map &, NGridType &, GridInfo &, const uint32 &x, const uint32 &y, const uint32 &t_diff) const;
+    public:
+        void Update(Map &, NGridType &, GridInfo &, const uint32 t_diff) const;
 };
 
-class IdleState: public GridState
+class IdleState : public GridState
 {
-public:
-
-    void Update (Map &, NGridType &, GridInfo &, const uint32 &x, const uint32 &y, const uint32 &t_diff) const;
+    public:
+        void Update(Map &, NGridType &, GridInfo &, const uint32 t_diff) const;
 };
 
-class RemovalState: public GridState
+class RemovalState : public GridState
 {
-public:
-
-    void Update (Map &, NGridType &, GridInfo &, const uint32 &x, const uint32 &y, const uint32 &t_diff) const;
+    public:
+        void Update(Map &, NGridType &, GridInfo &, const uint32 t_diff) const;
 };
 #endif
+

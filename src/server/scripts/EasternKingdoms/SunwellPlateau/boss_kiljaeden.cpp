@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
- *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
- *
- * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -28,7 +24,8 @@ EndScriptData */
 
 //TODO rewrite Armageddon
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "sunwell_plateau.h"
 #include <math.h>
 
@@ -255,9 +252,9 @@ public:
 
     struct boss_kalecgos_kjAI : public ScriptedAI
     {
-        boss_kalecgos_kjAI(Creature* c) : ScriptedAI(c)
+        boss_kalecgos_kjAI(Creature* creature) : ScriptedAI(creature)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
         InstanceScript* instance;
@@ -268,7 +265,7 @@ public:
         {
             OrbsEmpowered = 0;
             EmpowerCount = 0;
-            me->AddUnitMovementFlag(MOVEMENTFLAG_ONTRANSPORT | MOVEMENTFLAG_LEVITATING);
+            me->AddUnitMovementFlag(MOVEMENTFLAG_DISABLE_GRAVITY);
             me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
             me->setActive(true);
 
@@ -370,6 +367,7 @@ public:
             }
         }
     };
+
 };
 
 class go_orb_of_the_blue_flight : public GameObjectScript
@@ -393,6 +391,7 @@ public:
         }
         return true;
     }
+
 };
 
 //AI for Kil'jaeden Event Controller
@@ -408,9 +407,9 @@ public:
 
     struct mob_kiljaeden_controllerAI : public Scripted_NoMovementAI
     {
-        mob_kiljaeden_controllerAI(Creature* c) : Scripted_NoMovementAI(c), summons(me)
+        mob_kiljaeden_controllerAI(Creature* creature) : Scripted_NoMovementAI(creature), summons(me)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
         InstanceScript* instance;
@@ -427,7 +426,7 @@ public:
         {
             me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
             me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-            me->AddUnitState(UNIT_STAT_STUNNED);
+            me->AddUnitState(UNIT_STATE_STUNNED);
 
             ScriptedAI::InitializeAI();
         }
@@ -436,8 +435,9 @@ public:
         {
             phase = PHASE_DECEIVERS;
 
-            if (Creature* pKalecKJ = Unit::GetCreature((*me), instance->GetData64(DATA_KALECGOS_KJ)))
-                CAST_AI(boss_kalecgos_kj::boss_kalecgos_kjAI, pKalecKJ->AI())->ResetOrbs();
+            if (instance)
+                if (Creature* pKalecKJ = Unit::GetCreature((*me), instance->GetData64(DATA_KALECGOS_KJ)))
+                    CAST_AI(boss_kalecgos_kj::boss_kalecgos_kjAI, pKalecKJ->AI())->ResetOrbs();
             deceiverDeathCount = 0;
             bSummonedDeceivers = false;
             bKiljaedenDeath = false;
@@ -453,7 +453,7 @@ public:
                     summoned->CastSpell(summoned, SPELL_SHADOW_CHANNELING, false);
                     break;
                 case CREATURE_ANVEENA:
-                    summoned->AddUnitMovementFlag(MOVEMENTFLAG_ONTRANSPORT | MOVEMENTFLAG_LEVITATING);
+                    summoned->AddUnitMovementFlag(MOVEMENTFLAG_DISABLE_GRAVITY);
                     summoned->CastSpell(summoned, SPELL_ANVEENA_PRISON, true);
                     summoned->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                     break;
@@ -492,6 +492,7 @@ public:
             }
         }
     };
+
 };
 
 //AI for Kil'jaeden
@@ -507,9 +508,9 @@ public:
 
     struct boss_kiljaedenAI : public Scripted_NoMovementAI
     {
-        boss_kiljaedenAI(Creature* c) : Scripted_NoMovementAI(c), summons(me)
+        boss_kiljaedenAI(Creature* creature) : Scripted_NoMovementAI(creature), summons(me)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
         InstanceScript* instance;
@@ -661,15 +662,9 @@ public:
             DoScriptText(RAND(SAY_KJ_REFLECTION1, SAY_KJ_REFLECTION2), me);
             for (uint8 i = 0; i < 4; ++i)
             {
-                float x, y, z;
-                Unit* target = NULL;
-                for (uint8 z = 0; z < 6; ++z)
+                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true, -SPELL_VENGEANCE_OF_THE_BLUE_FLIGHT))
                 {
-                    target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true);
-                    if (!target || !target->HasAura(SPELL_VENGEANCE_OF_THE_BLUE_FLIGHT, 0))break;
-                }
-                if (target)
-                {
+                    float x, y, z;
                     target->GetPosition(x, y, z);
                     if (Creature* pSinisterReflection = me->SummonCreature(CREATURE_SINISTER_REFLECTION, x, y, z, 0, TEMPSUMMON_CORPSE_DESPAWN, 0))
                     {
@@ -760,7 +755,7 @@ public:
                                 if (pRandomPlayer)
                                     DoCast(pRandomPlayer, SPELL_LEGION_LIGHTNING, false);
                                 else
-                                    sLog->outError("try to cast SPELL_LEGION_LIGHTNING on invalid target");
+                                    sLog->outError(LOG_FILTER_TSCR, "try to cast SPELL_LEGION_LIGHTNING on invalid target");
 
                                 Timer[TIMER_LEGION_LIGHTNING] = (Phase == PHASE_SACRIFICE) ? 18000 : 30000; // 18 seconds in PHASE_SACRIFICE
                                 Timer[TIMER_SOUL_FLAY] = 2500;
@@ -779,8 +774,8 @@ public:
                             for (uint8 i = 1; i < Phase; ++i)
                             {
                                 float sx, sy;
-                                sx = ShieldOrbLocations[0][0] + sin(ShieldOrbLocations[i][0]);
-                                sy = ShieldOrbLocations[0][1] + sin(ShieldOrbLocations[i][1]);
+                                sx = ShieldOrbLocations[0][0] + std::sin(ShieldOrbLocations[i][0]);
+                                sy = ShieldOrbLocations[0][1] + std::sin(ShieldOrbLocations[i][1]);
                                 me->SummonCreature(CREATURE_SHIELD_ORB, sx, sy, SHIELD_ORB_Z, 0, TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 45000);
                             }
                             Timer[TIMER_SUMMON_SHILEDORB] = urand(30000, 60000); // 30-60seconds cooldown
@@ -905,6 +900,7 @@ public:
             }
         }
     };
+
 };
 
 //AI for Hand of the Deceiver
@@ -920,9 +916,9 @@ public:
 
     struct mob_hand_of_the_deceiverAI : public ScriptedAI
     {
-        mob_hand_of_the_deceiverAI(Creature* c) : ScriptedAI(c)
+        mob_hand_of_the_deceiverAI(Creature* creature) : ScriptedAI(creature)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
         InstanceScript* instance;
@@ -1005,6 +1001,7 @@ public:
             DoMeleeAttackIfReady();
         }
     };
+
 };
 
 //AI for Felfire Portal
@@ -1020,7 +1017,7 @@ public:
 
     struct mob_felfire_portalAI : public Scripted_NoMovementAI
     {
-        mob_felfire_portalAI(Creature* c) : Scripted_NoMovementAI(c) {}
+        mob_felfire_portalAI(Creature* creature) : Scripted_NoMovementAI(creature) {}
 
         uint32 uiSpawnFiendTimer;
 
@@ -1049,6 +1046,7 @@ public:
             } else uiSpawnFiendTimer -= diff;
         }
     };
+
 };
 
 //AI for Felfire Fiend
@@ -1064,7 +1062,7 @@ public:
 
     struct mob_volatile_felfire_fiendAI : public ScriptedAI
     {
-        mob_volatile_felfire_fiendAI(Creature* c) : ScriptedAI(c) {}
+        mob_volatile_felfire_fiendAI(Creature* creature) : ScriptedAI(creature) {}
 
         uint32 uiExplodeTimer;
 
@@ -1106,6 +1104,7 @@ public:
             }
         }
     };
+
 };
 
 //AI for Armageddon target
@@ -1121,7 +1120,7 @@ public:
 
     struct mob_armageddonAI : public Scripted_NoMovementAI
     {
-        mob_armageddonAI(Creature* c) : Scripted_NoMovementAI(c) {}
+        mob_armageddonAI(Creature* creature) : Scripted_NoMovementAI(creature) {}
 
         uint8 spell;
         uint32 uiTimer;
@@ -1160,6 +1159,7 @@ public:
             } else uiTimer -=diff;
         }
     };
+
 };
 
 //AI for Shield Orbs
@@ -1175,9 +1175,9 @@ public:
 
     struct mob_shield_orbAI : public ScriptedAI
     {
-        mob_shield_orbAI(Creature* c) : ScriptedAI(c)
+        mob_shield_orbAI(Creature* creature) : ScriptedAI(creature)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
         InstanceScript* instance;
@@ -1190,7 +1190,7 @@ public:
 
         void Reset()
         {
-            me->AddUnitMovementFlag(MOVEMENTFLAG_LEVITATING);
+            me->SetDisableGravity(true);
             bPointReached = true;
             uiTimer = urand(500, 1000);
             uiCheckTimer = 1000;
@@ -1207,13 +1207,13 @@ public:
             {
                 if (bClockwise)
                 {
-                    y = my - r * sin(c);
-                    x = mx - r * cos(c);
+                    y = my - r * std::sin(c);
+                    x = mx - r * std::cos(c);
                 }
                 else
                 {
-                    y = my + r * sin(c);
-                    x = mx + r * cos(c);
+                    y = my + r * std::sin(c);
+                    x = mx + r * std::cos(c);
                 }
                 bPointReached = false;
                 uiCheckTimer = 1000;
@@ -1247,6 +1247,7 @@ public:
             bPointReached = true;
         }
     };
+
 };
 
 //AI for Sinister Reflection
@@ -1262,7 +1263,7 @@ public:
 
     struct mob_sinster_reflectionAI : public ScriptedAI
     {
-        mob_sinster_reflectionAI(Creature* c) : ScriptedAI(c) {}
+        mob_sinster_reflectionAI(Creature* creature) : ScriptedAI(creature) {}
 
         uint8 victimClass;
         uint32 uiTimer[3];
@@ -1416,6 +1417,7 @@ public:
                     uiTimer[i] -= diff;
             }
     };
+
 };
 
 void AddSC_boss_kiljaeden()

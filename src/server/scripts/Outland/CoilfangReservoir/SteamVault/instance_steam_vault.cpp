@@ -1,27 +1,19 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 /* ScriptData
@@ -31,7 +23,8 @@ SDComment:  Instance script and access panel GO
 SDCategory: Coilfang Resevoir, The Steamvault
 EndScriptData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "InstanceScript.h"
 #include "steam_vault.h"
 
 #define MAX_ENCOUNTER 4
@@ -51,21 +44,22 @@ class go_main_chambers_access_panel : public GameObjectScript
 public:
     go_main_chambers_access_panel() : GameObjectScript("go_main_chambers_access_panel") { }
 
-    bool OnGossipHello(Player* /*pPlayer*/, GameObject* pGo)
+    bool OnGossipHello(Player* /*player*/, GameObject* go)
     {
-        InstanceScript* pInstance = pGo->GetInstanceScript();
+        InstanceScript* instance = go->GetInstanceScript();
 
-        if (!pInstance)
+        if (!instance)
             return false;
 
-        if (pGo->GetEntry() == ACCESS_PANEL_HYDRO && (pInstance->GetData(TYPE_HYDROMANCER_THESPIA) == DONE || pInstance->GetData(TYPE_HYDROMANCER_THESPIA) == SPECIAL))
-            pInstance->SetData(TYPE_HYDROMANCER_THESPIA, SPECIAL);
+        if (go->GetEntry() == ACCESS_PANEL_HYDRO && (instance->GetData(TYPE_HYDROMANCER_THESPIA) == DONE || instance->GetData(TYPE_HYDROMANCER_THESPIA) == SPECIAL))
+            instance->SetData(TYPE_HYDROMANCER_THESPIA, SPECIAL);
 
-        if (pGo->GetEntry() == ACCESS_PANEL_MEK && (pInstance->GetData(TYPE_MEKGINEER_STEAMRIGGER) == DONE || pInstance->GetData(TYPE_MEKGINEER_STEAMRIGGER) == SPECIAL))
-            pInstance->SetData(TYPE_MEKGINEER_STEAMRIGGER, SPECIAL);
+        if (go->GetEntry() == ACCESS_PANEL_MEK && (instance->GetData(TYPE_MEKGINEER_STEAMRIGGER) == DONE || instance->GetData(TYPE_MEKGINEER_STEAMRIGGER) == SPECIAL))
+            instance->SetData(TYPE_MEKGINEER_STEAMRIGGER, SPECIAL);
 
         return true;
     }
+
 };
 
 class instance_steam_vault : public InstanceMapScript
@@ -73,14 +67,14 @@ class instance_steam_vault : public InstanceMapScript
 public:
     instance_steam_vault() : InstanceMapScript("instance_steam_vault", 545) { }
 
-    InstanceScript* GetInstanceScript(InstanceMap* pMap) const
+    InstanceScript* GetInstanceScript(InstanceMap* map) const
     {
-        return new instance_steam_vault_InstanceMapScript(pMap);
+        return new instance_steam_vault_InstanceMapScript(map);
     }
 
     struct instance_steam_vault_InstanceMapScript : public InstanceScript
     {
-        instance_steam_vault_InstanceMapScript(Map* pMap) : InstanceScript(pMap) {Initialize();};
+        instance_steam_vault_InstanceMapScript(Map* map) : InstanceScript(map) {}
 
         uint32 m_auiEncounter[MAX_ENCOUNTER];
 
@@ -113,23 +107,23 @@ public:
             return false;
         }
 
-        void OnCreatureCreate(Creature* pCreature, bool /*add*/)
+        void OnCreatureCreate(Creature* creature)
         {
-              switch (pCreature->GetEntry())
+              switch (creature->GetEntry())
             {
-              case 17797: ThespiaGUID = pCreature->GetGUID(); break;
-              case 17796: MekgineerGUID = pCreature->GetGUID(); break;
-              case 17798: KalithreshGUID = pCreature->GetGUID(); break;
+              case 17797: ThespiaGUID = creature->GetGUID(); break;
+              case 17796: MekgineerGUID = creature->GetGUID(); break;
+              case 17798: KalithreshGUID = creature->GetGUID(); break;
             }
         }
 
-        void OnGameObjectCreate(GameObject* pGo, bool /*add*/)
+        void OnGameObjectCreate(GameObject* go)
         {
-            switch (pGo->GetEntry())
+            switch (go->GetEntry())
             {
-            case MAIN_CHAMBERS_DOOR: MainChambersDoor = pGo->GetGUID(); break;
-            case ACCESS_PANEL_HYDRO: AccessPanelHydro = pGo->GetGUID(); break;
-            case ACCESS_PANEL_MEK:   AccessPanelMek = pGo->GetGUID(); break;
+            case MAIN_CHAMBERS_DOOR: MainChambersDoor = go->GetGUID(); break;
+            case ACCESS_PANEL_HYDRO: AccessPanelHydro = go->GetGUID(); break;
+            case ACCESS_PANEL_MEK:   AccessPanelMek = go->GetGUID(); break;
             }
         }
 
@@ -145,7 +139,7 @@ public:
                         if (GetData(TYPE_MEKGINEER_STEAMRIGGER) == SPECIAL)
                             HandleGameObject(MainChambersDoor, true);
 
-                        sLog->outDebug(LOG_FILTER_TSCR, "TSCR: Instance Steamvault: Access panel used.");
+                        sLog->outDebug(LOG_FILTER_TSCR, "Instance Steamvault: Access panel used.");
                     }
                     m_auiEncounter[0] = data;
                     break;
@@ -157,7 +151,7 @@ public:
                         if (GetData(TYPE_HYDROMANCER_THESPIA) == SPECIAL)
                             HandleGameObject(MainChambersDoor, true);
 
-                        sLog->outDebug(LOG_FILTER_TSCR, "TSCR: Instance Steamvault: Access panel used.");
+                        sLog->outDebug(LOG_FILTER_TSCR, "Instance Steamvault: Access panel used.");
                     }
                     m_auiEncounter[1] = data;
                     break;
@@ -206,16 +200,12 @@ public:
         std::string GetSaveData()
         {
             OUT_SAVE_INST_DATA;
+
             std::ostringstream stream;
-            stream << m_auiEncounter[0] << " " << m_auiEncounter[1] << " " << m_auiEncounter[2] << " " << m_auiEncounter[3];
-            char* out = new char[stream.str().length() + 1];
-            strcpy(out, stream.str().c_str());
-            if (out)
-            {
-                OUT_SAVE_INST_DATA_COMPLETE;
-                return out;
-            }
-            return NULL;
+            stream << m_auiEncounter[0] << ' ' << m_auiEncounter[1] << ' ' << m_auiEncounter[2] << ' ' << m_auiEncounter[3];
+
+            OUT_SAVE_INST_DATA_COMPLETE;
+            return stream.str();
         }
 
         void Load(const char* in)
@@ -234,6 +224,7 @@ public:
             OUT_LOAD_INST_DATA_COMPLETE;
         }
     };
+
 };
 
 void AddSC_instance_steam_vault()

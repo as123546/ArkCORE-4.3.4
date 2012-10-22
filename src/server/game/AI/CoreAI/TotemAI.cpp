@@ -1,26 +1,22 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2011-2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gamePCH.h"
 #include "TotemAI.h"
 #include "Totem.h"
 #include "Creature.h"
@@ -32,7 +28,7 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 
-int TotemAI::Permissible(const Creature *creature)
+int TotemAI::Permissible(Creature const* creature)
 {
     if (creature->isTotem())
         return PERMIT_BASE_PROACTIVE;
@@ -40,13 +36,12 @@ int TotemAI::Permissible(const Creature *creature)
     return PERMIT_BASE_NO;
 }
 
-TotemAI::TotemAI(Creature *c) :
-        CreatureAI(c), i_victimGuid(0)
+TotemAI::TotemAI(Creature* c) : CreatureAI(c), i_victimGuid(0)
 {
     ASSERT(c->isTotem());
 }
 
-void TotemAI::MoveInLineOfSight(Unit *)
+void TotemAI::MoveInLineOfSight(Unit* /*who*/)
 {
 }
 
@@ -55,7 +50,7 @@ void TotemAI::EnterEvadeMode()
     me->CombatStop(true);
 }
 
-void TotemAI::UpdateAI(const uint32 /*diff*/)
+void TotemAI::UpdateAI(uint32 const /*diff*/)
 {
     if (me->ToTotem()->GetTotemType() != TOTEM_ACTIVE)
         return;
@@ -64,7 +59,7 @@ void TotemAI::UpdateAI(const uint32 /*diff*/)
         return;
 
     // Search spell
-    SpellInfo const *spellInfo = sSpellMgr->GetSpellInfo(me->ToTotem()->GetSpell());
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(me->ToTotem()->GetSpell());
     if (!spellInfo)
         return;
 
@@ -77,7 +72,9 @@ void TotemAI::UpdateAI(const uint32 /*diff*/)
     Unit* victim = i_victimGuid ? ObjectAccessor::GetUnit(*me, i_victimGuid) : NULL;
 
     // Search victim if no, not attackable, or out of range, or friendly (possible in case duel end)
-    if (!victim || !victim->isTargetableForAttack() || !me->IsWithinDistInMap(victim, max_range) || me->IsFriendlyTo(victim) || !me->canSeeOrDetect(victim))
+    if (!victim ||
+        !victim->isTargetableForAttack() || !me->IsWithinDistInMap(victim, max_range) ||
+        me->IsFriendlyTo(victim) || !me->canSeeOrDetect(victim))
     {
         victim = NULL;
         Trinity::NearestAttackableUnitInObjectRangeCheck u_check(me, me, max_range);
@@ -92,22 +89,22 @@ void TotemAI::UpdateAI(const uint32 /*diff*/)
         i_victimGuid = victim->GetGUID();
 
         // attack
-        me->SetInFront(victim);          // client change orientation by self
+        me->SetInFront(victim);                         // client change orientation by self
         me->CastSpell(victim, me->ToTotem()->GetSpell(), false);
     }
     else
         i_victimGuid = 0;
 }
 
-void TotemAI::AttackStart(Unit *)
+void TotemAI::AttackStart(Unit* /*victim*/)
 {
     // Sentry totem sends ping on attack
     if (me->GetEntry() == SENTRY_TOTEM_ENTRY && me->GetOwner()->GetTypeId() == TYPEID_PLAYER)
     {
-        WorldPacket data(MSG_MINIMAP_PING, (8 + 4 + 4));
+        WorldPacket data(MSG_MINIMAP_PING, (8+4+4));
         data << me->GetGUID();
         data << me->GetPositionX();
         data << me->GetPositionY();
-        ((Player*) me->GetOwner())->GetSession()->SendPacket(&data);
+        ((Player*)me->GetOwner())->GetSession()->SendPacket(&data);
     }
 }

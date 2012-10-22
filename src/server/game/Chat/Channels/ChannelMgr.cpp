@@ -1,36 +1,30 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2011-2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gamePCH.h"
 #include "ChannelMgr.h"
 
 #include "World.h"
 
-ChannelMgr* channelMgr (uint32 team)
+ChannelMgr* channelMgr(uint32 team)
 {
     if (sWorld->getBoolConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_CHANNEL))
-        return ACE_Singleton<AllianceChannelMgr, ACE_Null_Mutex>::instance();          // cross-faction
+        return ACE_Singleton<AllianceChannelMgr, ACE_Null_Mutex>::instance();        // cross-faction
 
     if (team == ALLIANCE)
         return ACE_Singleton<AllianceChannelMgr, ACE_Null_Mutex>::instance();
@@ -40,7 +34,7 @@ ChannelMgr* channelMgr (uint32 team)
     return NULL;
 }
 
-ChannelMgr::~ChannelMgr ()
+ChannelMgr::~ChannelMgr()
 {
     for (ChannelMap::iterator itr = channels.begin(); itr != channels.end(); ++itr)
         delete itr->second;
@@ -48,7 +42,7 @@ ChannelMgr::~ChannelMgr ()
     channels.clear();
 }
 
-Channel *ChannelMgr::GetJoinChannel (std::string name, uint32 channel_id)
+Channel* ChannelMgr::GetJoinChannel(std::string name, uint32 channel_id)
 {
     std::wstring wname;
     Utf8toWStr(name, wname);
@@ -56,7 +50,7 @@ Channel *ChannelMgr::GetJoinChannel (std::string name, uint32 channel_id)
 
     if (channels.find(wname) == channels.end())
     {
-        Channel *nchan = new Channel(name, channel_id, team);
+        Channel* nchan = new Channel(name, channel_id, team);
         channels[wname] = nchan;
         return nchan;
     }
@@ -64,7 +58,7 @@ Channel *ChannelMgr::GetJoinChannel (std::string name, uint32 channel_id)
     return channels[wname];
 }
 
-Channel *ChannelMgr::GetChannel (std::string name, Player *p, bool pkt)
+Channel* ChannelMgr::GetChannel(std::string name, Player* p, bool pkt)
 {
     std::wstring wname;
     Utf8toWStr(name, wname);
@@ -87,7 +81,7 @@ Channel *ChannelMgr::GetChannel (std::string name, Player *p, bool pkt)
         return i->second;
 }
 
-void ChannelMgr::LeftChannel (std::string name)
+void ChannelMgr::LeftChannel(std::string name)
 {
     std::wstring wname;
     Utf8toWStr(name, wname);
@@ -107,8 +101,8 @@ void ChannelMgr::LeftChannel (std::string name)
     }
 }
 
-void ChannelMgr::MakeNotOnPacket (WorldPacket *data, std::string name)
+void ChannelMgr::MakeNotOnPacket(WorldPacket* data, std::string name)
 {
-    data->Initialize(SMSG_CHANNEL_NOTIFY, (1 + 10));          // we guess size
-    (*data) << (uint8) 0x05 << name;
+    data->Initialize(SMSG_CHANNEL_NOTIFY, (1+10));  // we guess size
+    (*data) << (uint8)0x05 << name;
 }

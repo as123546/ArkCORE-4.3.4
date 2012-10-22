@@ -1,25 +1,20 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2011-2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef _HOSTILEREFMANAGER
@@ -35,53 +30,45 @@ class SpellInfo;
 
 //=================================================
 
-class HostileRefManager: public RefManager<Unit, ThreatManager>
+class HostileRefManager : public RefManager<Unit, ThreatManager>
 {
-private:
-    Unit *iOwner;
-public:
-    explicit HostileRefManager (Unit *pOwner)
-    {
-        iOwner = pOwner;
-    }
-    ~HostileRefManager ();
+    private:
+        Unit* iOwner;
+    public:
+        explicit HostileRefManager(Unit* owner) { iOwner = owner; }
+        ~HostileRefManager();
 
-    Unit* getOwner ()
-    {
-        return iOwner;
-    }
+        Unit* getOwner() { return iOwner; }
 
-    // send threat to all my hateres for the pVictim
-    // The pVictim is hated than by them as well
-    // use for buffs and healing threat functionality
-    void threatAssist (Unit *pVictim, float fThreat, SpellInfo const *threatSpell = 0, bool pSingleTarget = false);
+        // send threat to all my hateres for the victim
+        // The victim is hated than by them as well
+        // use for buffs and healing threat functionality
+        void threatAssist(Unit* victim, float baseThreat, SpellInfo const* threatSpell = NULL);
 
-    void addTempThreat (float fThreat, bool apply);
+        void addTempThreat(float threat, bool apply);
 
-    void addThreatPercent (int32 iPercent);
+        void addThreatPercent(int32 percent);
 
-    // The references are not needed anymore
-    // tell the source to remove them from the list and free the mem
-    void deleteReferences ();
+        // The references are not needed anymore
+        // tell the source to remove them from the list and free the mem
+        void deleteReferences();
 
-    // Remove specific faction references
-    void deleteReferencesForFaction (uint32 faction);
+        // Remove specific faction references
+        void deleteReferencesForFaction(uint32 faction);
 
-    void UpdateVisibility ();
-    HostileReference* getFirst ()
-    {
-        return ((HostileReference*) RefManager<Unit, ThreatManager>::getFirst());
-    }
+        HostileReference* getFirst() { return ((HostileReference*) RefManager<Unit, ThreatManager>::getFirst()); }
 
-    void updateThreatTables ();
+        void updateThreatTables();
 
-    void setOnlineOfflineState (bool bIsOnline);
+        void setOnlineOfflineState(bool isOnline);
 
-    // set state for one reference, defined by Unit
-    void setOnlineOfflineState (Unit *pCreature, bool bIsOnline);
+        // set state for one reference, defined by Unit
+        void setOnlineOfflineState(Unit* creature, bool isOnline);
 
-    // delete one reference, defined by Unit
-    void deleteReference (Unit *pCreature);
+        // delete one reference, defined by Unit
+        void deleteReference(Unit* creature);
+
+        void UpdateVisibility();
 };
 //=================================================
 #endif

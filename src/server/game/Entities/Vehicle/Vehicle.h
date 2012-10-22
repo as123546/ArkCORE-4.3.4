@@ -1,29 +1,24 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2011-2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __ARKCORE_VEHICLE_H
-#define __ARKCORE_VEHICLE_H
+#ifndef __TRINITY_VEHICLE_H
+#define __TRINITY_VEHICLE_H
 
 #include "ObjectDefines.h"
 #include "VehicleDefines.h"
@@ -31,57 +26,57 @@
 struct VehicleEntry;
 class Unit;
 
-class Vehicle
+typedef std::set<uint64> GuidSet;
+
+class Vehicle : public TransportBase
 {
-public:
-    explicit Vehicle (Unit *unit, VehicleEntry const *vehInfo, uint32 creatureEntry);
-    virtual ~Vehicle ();
+    public:
+        explicit Vehicle(Unit* unit, VehicleEntry const* vehInfo, uint32 creatureEntry);
+        virtual ~Vehicle();
 
-    void Install ();
-    void Uninstall ();
-    void Reset (bool evading = false);
-    void InstallAllAccessories (bool evading);
-    void ApplyAllImmunities();
+        void Install();
+        void Uninstall();
+        void Reset(bool evading = false);
+        void InstallAllAccessories(bool evading);
+        void ApplyAllImmunities();
+        void InstallAccessory(uint32 entry, int8 seatId, bool minion, uint8 type, uint32 summonTime);   //! May be called from scripts
 
-    Unit *GetBase () const
-    {
-        return me;
-    }
-    VehicleEntry const *GetVehicleInfo () const
-    {
-        return m_vehicleInfo;
-    }
+        Unit* GetBase() const { return _me; }
+        VehicleEntry const* GetVehicleInfo() const { return _vehicleInfo; }
+        uint32 GetCreatureEntry() const { return _creatureEntry; }
 
-    uint32 const& GetCreatureEntry() const { return m_creatureEntry; }
-    bool HasEmptySeat (int8 seatId) const;
-    Unit *GetPassenger (int8 seatId) const;
-    int8 GetNextEmptySeat (int8 seatId, bool next) const;
-    uint8 GetAvailableSeatCount () const;
+        bool HasEmptySeat(int8 seatId) const;
+        Unit* GetPassenger(int8 seatId) const;
+        int8 GetNextEmptySeat(int8 seatId, bool next) const;
+        uint8 GetAvailableSeatCount() const;
 
-    bool AddPassenger (Unit *passenger, int8 seatId = -1);
-    void EjectPassenger (Unit* passenger, Unit* controller);
-    void RemovePassenger (Unit *passenger);
-    void RelocatePassengers (float x, float y, float z, float ang);
-    void RemoveAllPassengers ();
-    void Dismiss ();
-    bool IsVehicleInUse ()
-    {
-        return m_Seats.begin() != m_Seats.end();
-    }
-    void Relocate (Position pos);
+        bool AddPassenger(Unit* passenger, int8 seatId = -1);
+        void EjectPassenger(Unit* passenger, Unit* controller);
+        void RemovePassenger(Unit* passenger);
+        void RelocatePassengers();
+        void RemoveAllPassengers();
+        void Dismiss();
+        void TeleportVehicle(float x, float y, float z, float ang);
+        bool IsVehicleInUse() { return Seats.begin() != Seats.end(); }
 
-    SeatMap m_Seats;
+        SeatMap Seats;
 
-    VehicleSeatEntry const* GetSeatForPassenger (Unit* passenger);
+        VehicleSeatEntry const* GetSeatForPassenger(Unit* passenger);
 
-private:
-    SeatMap::iterator GetSeatIteratorForPassenger (Unit* passenger);
-    void InitMovementInfoForBase ();
-    void InstallAccessory (uint32 entry, int8 seatId, bool minion, uint8 type, uint32 summonTime);
+    private:
+        SeatMap::iterator GetSeatIteratorForPassenger(Unit* passenger);
+        void InitMovementInfoForBase();
 
-    Unit *me;
-    VehicleEntry const *m_vehicleInfo;
-    uint32 m_usableSeatNum;          // Number of seats that match VehicleSeatEntry::UsableByPlayer, used for proper display flags
-    uint32 m_creatureEntry;
+        /// This method transforms supplied transport offsets into global coordinates
+        void CalculatePassengerPosition(float& x, float& y, float& z, float& o);
+
+        /// This method transforms supplied global coordinates into local offsets
+        void CalculatePassengerOffset(float& x, float& y, float& z, float& o);
+
+        Unit* _me;
+        VehicleEntry const* _vehicleInfo;
+        GuidSet vehiclePlayers;
+        uint32 _usableSeatNum;         // Number of seats that match VehicleSeatEntry::UsableByPlayer, used for proper display flags
+        uint32 _creatureEntry;         // Can be different than me->GetBase()->GetEntry() in case of players
 };
 #endif

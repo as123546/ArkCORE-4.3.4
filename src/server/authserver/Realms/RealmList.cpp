@@ -1,35 +1,27 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2011-2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "Common.h"
 #include "RealmList.h"
 #include "Database/DatabaseEnv.h"
 
-RealmList::RealmList() :
-        m_UpdateInterval(0), m_NextUpdateTime(time(NULL))
-{
-}
+RealmList::RealmList() : m_UpdateInterval(0), m_NextUpdateTime(time(NULL)) { }
 
 // Load the realm list from the database
 void RealmList::Initialize(uint32 updateInterval)
@@ -40,7 +32,7 @@ void RealmList::Initialize(uint32 updateInterval)
     UpdateRealms(true);
 }
 
-void RealmList::UpdateRealm(uint32 ID, const std::string& name, const std::string& address, uint32 port, uint8 icon, uint8 color, uint8 timezone, AccountTypes allowedSecurityLevel, float popu, uint32 build)
+void RealmList::UpdateRealm(uint32 ID, const std::string& name, const std::string& address, uint16 port, uint8 icon, RealmFlags flag, uint8 timezone, AccountTypes allowedSecurityLevel, float popu, uint32 build)
 {
     // Create new if not exist or update existed
     Realm& realm = m_realms[name];
@@ -48,14 +40,14 @@ void RealmList::UpdateRealm(uint32 ID, const std::string& name, const std::strin
     realm.m_ID = ID;
     realm.name = name;
     realm.icon = icon;
-    realm.color = color;
+    realm.flag = flag;
     realm.timezone = timezone;
     realm.allowedSecurityLevel = allowedSecurityLevel;
     realm.populationLevel = popu;
 
     // Append port to IP address.
     std::ostringstream ss;
-    ss << address << ":" << port;
+    ss << address << ':' << port;
     realm.address = ss.str();
     realm.gamebuild = build;
 }
@@ -77,9 +69,9 @@ void RealmList::UpdateIfNeed()
 
 void RealmList::UpdateRealms(bool init)
 {
-    sLog->outDetail("Updating Realm List...");
+    sLog->outInfo(LOG_FILTER_AUTHSERVER, "Updating Realm List...");
 
-    PreparedStatement *stmt = LoginDatabase.GetPreparedStatement(LOGIN_GET_REALMLIST);
+    PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_REALMLIST);
     PreparedQueryResult result = LoginDatabase.Query(stmt);
 
     // Circle through results and add them to the realm map
@@ -87,22 +79,22 @@ void RealmList::UpdateRealms(bool init)
     {
         do
         {
-            Field *fields = result->Fetch();
-            uint32 realmId = fields[0].GetUInt32();
-            const std::string& name = fields[1].GetString();
+            Field* fields = result->Fetch();
+            uint32 realmId             = fields[0].GetUInt32();
+            const std::string& name    = fields[1].GetString();
             const std::string& address = fields[2].GetString();
-            uint32 port = fields[3].GetUInt32();
-            uint8 icon = fields[4].GetUInt8();
-            uint8 color = fields[5].GetUInt8();
-            uint8 timezone = fields[6].GetUInt8();
+            uint16 port                = fields[3].GetUInt16();
+            uint8 icon                 = fields[4].GetUInt8();
+            RealmFlags flag            = RealmFlags(fields[5].GetUInt8());
+            uint8 timezone             = fields[6].GetUInt8();
             uint8 allowedSecurityLevel = fields[7].GetUInt8();
-            float pop = fields[8].GetFloat();
-            uint32 build = fields[9].GetUInt32();
+            float pop                  = fields[8].GetFloat();
+            uint32 build               = fields[9].GetUInt32();
 
-            UpdateRealm(realmId, name, address, port, icon, color, timezone, (allowedSecurityLevel <= SEC_ADMINISTRATOR ? AccountTypes(allowedSecurityLevel) : SEC_ADMINISTRATOR), pop, build);
+            UpdateRealm(realmId, name, address, port, icon, flag, timezone, (allowedSecurityLevel <= SEC_ADMINISTRATOR ? AccountTypes(allowedSecurityLevel) : SEC_ADMINISTRATOR), pop, build);
 
             if (init)
-                sLog->outString("Added realm \"%s\".", fields[1].GetCString());
+                sLog->outInfo(LOG_FILTER_AUTHSERVER, "Added realm \"%s\".", fields[1].GetCString());
         }
         while (result->NextRow());
     }

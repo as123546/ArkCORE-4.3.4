@@ -1,30 +1,25 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2011-2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 /** \file
- \ingroup Trinityd
- */
+    \ingroup Trinityd
+*/
 
 #include "Common.h"
 #include "Configuration/Config.h"
@@ -36,45 +31,45 @@
 #include "World.h"
 #include "SHA1.h"
 
-RASocket::RASocket ()
+RASocket::RASocket()
 {
-    iMinLevel = sConfig->GetIntDefault("RA.MinLevel", 3);
+    _minLevel = ConfigMgr::GetIntDefault("RA.MinLevel", 3);
 }
 
-RASocket::~RASocket ()
+RASocket::~RASocket()
 {
 }
 
-int RASocket::open (void *)
+int RASocket::open(void *)
 {
     ACE_INET_Addr remote_addr;
 
     if (peer().get_remote_addr(remote_addr) == -1)
     {
-        sLog->outError("RASocket::open: peer().get_remote_addr error is %s", ACE_OS::strerror(errno));
+        sLog->outError(LOG_FILTER_WORLDSERVER, "RASocket::open: peer().get_remote_addr error is %s", ACE_OS::strerror(errno));
         return -1;
     }
 
-    sLog->outRemote("Incoming connection from %s", remote_addr.get_host_addr());
+    sLog->outDebug(LOG_FILTER_REMOTECOMMAND, "Incoming connection from %s", remote_addr.get_host_addr());
 
     return activate();
 }
 
-int RASocket::handle_close (ACE_HANDLE, ACE_Reactor_Mask)
+int RASocket::handle_close(ACE_HANDLE, ACE_Reactor_Mask)
 {
-    sLog->outRemote("Closing connection");
+    sLog->outDebug(LOG_FILTER_REMOTECOMMAND, "Closing connection");
     peer().close_reader();
     wait();
     destroy();
     return 0;
 }
 
-int RASocket::send (const std::string& line)
+int RASocket::send(const std::string& line)
 {
     return size_t(peer().send(line.c_str(), line.length())) == line.length() ? 0 : -1;
 }
 
-int RASocket::recv_line (ACE_Message_Block& buffer)
+int RASocket::recv_line(ACE_Message_Block& buffer)
 {
     char byte;
     for (;;)
@@ -110,17 +105,25 @@ int RASocket::recv_line (ACE_Message_Block& buffer)
     return 0;
 }
 
-int RASocket::recv_line (std::string& out_line)
+int RASocket::recv_line(std::string& out_line)
 {
     char buf[4096];
 
-    ACE_Data_Block db(sizeof(buf), ACE_Message_Block::MB_DATA, buf, 0, 0, ACE_Message_Block::DONT_DELETE, 0);
+    ACE_Data_Block db(sizeof (buf),
+            ACE_Message_Block::MB_DATA,
+            buf,
+            0,
+            0,
+            ACE_Message_Block::DONT_DELETE,
+            0);
 
-    ACE_Message_Block message_block(&db, ACE_Message_Block::DONT_DELETE, 0);
+    ACE_Message_Block message_block(&db,
+            ACE_Message_Block::DONT_DELETE,
+            0);
 
     if (recv_line(message_block) == -1)
     {
-        sLog->outRemote("Recv error %s", ACE_OS::strerror(errno));
+        sLog->outDebug(LOG_FILTER_REMOTECOMMAND, "Recv error %s", ACE_OS::strerror(errno));
         return -1;
     }
 
@@ -129,16 +132,15 @@ int RASocket::recv_line (std::string& out_line)
     return 0;
 }
 
-int RASocket::process_command (const std::string& command)
+int RASocket::process_command(const std::string& command)
 {
     if (command.length() == 0)
         return 0;
 
-    sLog->outRemote("Got command: %s", command.c_str());
+    sLog->outDebug(LOG_FILTER_REMOTECOMMAND, "Got command: %s", command.c_str());
 
     // handle quit, exit and logout commands to terminate connection
-    if (command == "quit" || command == "exit" || command == "logout")
-    {
+    if (command == "quit" || command == "exit" || command == "logout") {
         (void) send("Bye\r\n");
         return -1;
     }
@@ -171,61 +173,67 @@ int RASocket::process_command (const std::string& command)
     return 0;
 }
 
-int RASocket::check_access_level (const std::string& user)
+int RASocket::check_access_level(const std::string& user)
 {
-    std::string safe_user = user;
+    std::string safeUser = user;
 
-    AccountMgr::normalizeString(safe_user);
-    LoginDatabase.EscapeString(safe_user);
+    AccountMgr::normalizeString(safeUser);
 
-    QueryResult result = LoginDatabase.PQuery("SELECT a.id, aa.gmlevel, aa.RealmID FROM account a LEFT JOIN account_access aa ON (a.id = aa.id) WHERE a.username = '%s'", safe_user.c_str());
+
+
+    PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_ACCOUNT_ACCESS);
+    stmt->setString(0, safeUser);
+    PreparedQueryResult result = LoginDatabase.Query(stmt);
 
     if (!result)
     {
-        sLog->outRemote("User %s does not exist in database", user.c_str());
+        sLog->outDebug(LOG_FILTER_REMOTECOMMAND, "User %s does not exist in database", user.c_str());
         return -1;
     }
 
-    Field *fields = result->Fetch();
+    Field* fields = result->Fetch();
 
-    if (fields[1].GetUInt32() < iMinLevel)
+    if (fields[1].GetUInt8() < _minLevel)
     {
-        sLog->outRemote("User %s has no privilege to login", user.c_str());
+        sLog->outDebug(LOG_FILTER_REMOTECOMMAND, "User %s has no privilege to login", user.c_str());
         return -1;
     }
     else if (fields[2].GetInt32() != -1)
     {
-        sLog->outRemote("User %s has to be assigned on all realms (with RealmID = '-1')", user.c_str());
+        sLog->outDebug(LOG_FILTER_REMOTECOMMAND, "User %s has to be assigned on all realms (with RealmID = '-1')", user.c_str());
         return -1;
     }
 
     return 0;
 }
 
-int RASocket::check_password (const std::string& user, const std::string& pass)
+int RASocket::check_password(const std::string& user, const std::string& pass)
 {
     std::string safe_user = user;
     AccountMgr::normalizeString(safe_user);
-    LoginDatabase.EscapeString(safe_user);
 
     std::string safe_pass = pass;
     AccountMgr::normalizeString(safe_pass);
-    LoginDatabase.EscapeString(safe_pass);
 
-    std::string hash = sAccountMgr->CalculateShaPassHash(safe_user, safe_pass);
+    std::string hash = AccountMgr::CalculateShaPassHash(safe_user, safe_pass);
 
-    QueryResult check = LoginDatabase.PQuery("SELECT 1 FROM account WHERE username = '%s' AND sha_pass_hash = '%s'", safe_user.c_str(), hash.c_str());
+    PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_CHECK_PASSWORD_BY_NAME);
 
-    if (!check)
+    stmt->setString(0, safe_user);
+    stmt->setString(1, hash);
+
+    PreparedQueryResult result = LoginDatabase.Query(stmt);
+
+    if (!result)
     {
-        sLog->outRemote("Wrong password for user: %s", user.c_str());
+        sLog->outDebug(LOG_FILTER_REMOTECOMMAND, "Wrong password for user: %s", user.c_str());
         return -1;
     }
 
     return 0;
 }
 
-int RASocket::authenticate ()
+int RASocket::authenticate()
 {
     if (send(std::string("Username: ")) == -1)
         return -1;
@@ -241,7 +249,7 @@ int RASocket::authenticate ()
     if (recv_line(pass) == -1)
         return -1;
 
-    sLog->outRemote("Login attempt for user: %s", user.c_str());
+    sLog->outDebug(LOG_FILTER_REMOTECOMMAND, "Login attempt for user: %s", user.c_str());
 
     if (check_access_level(user) == -1)
         return -1;
@@ -249,77 +257,86 @@ int RASocket::authenticate ()
     if (check_password(user, pass) == -1)
         return -1;
 
-    sLog->outRemote("User login: %s", user.c_str());
+    sLog->outDebug(LOG_FILTER_REMOTECOMMAND, "User login: %s", user.c_str());
 
     return 0;
 }
 
-int RASocket::subnegotiate ()
+
+int RASocket::subnegotiate()
 {
     char buf[1024];
 
-    ACE_Data_Block db(sizeof(buf), ACE_Message_Block::MB_DATA, buf, 0, 0, ACE_Message_Block::DONT_DELETE, 0);
+    ACE_Data_Block db(sizeof (buf),
+        ACE_Message_Block::MB_DATA,
+        buf,
+        0,
+        0,
+        ACE_Message_Block::DONT_DELETE,
+        0);
 
-    ACE_Message_Block message_block(&db, ACE_Message_Block::DONT_DELETE, 0);
+    ACE_Message_Block message_block(&db,
+        ACE_Message_Block::DONT_DELETE,
+        0);
 
     const size_t recv_size = message_block.space();
 
     // Wait a maximum of 1000ms for negotiation packet - not all telnet clients may send it
     ACE_Time_Value waitTime = ACE_Time_Value(1);
-    const ssize_t n = peer().recv(message_block.wr_ptr(), recv_size, &waitTime);
+    const ssize_t n = peer().recv(message_block.wr_ptr(),
+        recv_size, &waitTime);
 
     if (n <= 0)
         return int(n);
 
     if (n >= 1024)
     {
-        sLog->outRemote("RASocket::subnegotiate: allocated buffer 1024 bytes was too small for negotiation packet, size: %u", n);
+        sLog->outDebug(LOG_FILTER_REMOTECOMMAND, "RASocket::subnegotiate: allocated buffer 1024 bytes was too small for negotiation packet, size: %u", uint32(n));
         return -1;
     }
 
     buf[n] = '\0';
 
-#ifdef _DEBUG
+    #ifdef _DEBUG
     for (uint8 i = 0; i < n; )
     {
         uint8 iac = buf[i];
-        if (iac == 0xFF)          // "Interpret as Command" (IAC)
+        if (iac == 0xFF)   // "Interpret as Command" (IAC)
         {
             uint8 command = buf[++i];
             std::stringstream ss;
             switch (command)
             {
-                case 0xFB:          // WILL
-                ss << "WILL ";
-                break;
-                case 0xFC:// WON'T
-                ss << "WON'T ";
-                break;
-                case 0xFD:// DO
-                ss << "DO ";
-                break;
-                case 0xFE:// DON'T
-                ss << "DON'T ";
-                break;
+                case 0xFB:        // WILL
+                    ss << "WILL ";
+                    break;
+                case 0xFC:        // WON'T
+                    ss << "WON'T ";
+                    break;
+                case 0xFD:        // DO
+                    ss << "DO ";
+                    break;
+                case 0xFE:        // DON'T
+                    ss << "DON'T ";
+                    break;
                 default:
-                return -1;// not allowed
+                    return -1;      // not allowed
             }
 
             uint8 param = buf[++i];
             ss << uint32(param);
-            sLog->outRemote(ss.str().c_str());
+            sLog->outDebug(LOG_FILTER_REMOTECOMMAND, ss.str().c_str());
         }
         ++i;
     }
-#endif
+    #endif
 
     //! Just send back end of subnegotiation packet
-    uint8 const reply[2] =
-    { 0xFF, 0xF0 };
+    uint8 const reply[2] = {0xFF, 0xF0};
     return peer().send(reply, 2);
 }
 
-int RASocket::svc (void)
+int RASocket::svc(void)
 {
     //! Subnegotiation may differ per client - do not react on it
     subnegotiate();
@@ -356,7 +373,7 @@ int RASocket::svc (void)
     return 0;
 }
 
-void RASocket::zprint (void* callbackArg, const char * szText)
+void RASocket::zprint(void* callbackArg, const char * szText)
 {
     if (!szText || !callbackArg)
         return;
@@ -369,12 +386,12 @@ void RASocket::zprint (void* callbackArg, const char * szText)
 
     if (socket->putq(mb, const_cast<ACE_Time_Value*>(&ACE_Time_Value::zero)) == -1)
     {
-        sLog->outRemote("Failed to enqueue message, queue is full or closed. Error is %s", ACE_OS::strerror(errno));
+        sLog->outDebug(LOG_FILTER_REMOTECOMMAND, "Failed to enqueue message, queue is full or closed. Error is %s", ACE_OS::strerror(errno));
         mb->release();
     }
 }
 
-void RASocket::commandFinished (void* callbackArg, bool /*success*/)
+void RASocket::commandFinished(void* callbackArg, bool /*success*/)
 {
     if (!callbackArg)
         return;
@@ -390,7 +407,7 @@ void RASocket::commandFinished (void* callbackArg, bool /*success*/)
     if (socket->putq(mb) == -1)
     {
         // getting here is bad, command can't be marked as complete
-        sLog->outRemote("Failed to enqueue command end message. Error is %s", ACE_OS::strerror(errno));
+        sLog->outDebug(LOG_FILTER_REMOTECOMMAND, "Failed to enqueue command end message. Error is %s", ACE_OS::strerror(errno));
         mb->release();
     }
 }

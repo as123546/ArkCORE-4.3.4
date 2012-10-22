@@ -1,43 +1,72 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef DEF_MOLTEN_CORE_H
 #define DEF_MOLTEN_CORE_H
 
-#define DATA_FLAMEWAKERPRIEST 1
-#define DATA_GARRISDEAD 2
-#define DATA_GEDDONISDEAD 3
-#define DATA_GEHENNASISDEAD 4
-#define DATA_GOLEMAGGISDEAD 5
-#define DATA_GOLEMAGG_DEATH 6
-#define DATA_LUCIFRONISDEAD 7
-#define DATA_MAGMADARISDEAD 8
-#define DATA_MAJORDOMOISDEAD 9
-#define DATA_SHAZZRAHISDEAD 10
-#define DATA_SULFURON 11
-#define DATA_SULFURONISDEAD 12
-#define DATA_GOLEMAGG 13
+enum Encounters
+{
+    BOSS_LUCIFRON                   = 0,
+    BOSS_MAGMADAR                   = 1,
+    BOSS_GEHENNAS                   = 2,
+    BOSS_GARR                       = 3,
+    BOSS_SHAZZRAH                   = 4,
+    BOSS_BARON_GEDDON               = 5,
+    BOSS_SULFURON_HARBINGER         = 6,
+    BOSS_GOLEMAGG_THE_INCINERATOR   = 7,
+    BOSS_MAJORDOMO_EXECUTUS         = 8,
+    BOSS_RAGNAROS                   = 9,
+    MAX_ENCOUNTER,
+};
+
+enum Actions
+{
+    ACTION_START_RAGNAROS       = 0,
+    ACTION_START_RAGNAROS_ALT   = 1,
+};
+
+Position const RagnarosTelePos   = {829.159f, -815.773f, -228.972f, 5.30500f};
+Position const RagnarosSummonPos = {838.510f, -829.840f, -232.000f, 2.00000f};
+
+enum Creatures
+{
+    NPC_LUCIFRON                    = 12118,
+    NPC_MAGMADAR                    = 11982,
+    NPC_GEHENNAS                    = 12259,
+    NPC_GARR                        = 12057,
+    NPC_SHAZZRAH                    = 12264,
+    NPC_BARON_GEDDON                = 12056,
+    NPC_SULFURON_HARBINGER          = 12098,
+    NPC_GOLEMAGG_THE_INCINERATOR    = 11988,
+    NPC_MAJORDOMO_EXECUTUS          = 12018,
+    NPC_RAGNAROS                    = 11502,
+    NPC_FLAMEWAKER_HEALER           = 11663,
+    NPC_FLAMEWAKER_ELITE            = 11664,
+};
+
+enum GameObjects
+{
+    GO_CACHE_OF_THE_FIRELORD        = 179703,
+};
+
+enum Data
+{
+    DATA_RAGNAROS_ADDS  = 0,
+};
+
 #endif

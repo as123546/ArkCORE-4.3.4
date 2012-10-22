@@ -1,27 +1,19 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 /* ScriptData
@@ -31,7 +23,9 @@ SDComment: Script used for testing escortAI
 SDCategory: Script Examples
 EndScriptData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
+#include "ScriptedGossip.h"
 #include "ScriptedEscortAI.h"
 
 enum eEnums
@@ -72,20 +66,20 @@ class example_escort : public CreatureScript
         struct example_escortAI : public npc_escortAI
         {
             // CreatureAI functions
-            example_escortAI(Creature* pCreature) : npc_escortAI(pCreature) { }
+            example_escortAI(Creature* creature) : npc_escortAI(creature) { }
 
             uint32 m_uiDeathCoilTimer;
             uint32 m_uiChatTimer;
 
-            void JustSummoned(Creature* pSummoned)
+            void JustSummoned(Creature* summoned)
             {
-                pSummoned->AI()->AttackStart(me);
+                summoned->AI()->AttackStart(me);
             }
 
             // Pure Virtual Functions (Have to be implemented)
-            void WaypointReached(uint32 uiWP)
+            void WaypointReached(uint32 waypointId)
             {
-                switch (uiWP)
+                switch (waypointId)
                 {
                     case 1:
                         DoScriptText(SAY_WP_1, me);
@@ -95,23 +89,23 @@ class example_escort : public CreatureScript
                         me->SummonCreature(NPC_FELBOAR, me->GetPositionX()+5.0f, me->GetPositionY()+7.0f, me->GetPositionZ(), 0.0f, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 3000);
                         break;
                     case 4:
-                        if (Player* pPlayer = GetPlayerForEscort())
+                        if (Player* player = GetPlayerForEscort())
                         {
                             //pTmpPlayer is the target of the text
-                            DoScriptText(SAY_WP_3, me, pPlayer);
+                            DoScriptText(SAY_WP_3, me, player);
                             //pTmpPlayer is the source of the text
-                            DoScriptText(SAY_WP_4, pPlayer);
+                            DoScriptText(SAY_WP_4, player);
                         }
                         break;
                 }
             }
 
-            void EnterCombat(Unit* /*pWho*/)
+            void EnterCombat(Unit* /*who*/)
             {
                 if (HasEscortState(STATE_ESCORT_ESCORTING))
                 {
-                    if (Player* pPlayer = GetPlayerForEscort())
-                        DoScriptText(SAY_AGGRO1, me, pPlayer);
+                    if (Player* player = GetPlayerForEscort())
+                        DoScriptText(SAY_AGGRO1, me, player);
                 }
                 else
                     DoScriptText(SAY_AGGRO2, me);
@@ -123,19 +117,17 @@ class example_escort : public CreatureScript
                 m_uiChatTimer = 4000;
             }
 
-            void JustDied(Unit* pKiller)
+            void JustDied(Unit* killer)
             {
                 if (HasEscortState(STATE_ESCORT_ESCORTING))
                 {
-                    if (Player* pPlayer = GetPlayerForEscort())
+                    if (Player* player = GetPlayerForEscort())
                     {
                         // not a likely case, code here for the sake of example
-                        if (pKiller == me)
-                        {
-                            DoScriptText(SAY_DEATH_1, me, pPlayer);
-                        }
+                        if (killer == me)
+                            DoScriptText(SAY_DEATH_1, me, player);
                         else
-                            DoScriptText(SAY_DEATH_2, me, pPlayer);
+                            DoScriptText(SAY_DEATH_2, me, player);
                     }
                 }
                 else
@@ -186,49 +178,49 @@ class example_escort : public CreatureScript
             }
         };
 
-        CreatureAI* GetAI(Creature* pCreature) const
+        CreatureAI* GetAI(Creature* creature) const
         {
-            return new example_escortAI(pCreature);
+            return new example_escortAI(creature);
         }
 
-        bool OnGossipHello(Player* pPlayer, Creature* pCreature)
+        bool OnGossipHello(Player* player, Creature* creature)
         {
-            pPlayer->TalkedToCreature(pCreature->GetEntry(), pCreature->GetGUID());
-            pPlayer->PrepareGossipMenu(pCreature, 0);
+            player->TalkedToCreature(creature->GetEntry(), creature->GetGUID());
+            player->PrepareGossipMenu(creature, 0);
 
-            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
-            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
-            pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_3, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+3);
+            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
+            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_2, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
+            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_3, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+3);
 
-            pPlayer->SendPreparedGossip(pCreature);
+            player->SendPreparedGossip(creature);
 
             return true;
         }
 
-        bool OnGossipSelect(Player* pPlayer, Creature* pCreature, uint32 /*uiSender*/, uint32 uiAction)
+        bool OnGossipSelect(Player* player, Creature* creature, uint32 /*sender*/, uint32 action)
         {
-            pPlayer->PlayerTalkClass->ClearMenus();
-            npc_escortAI* pEscortAI = CAST_AI(example_escort::example_escortAI, pCreature->AI());
+            player->PlayerTalkClass->ClearMenus();
+            npc_escortAI* pEscortAI = CAST_AI(example_escort::example_escortAI, creature->AI());
 
-            switch (uiAction)
+            switch (action)
             {
                 case GOSSIP_ACTION_INFO_DEF+1:
-                    pPlayer->CLOSE_GOSSIP_MENU();
+                    player->CLOSE_GOSSIP_MENU();
 
                     if (pEscortAI)
-                        pEscortAI->Start(true, true, pPlayer->GetGUID());
+                        pEscortAI->Start(true, true, player->GetGUID());
                     break;
                 case GOSSIP_ACTION_INFO_DEF+2:
-                    pPlayer->CLOSE_GOSSIP_MENU();
+                    player->CLOSE_GOSSIP_MENU();
 
                     if (pEscortAI)
-                        pEscortAI->Start(false, false, pPlayer->GetGUID());
+                        pEscortAI->Start(false, false, player->GetGUID());
                     break;
                 case GOSSIP_ACTION_INFO_DEF+3:
-                    pPlayer->CLOSE_GOSSIP_MENU();
+                    player->CLOSE_GOSSIP_MENU();
 
                     if (pEscortAI)
-                        pEscortAI->Start(false, true, pPlayer->GetGUID());
+                        pEscortAI->Start(false, true, player->GetGUID());
                     break;
                 default:
                     return false;                                   // nothing defined      -> trinity core handling

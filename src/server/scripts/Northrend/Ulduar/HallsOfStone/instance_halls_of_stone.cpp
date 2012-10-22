@@ -1,7 +1,5 @@
 /*
- * Copyright (C) 2008 - 2012 TrinityCore <http://www.trinitycore.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -17,7 +15,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "InstanceScript.h"
 #include "halls_of_stone.h"
 
 #define MAX_ENCOUNTER 4
@@ -148,7 +147,7 @@ public:
                     if (m_auiEncounter[2] == DONE)
                         go->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_INTERACT_COND);
                     break;
-                case GO_TRIBUNAL_SKYROOM_FLOOR:
+                case 191527:
                     uiTribunalSkyFloor = go->GetGUID();
                     break;
             }
@@ -158,28 +157,28 @@ public:
         {
             switch (type)
             {
+                case DATA_MAIDEN_OF_GRIEF_EVENT:
+                    m_auiEncounter[1] = data;
+                    if (m_auiEncounter[1] == DONE)
+                        HandleGameObject(uiBrannDoor, true);
+                    break;
                 case DATA_KRYSTALLUS_EVENT:
                     m_auiEncounter[0] = data;
                     if (m_auiEncounter[0] == DONE)
                         HandleGameObject(uiMaidenOfGriefDoor, true);
                     break;
-                case DATA_MAIDEN_OF_GRIEF_EVENT:
-                    m_auiEncounter[1] = data;
-                    if (m_auiEncounter[1] == DONE)
-                        HandleGameObject(uiBrannDoor, true);
+                case DATA_SJONNIR_EVENT:
+                    m_auiEncounter[3] = data;
                     break;
                 case DATA_BRANN_EVENT:
                     m_auiEncounter[2] = data;
                     if (m_auiEncounter[2] == DONE)
                     {
                         HandleGameObject(uiSjonnirDoor, true);
-                        GameObject *go = instance->GetGameObject(uiTribunalChest);
+                        GameObject* go = instance->GetGameObject(uiTribunalChest);
                         if (go)
                             go->RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_INTERACT_COND);
                     }
-                    break;
-                case DATA_SJONNIR_EVENT:
-                    m_auiEncounter[3] = data;
                     break;
             }
 
@@ -193,8 +192,8 @@ public:
             {
                 case DATA_KRYSTALLUS_EVENT:                return m_auiEncounter[0];
                 case DATA_MAIDEN_OF_GRIEF_EVENT:           return m_auiEncounter[1];
-                case DATA_BRANN_EVENT:                     return m_auiEncounter[2];
-                case DATA_SJONNIR_EVENT:                   return m_auiEncounter[3];
+                case DATA_SJONNIR_EVENT:                   return m_auiEncounter[2];
+                case DATA_BRANN_EVENT:                     return m_auiEncounter[3];
             }
 
             return 0;
@@ -261,11 +260,13 @@ public:
                 for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
                     if (m_auiEncounter[i] == IN_PROGRESS)
                         m_auiEncounter[i] = NOT_STARTED;
+
             } else OUT_LOAD_INST_DATA_FAIL;
 
             OUT_LOAD_INST_DATA_COMPLETE;
         }
     };
+
 };
 
 void AddSC_instance_halls_of_stone()

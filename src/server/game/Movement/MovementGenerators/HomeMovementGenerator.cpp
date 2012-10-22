@@ -1,28 +1,22 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2011-2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gamePCH.h"
 #include "HomeMovementGenerator.h"
 #include "Creature.h"
 #include "CreatureAI.h"
@@ -30,29 +24,18 @@
 #include "MoveSplineInit.h"
 #include "MoveSpline.h"
 
-void HomeMovementGenerator<Creature>::Initialize (Creature & owner)
+void HomeMovementGenerator<Creature>::Initialize(Creature & owner)
 {
-    float x, y, z;
-    owner.GetHomePosition(x, y, z, ori);
-    owner.AddUnitState(UNIT_STAT_EVADE);
     _setTargetLocation(owner);
 }
 
-void HomeMovementGenerator<Creature>::Finalize (Creature & owner)
-{
-    owner.ClearUnitState(UNIT_STAT_EVADE);
-}
-
-void HomeMovementGenerator<Creature>::Reset (Creature &)
+void HomeMovementGenerator<Creature>::Reset(Creature &)
 {
 }
 
-void HomeMovementGenerator<Creature>::_setTargetLocation (Creature & owner)
+void HomeMovementGenerator<Creature>::_setTargetLocation(Creature & owner)
 {
-    if (!&owner)
-        return;
-
-    if (owner.HasUnitState(UNIT_STAT_ROOT | UNIT_STAT_STUNNED | UNIT_STAT_DISTRACTED))
+    if (owner.HasUnitState(UNIT_STATE_ROOT | UNIT_STATE_STUNNED | UNIT_STATE_DISTRACTED))
         return;
 
     Movement::MoveSplineInit init(owner);
@@ -68,10 +51,10 @@ void HomeMovementGenerator<Creature>::_setTargetLocation (Creature & owner)
     init.Launch();
 
     arrived = false;
-    owner.ClearUnitState(UNIT_STAT_ALL_STATE & ~UNIT_STAT_EVADE);
+    owner.ClearUnitState(UNIT_STATE_ALL_STATE & ~UNIT_STATE_EVADE);
 }
 
-bool HomeMovementGenerator<Creature>::Update (Creature &owner, const uint32& time_diff)
+bool HomeMovementGenerator<Creature>::Update(Creature &owner, const uint32 /*time_diff*/)
 {
     arrived = owner.movespline->Finalized();
     return !arrived;
@@ -81,7 +64,7 @@ void HomeMovementGenerator<Creature>::Finalize(Creature& owner)
 {
     if (arrived)
     {
-        owner.ClearUnitState(UNIT_STAT_EVADE);
+        owner.ClearUnitState(UNIT_STATE_EVADE);
         owner.SetWalk(true);
         owner.LoadCreaturesAddon(true);
         owner.AI()->JustReachedHome();

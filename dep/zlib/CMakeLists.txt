@@ -1,4 +1,4 @@
-# Copyright (C) 2008 - 2012 TrinityCore <http://www.trinitycore.org/>
+# Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
 #
 # This file is free software; as a special exception the author gives
 # unlimited permission to copy and/or distribute it, with or without
@@ -14,7 +14,6 @@ SET(zlib_STAT_SRCS
   crc32.c                                                                                                                                             
   deflate.c                                                                                                                                           
   example.c                                                                                                                                           
-  gzio.c
   infback.c                                                                                                                                           
   inffast.c                                                                                                                                           
   inflate.c                                                                                                                                           

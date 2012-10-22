@@ -1,27 +1,19 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 /* ScriptData
@@ -31,7 +23,9 @@ SDComment:
 SDCategory: Hellfire Citadel, Magtheridon's lair
 EndScriptData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
+#include "InstanceScript.h"
 #include "magtheridons_lair.h"
 
 enum eSpells
@@ -58,9 +52,8 @@ class instance_magtheridons_lair : public InstanceMapScript
 
         struct instance_magtheridons_lair_InstanceMapScript : public InstanceScript
         {
-            instance_magtheridons_lair_InstanceMapScript(Map* pMap) : InstanceScript(pMap)
+            instance_magtheridons_lair_InstanceMapScript(Map* map) : InstanceScript(map)
             {
-                Initialize();
             }
 
             uint32 m_auiEncounter[MAX_ENCOUNTER];
@@ -89,32 +82,34 @@ class instance_magtheridons_lair : public InstanceMapScript
             bool IsEncounterInProgress() const
             {
                 for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
-                    if (m_auiEncounter[i] == IN_PROGRESS) return true;
+                    if (m_auiEncounter[i] == IN_PROGRESS)
+                        return true;
+
                 return false;
             }
 
-            void OnCreatureCreate(Creature* pCreature, bool /*add*/)
+            void OnCreatureCreate(Creature* creature)
             {
-                switch (pCreature->GetEntry())
+                switch (creature->GetEntry())
                 {
                 case 17257:
-                    MagtheridonGUID = pCreature->GetGUID();
+                    MagtheridonGUID = creature->GetGUID();
                     break;
                 case 17256:
-                    ChannelerGUID.insert(pCreature->GetGUID());
+                    ChannelerGUID.insert(creature->GetGUID());
                     break;
                 }
             }
 
-            void OnGameObjectCreate(GameObject* pGo, bool /*add*/)
+            void OnGameObjectCreate(GameObject* go)
             {
-                switch (pGo->GetEntry())
+                switch (go->GetEntry())
                 {
                 case 181713:
-                    pGo->SetUInt32Value(GAMEOBJECT_FLAGS, 0);
+                    go->SetUInt32Value(GAMEOBJECT_FLAGS, 0);
                     break;
                 case 183847:
-                    DoorGUID = pGo->GetGUID();
+                    DoorGUID = go->GetGUID();
                     break;
                 case 184653: // hall
                 case 184634: // six columns
@@ -123,7 +118,7 @@ class instance_magtheridons_lair : public InstanceMapScript
                 case 184637:
                 case 184638:
                 case 184639:
-                    ColumnGUID.insert(pGo->GetGUID());
+                    ColumnGUID.insert(go->GetGUID());
                     break;
                 }
             }
@@ -158,7 +153,7 @@ class instance_magtheridons_lair : public InstanceMapScript
                             m_auiEncounter[1] = NOT_STARTED;
                             for (std::set<uint64>::const_iterator i = ChannelerGUID.begin(); i != ChannelerGUID.end(); ++i)
                             {
-                                if (Creature *Channeler = instance->GetCreature(*i))
+                                if (Creature* Channeler = instance->GetCreature(*i))
                                 {
                                     if (Channeler->isAlive())
                                         Channeler->AI()->EnterEvadeMode();
@@ -177,12 +172,12 @@ class instance_magtheridons_lair : public InstanceMapScript
                             // Let all five channelers aggro.
                             for (std::set<uint64>::const_iterator i = ChannelerGUID.begin(); i != ChannelerGUID.end(); ++i)
                             {
-                                Creature *Channeler = instance->GetCreature(*i);
+                                Creature* Channeler = instance->GetCreature(*i);
                                 if (Channeler && Channeler->isAlive())
                                     Channeler->AI()->AttackStart(Channeler->SelectNearestTarget(999));
                             }
                             // Release Magtheridon after two minutes.
-                            Creature *Magtheridon = instance->GetCreature(MagtheridonGUID);
+                            Creature* Magtheridon = instance->GetCreature(MagtheridonGUID);
                             if (Magtheridon && Magtheridon->isAlive())
                             {
                                 Magtheridon->MonsterTextEmote(EMOTE_BONDS_WEAKEN, 0);
@@ -194,7 +189,7 @@ class instance_magtheridons_lair : public InstanceMapScript
                     case DONE: // Add buff and check if all channelers are dead.
                         for (std::set<uint64>::const_iterator i = ChannelerGUID.begin(); i != ChannelerGUID.end(); ++i)
                         {
-                            Creature *Channeler = instance->GetCreature(*i);
+                            Creature* Channeler = instance->GetCreature(*i);
                             if (Channeler && Channeler->isAlive())
                             {
                                 //Channeler->CastSpell(Channeler, SPELL_SOUL_TRANSFER, true);
@@ -229,10 +224,10 @@ class instance_magtheridons_lair : public InstanceMapScript
                 {
                     if (CageTimer <= diff)
                     {
-                        Creature *Magtheridon = instance->GetCreature(MagtheridonGUID);
+                        Creature* Magtheridon = instance->GetCreature(MagtheridonGUID);
                         if (Magtheridon && Magtheridon->isAlive())
                         {
-                            Magtheridon->ClearUnitState(UNIT_STAT_STUNNED);
+                            Magtheridon->ClearUnitState(UNIT_STATE_STUNNED);
                             Magtheridon->AI()->AttackStart(Magtheridon->SelectNearestTarget(999));
                         }
                         CageTimer = 0;
@@ -245,7 +240,7 @@ class instance_magtheridons_lair : public InstanceMapScript
                     {
                         for (std::set<uint64>::const_iterator i = ChannelerGUID.begin(); i != ChannelerGUID.end(); ++i)
                         {
-                            if (Creature *Channeler = instance->GetCreature(*i))
+                            if (Creature* Channeler = instance->GetCreature(*i))
                             {
                                 if (Channeler->isAlive())
                                     Channeler->AI()->EnterEvadeMode();
@@ -259,9 +254,9 @@ class instance_magtheridons_lair : public InstanceMapScript
             }
         };
 
-        InstanceScript* GetInstanceScript(InstanceMap* pMap) const
+        InstanceScript* GetInstanceScript(InstanceMap* map) const
         {
-            return new instance_magtheridons_lair_InstanceMapScript(pMap);
+            return new instance_magtheridons_lair_InstanceMapScript(map);
         }
 };
 
@@ -269,3 +264,4 @@ void AddSC_instance_magtheridons_lair()
 {
     new instance_magtheridons_lair();
 }
+

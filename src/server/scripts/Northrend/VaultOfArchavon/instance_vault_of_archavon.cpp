@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
- *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
- *
- * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -19,11 +15,9 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "InstanceScript.h"
 #include "vault_of_archavon.h"
-
-#include "OutdoorPvPMgr.h"
-#include "OutdoorPvPWG.h"
 
 /* Vault of Archavon encounters:
 1 - Archavon the Stone Watcher event
@@ -44,8 +38,6 @@ class instance_archavon : public InstanceMapScript
                 SetBossNumber(MAX_ENCOUNTER);
             }
 
-            uint32 m_auiEncounter[MAX_ENCOUNTER];
-
             void Initialize()
             {
                 EmalonGUID = 0;
@@ -53,16 +45,6 @@ class instance_archavon : public InstanceMapScript
                 ArchavonDeath = 0;
                 EmalonDeath = 0;
                 KoralonDeath = 0;
-            }
-
-            void OnPlayerEnter(Player *player)
-            {
-                if (sWorld->getBoolConfig(CONFIG_OUTDOORPVP_WINTERGRASP_ENABLED))
-                {
-                    OutdoorPvPWG *pvpWG = (OutdoorPvPWG*)sOutdoorPvPMgr->GetOutdoorPvPToZoneId(4197);
-                    if (pvpWG && !player->isGameMaster() && player->GetTeamId() != pvpWG->getDefenderTeam())
-                        player->CastSpell(player, SPELL_TELEPORT_FORTRESS, true);
-                }
             }
 
             void OnCreatureCreate(Creature* creature)
@@ -93,46 +75,6 @@ class instance_archavon : public InstanceMapScript
                 }
 
                 return 0;
-            }
-
-            void SetData(uint32 type, uint32 data)
-            {
-                switch (type)
-                {
-                case DATA_ARCHAVON:
-                    m_auiEncounter[0] = data;
-                    break;
-                case DATA_EMALON:
-                    m_auiEncounter[1] = data;
-                    break;
-                case DATA_KORALON:
-                    m_auiEncounter[2] = data;
-                    break;
-                case DATA_TORAVON:
-                    m_auiEncounter[3] = data;
-                    break;
-                }
-            }
-
-            uint32 GetData(uint32 type)
-            {
-                switch (type)
-                {
-                    case DATA_ARCHAVON:       return m_auiEncounter[0];
-                    case DATA_EMALON:         return m_auiEncounter[1];
-                    case DATA_KORALON:        return m_auiEncounter[2];
-                    case DATA_TORAVON:        return m_auiEncounter[3];
-                }
-
-                return 0;
-            }
-
-            bool IsEncounterInProgress() const
-            {
-                for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
-                    if (m_auiEncounter[i] == IN_PROGRESS) return true;
-
-                return false;
             }
 
             bool SetBossState(uint32 type, EncounterState state)

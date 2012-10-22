@@ -1,209 +1,180 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* ScriptData
- SDName: Boss_Gyth
- SD%Complete: 100
- SDComment:
- SDCategory: Blackrock Spire
- EndScriptData */
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
+#include "blackrock_spire.h"
 
-#include "ScriptPCH.h"
+enum Spells
+{
+    SPELL_CORROSIVE_ACID            = 20667,
+    SPELL_FREEZE                    = 18763,
+    SPELL_FLAMEBREATH               = 20712,
+    SPELL_SELF_ROOT_FOREVER         = 33356,
+};
 
-#define SPELL_CORROSIVEACID      20667
-#define SPELL_FREEZE             18763
-#define SPELL_FLAMEBREATH        20712
+enum Adds
+{
+    MODEL_REND_ON_DRAKE             = 9723, // TODO: use creature_template 10459 instead of its modelid
+    NPC_RAGE_TALON_FIRE_TONG        = 10372,
+    NPC_CHROMATIC_WHELP             = 10442,
+    NPC_CHROMATIC_DRAGONSPAWN       = 10447,
+    NPC_BLACKHAND_ELITE             = 10317,
+};
 
-class boss_gyth: public CreatureScript {
+enum Events
+{
+    EVENT_SUMMON_REND               = 1,
+    EVENT_AGGRO                     = 2,
+    EVENT_SUMMON_DRAGON_PACK        = 3,
+    EVENT_SUMMON_ORC_PACK           = 4,
+    EVENT_CORROSIVE_ACID            = 5,
+    EVENT_FREEZE                    = 6,
+    EVENT_FLAME_BREATH              = 7,
+};
+
+class boss_gyth : public CreatureScript
+{
 public:
-    boss_gyth() :
-            CreatureScript("boss_gyth") {
-    }
+    boss_gyth() : CreatureScript("boss_gyth") { }
 
-    CreatureAI* GetAI(Creature* pCreature) const {
-        return new boss_gythAI(pCreature);
-    }
-
-    struct boss_gythAI: public ScriptedAI {
-        boss_gythAI(Creature *c) :
-                ScriptedAI(c) {
+    struct boss_gythAI : public BossAI
+    {
+        boss_gythAI(Creature* creature) : BossAI(creature, DATA_GYTH)
+        {
+            DoCast(me, SPELL_SELF_ROOT_FOREVER);
         }
 
-        uint32 Aggro_Timer;
-        uint32 Dragons_Timer;
-        uint32 Orc_Timer;
-        uint32 CorrosiveAcid_Timer;
-        uint32 Freeze_Timer;
-        uint32 Flamebreath_Timer;
-        uint32 Line1Count;
-        uint32 Line2Count;
-
-        bool Event;
-        bool SummonedDragons;
-        bool SummonedOrcs;
         bool SummonedRend;
-        bool bAggro;
-        bool RootSelf;
 
-        void Reset() {
-            Dragons_Timer = 3000;
-            Orc_Timer = 60000;
-            Aggro_Timer = 60000;
-            CorrosiveAcid_Timer = 8000;
-            Freeze_Timer = 11000;
-            Flamebreath_Timer = 4000;
-            Event = false;
-            SummonedDragons = false;
-            SummonedOrcs = false;
+        void Reset()
+        {
+            _Reset();
             SummonedRend = false;
-            bAggro = false;
-            RootSelf = false;
-
-            // how many times should the two lines of summoned creatures be spawned
-            // min 2 x 2, max 7 lines of attack in total
-            Line1Count = rand() % 4 + 2;
-            if (Line1Count < 5)
-                Line2Count = rand() % (5 - Line1Count) + 2;
-            else
-                Line2Count = 2;
-
             //Invisible for event start
-            me->SetDisplayId(11686);
+            me->SetVisible(false);
             me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
         }
 
-        void EnterCombat(Unit * /*who*/) {
+        void EnterCombat(Unit* /*who*/)
+        {
+            _EnterCombat();
+            events.ScheduleEvent(EVENT_SUMMON_DRAGON_PACK, 3 * IN_MILLISECONDS);
+            events.ScheduleEvent(EVENT_SUMMON_ORC_PACK, 60 * IN_MILLISECONDS);
+            events.ScheduleEvent(EVENT_AGGRO, 60 * IN_MILLISECONDS);
         }
 
-        void SummonCreatureWithRandomTarget(uint32 creatureId) {
-            Unit* Summoned = me->SummonCreature(creatureId, me->GetPositionX(),
-                    me->GetPositionY(), me->GetPositionZ(), 0,
-                    TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 240000);
-            if (Summoned) {
-                Unit *pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0);
-                if (pTarget)
-                    Summoned->AddThreat(pTarget, 1.0f);
-            }
+        void JustDied(Unit* /*killer*/)
+        {
+            _JustDied();
         }
 
-        void UpdateAI(const uint32 diff) {
-            //char buf[200];
+        void SummonCreatureWithRandomTarget(uint32 creatureId, uint8 count)
+        {
+            for (uint8 n = 0; n < count; n++)
+                if (Unit* Summoned = me->SummonCreature(creatureId, me->GetPositionX(), me->GetPositionY(), me->GetPositionZ(), 0, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 240 * IN_MILLISECONDS))
+                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 50.0f, true))
+                        Summoned->AddThreat(target, 250.0f);
+        }
 
-            //Return since we have no target
+        void UpdateAI(uint32 const diff)
+        {
             if (!UpdateVictim())
                 return;
 
-            if (!RootSelf) {
-                //me->m_canMove = true;
-                DoCast(me, 33356);
-                RootSelf = true;
+            if (!SummonedRend && HealthBelowPct(11))
+            {
+                events.ScheduleEvent(EVENT_SUMMON_REND, 8 * IN_MILLISECONDS);
+                SummonedRend = true;
             }
 
-            if (!bAggro && Line1Count == 0 && Line2Count == 0) {
-                if (Aggro_Timer <= diff) {
-                    bAggro = true;
-                    // Visible now!
-                    me->SetDisplayId(9723);
-                    me->setFaction(14);
-                    me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-                } else
-                    Aggro_Timer -= diff;
-            }
+            events.Update(diff);
 
-            // Summon Dragon pack. 2 Dragons and 3 Whelps
-            if (!bAggro && !SummonedRend && Line1Count > 0) {
-                if (Dragons_Timer <= diff) {
-                    SummonCreatureWithRandomTarget(10372);
-                    SummonCreatureWithRandomTarget(10372);
-                    SummonCreatureWithRandomTarget(10442);
-                    SummonCreatureWithRandomTarget(10442);
-                    SummonCreatureWithRandomTarget(10442);
-                    Line1Count = Line1Count - 1;
-                    Dragons_Timer = 60000;
-                } else
-                    Dragons_Timer -= diff;
-            }
+            if (me->HasUnitState(UNIT_STATE_CASTING))
+                return;
 
-            //Summon Orc pack. 1 Orc Handler 1 Elite Dragonkin and 3 Whelps
-            if (!bAggro && !SummonedRend && Line1Count == 0 && Line2Count > 0) {
-                if (Orc_Timer <= diff) {
-                    SummonCreatureWithRandomTarget(10447);
-                    SummonCreatureWithRandomTarget(10317);
-                    SummonCreatureWithRandomTarget(10442);
-                    SummonCreatureWithRandomTarget(10442);
-                    SummonCreatureWithRandomTarget(10442);
-                    Line2Count = Line2Count - 1;
-                    Orc_Timer = 60000;
-                } else
-                    Orc_Timer -= diff;
-            }
-
-            // we take part in the fight
-            if (bAggro) {
-                // CorrosiveAcid_Timer
-                if (CorrosiveAcid_Timer <= diff) {
-                    DoCast(me->getVictim(), SPELL_CORROSIVEACID);
-                    CorrosiveAcid_Timer = 7000;
-                } else
-                    CorrosiveAcid_Timer -= diff;
-
-                // Freeze_Timer
-                if (Freeze_Timer <= diff) {
-                    DoCast(me->getVictim(), SPELL_FREEZE);
-                    Freeze_Timer = 16000;
-                } else
-                    Freeze_Timer -= diff;
-
-                // Flamebreath_Timer
-                if (Flamebreath_Timer <= diff) {
-                    DoCast(me->getVictim(), SPELL_FLAMEBREATH);
-                    Flamebreath_Timer = 10500;
-                } else
-                    Flamebreath_Timer -= diff;
-
-                //Summon Rend
-                if (!SummonedRend && HealthBelowPct(11)
-                        && me->GetHealth() > 0) {
-                    //summon Rend and Change model to normal Gyth
-                    //Interrupt any spell casting
-                    me->InterruptNonMeleeSpells(false);
-                    //Gyth model
-                    me->SetDisplayId(9806);
-                    me->SummonCreature(10429, me->GetPositionX(),
-                            me->GetPositionY(), me->GetPositionZ(), 0,
-                            TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 900000);
-                    SummonedRend = true;
+            while (uint32 eventId = events.ExecuteEvent())
+            {
+                switch (eventId)
+                {
+                    case EVENT_SUMMON_REND:
+                        // Summon Rend and Change model to normal Gyth
+                        // Interrupt any spell casting
+                        me->InterruptNonMeleeSpells(false);
+                        // Gyth model
+                        me->SetDisplayId(me->GetCreatureTemplate()->Modelid1);
+                        me->SummonCreature(NPC_WARCHIEF_REND_BLACKHAND, me->GetPositionX(), me->GetPositionY(), me->GetPositionZ(), 0, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 900 * IN_MILLISECONDS);
+                        events.ScheduleEvent(EVENT_CORROSIVE_ACID, 8 * IN_MILLISECONDS);
+                        events.ScheduleEvent(EVENT_FREEZE, 11 * IN_MILLISECONDS);
+                        events.ScheduleEvent(EVENT_FLAME_BREATH, 4 * IN_MILLISECONDS);
+                        events.CancelEvent(EVENT_SUMMON_REND);
+                        break;
+                    case EVENT_AGGRO:
+                        me->SetVisible(true);
+                        me->SetDisplayId(MODEL_REND_ON_DRAKE);
+                        me->setFaction(14);
+                        me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+                        events.CancelEvent(EVENT_AGGRO);
+                        break;
+                    // Summon Dragon pack. 2 Dragons and 3 Whelps
+                    case EVENT_SUMMON_DRAGON_PACK:
+                        for (uint8 i = 0; i < urand(0, 3) + 2; ++i)
+                        {
+                            SummonCreatureWithRandomTarget(NPC_RAGE_TALON_FIRE_TONG, 2);
+                            SummonCreatureWithRandomTarget(NPC_CHROMATIC_WHELP, 3);
+                        }
+                        events.CancelEvent(EVENT_SUMMON_DRAGON_PACK);
+                        break;
+                    // Summon Orc pack. 1 Orc Handler 1 Elite Dragonkin and 3 Whelps
+                    case EVENT_SUMMON_ORC_PACK:
+                        for (uint8 i = 0; i < urand (0, 5) + 2; ++i)
+                        {
+                            SummonCreatureWithRandomTarget(NPC_CHROMATIC_DRAGONSPAWN, 1);
+                            SummonCreatureWithRandomTarget(NPC_BLACKHAND_ELITE, 1);
+                            SummonCreatureWithRandomTarget(NPC_CHROMATIC_WHELP, 3);
+                        }
+                        events.CancelEvent(EVENT_SUMMON_ORC_PACK);
+                        break;
+                    case EVENT_CORROSIVE_ACID:
+                        DoCast(me->getVictim(), SPELL_CORROSIVE_ACID);
+                        events.ScheduleEvent(EVENT_CORROSIVE_ACID, 7 * IN_MILLISECONDS);
+                        break;
+                    case EVENT_FREEZE:
+                        DoCast(me->getVictim(), SPELL_FREEZE);
+                        events.ScheduleEvent(EVENT_FREEZE, 16 * IN_MILLISECONDS);
+                        break;
+                    case EVENT_FLAME_BREATH:
+                        DoCast(me->getVictim(), SPELL_FLAMEBREATH);
+                        events.ScheduleEvent(EVENT_FLAME_BREATH, 10500);
+                        break;
                 }
-
-                DoMeleeAttackIfReady();
-            } // end if Aggro
+            }
+            DoMeleeAttackIfReady();
         }
     };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return new boss_gythAI(creature);
+    }
 };
 
-void AddSC_boss_gyth() {
+void AddSC_boss_gyth()
+{
     new boss_gyth();
 }

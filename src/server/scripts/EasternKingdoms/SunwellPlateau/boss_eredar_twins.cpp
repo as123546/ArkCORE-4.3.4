@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
- *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
- *
- * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -25,7 +21,8 @@ SD%Complete: 100
 SDComment:
 EndScriptData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "sunwell_plateau.h"
 
 enum Quotes
@@ -101,9 +98,9 @@ public:
 
     struct boss_sacrolashAI : public ScriptedAI
     {
-        boss_sacrolashAI(Creature* c) : ScriptedAI(c)
+        boss_sacrolashAI(Creature* creature) : ScriptedAI(creature)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
         InstanceScript* instance;
@@ -124,7 +121,7 @@ public:
 
             if (instance)
             {
-                Unit* Temp =  Unit::GetUnit((*me), instance->GetData64(DATA_ALYTHESS));
+                Unit* Temp =  Unit::GetUnit(*me, instance->GetData64(DATA_ALYTHESS));
                 if (Temp)
                 {
                     if (Temp->isDead())
@@ -156,7 +153,7 @@ public:
 
             if (instance)
             {
-                Unit* Temp =  Unit::GetUnit((*me), instance->GetData64(DATA_ALYTHESS));
+                Unit* Temp =  Unit::GetUnit(*me, instance->GetData64(DATA_ALYTHESS));
                 if (Temp && Temp->isAlive() && !(Temp->getVictim()))
                     CAST_CRE(Temp)->AI()->AttackStart(who);
             }
@@ -171,7 +168,7 @@ public:
                 DoScriptText(RAND(YELL_SAC_KILL_1, YELL_SAC_KILL_2), me);
         }
 
-        void JustDied(Unit* /*Killer*/)
+        void JustDied(Unit* /*killer*/)
         {
             // only if ALY death
             if (SisterDeath)
@@ -185,7 +182,7 @@ public:
                 me->RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
         }
 
-        void SpellHitTarget(Unit* target, const SpellEntry* spell)
+        void SpellHitTarget(Unit* target, const SpellInfo* spell)
         {
             switch (spell->Id)
             {
@@ -235,7 +232,7 @@ public:
                 if (instance)
                 {
                     Unit* Temp = NULL;
-                    Temp = Unit::GetUnit((*me), instance->GetData64(DATA_ALYTHESS));
+                    Temp = Unit::GetUnit(*me, instance->GetData64(DATA_ALYTHESS));
                     if (Temp && Temp->isDead())
                     {
                         DoScriptText(YELL_SISTER_ALYTHESS_DEAD, me);
@@ -344,6 +341,7 @@ public:
             }
         }
     };
+
 };
 
 class boss_alythess : public CreatureScript
@@ -358,9 +356,9 @@ public:
 
     struct boss_alythessAI : public Scripted_NoMovementAI
     {
-        boss_alythessAI(Creature* c) : Scripted_NoMovementAI(c)
+        boss_alythessAI(Creature* creature) : Scripted_NoMovementAI(creature)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
             IntroStepCounter = 10;
         }
 
@@ -385,7 +383,7 @@ public:
 
             if (instance)
             {
-                Unit* Temp =  Unit::GetUnit((*me), instance->GetData64(DATA_SACROLASH));
+                Unit* Temp =  Unit::GetUnit(*me, instance->GetData64(DATA_SACROLASH));
                 if (Temp)
                 {
                     if (Temp->isDead())
@@ -418,7 +416,7 @@ public:
 
             if (instance)
             {
-                Unit* Temp =  Unit::GetUnit((*me), instance->GetData64(DATA_SACROLASH));
+                Unit* Temp =  Unit::GetUnit(*me, instance->GetData64(DATA_SACROLASH));
                 if (Temp && Temp->isAlive() && !(Temp->getVictim()))
                     CAST_CRE(Temp)->AI()->AttackStart(who);
             }
@@ -465,7 +463,7 @@ public:
             }
         }
 
-        void JustDied(Unit* /*Killer*/)
+        void JustDied(Unit* /*killer*/)
         {
             if (SisterDeath)
             {
@@ -478,10 +476,11 @@ public:
                 me->RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
         }
 
-        void SpellHitTarget(Unit* target, const SpellEntry* spell)
+        void SpellHitTarget(Unit* target, const SpellInfo* spell)
         {
             switch (spell->Id)
             {
+
             case SPELL_BLAZE:
                 target->CastSpell(target, SPELL_BLAZE_SUMMON, true);
             case SPELL_CONFLAGRATION:
@@ -569,7 +568,7 @@ public:
                 if (instance)
                 {
                     Unit* Temp = NULL;
-                    Temp = Unit::GetUnit((*me), instance->GetData64(DATA_SACROLASH));
+                    Temp = Unit::GetUnit(*me, instance->GetData64(DATA_SACROLASH));
                     if (Temp && Temp->isDead())
                     {
                         DoScriptText(YELL_SISTER_SACROLASH_DEAD, me);
@@ -671,6 +670,7 @@ public:
             } else EnrageTimer -= diff;
         }
     };
+
 };
 
 class mob_shadow_image : public CreatureScript
@@ -685,7 +685,7 @@ public:
 
     struct mob_shadow_imageAI : public ScriptedAI
     {
-        mob_shadow_imageAI(Creature* c) : ScriptedAI(c) {}
+        mob_shadow_imageAI(Creature* creature) : ScriptedAI(creature) {}
 
         uint32 ShadowfuryTimer;
         uint32 KillTimer;
@@ -701,10 +701,11 @@ public:
 
         void EnterCombat(Unit* /*who*/){}
 
-        void SpellHitTarget(Unit* target, const SpellEntry* spell)
+        void SpellHitTarget(Unit* target, const SpellInfo* spell)
         {
             switch (spell->Id)
             {
+
             case SPELL_SHADOW_FURY:
             case SPELL_DARK_STRIKE:
                 if (!target->HasAura(SPELL_DARK_FLAME))
@@ -751,6 +752,7 @@ public:
             } else DarkstrikeTimer -= diff;
         }
     };
+
 };
 
 void AddSC_boss_eredar_twins()

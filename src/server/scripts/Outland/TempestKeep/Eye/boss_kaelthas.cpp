@@ -1,27 +1,19 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 /* ScriptData
@@ -31,7 +23,8 @@ SDComment: SQL, weapon scripts, mind control, need correct spells(interruptible/
 SDCategory: Tempest Keep, The Eye
 EndScriptData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "the_eye.h"
 #include "WorldPacket.h"
 
@@ -153,13 +146,13 @@ const float afGravityPos[3]             = {795.0f, 0.0f, 70.0f};
 //Base AI for Advisors
 struct advisorbase_ai : public ScriptedAI
 {
-    advisorbase_ai(Creature* pCreature) : ScriptedAI(pCreature)
+    advisorbase_ai(Creature* creature) : ScriptedAI(creature)
     {
-        m_pInstance = pCreature->GetInstanceScript();
+        instance = creature->GetInstanceScript();
         m_bDoubled_Health = false;
     }
 
-    InstanceScript* m_pInstance;
+    InstanceScript* instance;
     bool FakeDeath;
     bool m_bDoubled_Health;
     uint32 DelayRes_Timer;
@@ -182,12 +175,12 @@ struct advisorbase_ai : public ScriptedAI
         me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
 
         //reset encounter
-        if (m_pInstance && (m_pInstance->GetData(DATA_KAELTHASEVENT) == 1 || m_pInstance->GetData(DATA_KAELTHASEVENT) == 3))
-            if (Creature *Kaelthas = Unit::GetCreature((*me), m_pInstance->GetData64(DATA_KAELTHAS)))
+        if (instance && (instance->GetData(DATA_KAELTHASEVENT) == 1 || instance->GetData(DATA_KAELTHASEVENT) == 3))
+            if (Creature* Kaelthas = Unit::GetCreature((*me), instance->GetData64(DATA_KAELTHAS)))
                 Kaelthas->AI()->EnterEvadeMode();
     }
 
-    void MoveInLineOfSight(Unit *who)
+    void MoveInLineOfSight(Unit* who)
     {
         if (!who || FakeDeath || me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
             return;
@@ -216,20 +209,20 @@ struct advisorbase_ai : public ScriptedAI
         DelayRes_Timer = 2000;
     }
 
-    void DamageTaken(Unit* pKiller, uint32 &damage)
+    void DamageTaken(Unit* killer, uint32 &damage)
     {
         if (damage < me->GetHealth())
             return;
 
         //Prevent glitch if in fake death
-        if (FakeDeath && m_pInstance && m_pInstance->GetData(DATA_KAELTHASEVENT) != 0)
+        if (FakeDeath && instance && instance->GetData(DATA_KAELTHASEVENT) != 0)
         {
             damage = 0;
             return;
         }
 
         //Don't really die in phase 1 & 3, only die after that
-        if (m_pInstance && m_pInstance->GetData(DATA_KAELTHASEVENT) != 0)
+        if (instance && instance->GetData(DATA_KAELTHASEVENT) != 0)
         {
             //prevent death
             damage = 0;
@@ -244,11 +237,11 @@ struct advisorbase_ai : public ScriptedAI
             me->ModifyAuraState(AURA_STATE_HEALTHLESS_35_PERCENT, false);
             me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
             me->ClearAllReactives();
-            me->SetUInt64Value(UNIT_FIELD_TARGET, 0);
+            me->SetTarget(0);
             me->GetMotionMaster()->Clear();
             me->GetMotionMaster()->MoveIdle();
             me->SetStandState(UNIT_STAND_STATE_DEAD);
-            JustDied(pKiller);
+            JustDied(killer);
         }
     }
 
@@ -261,7 +254,7 @@ struct advisorbase_ai : public ScriptedAI
                 DelayRes_Timer = 0;
                 FakeDeath = false;
 
-                Unit* Target = Unit::GetUnit((*me), DelayRes_Target);
+                Unit* Target = Unit::GetUnit(*me, DelayRes_Target);
                 if (!Target)
                     Target = me->getVictim();
 
@@ -286,13 +279,13 @@ class boss_kaelthas : public CreatureScript
         //Kael'thas AI
         struct boss_kaelthasAI : public ScriptedAI
         {
-            boss_kaelthasAI(Creature* pCreature) : ScriptedAI(pCreature), summons(me)
+            boss_kaelthasAI(Creature* creature) : ScriptedAI(creature), summons(me)
             {
-                m_pInstance = pCreature->GetInstanceScript();
+                instance = creature->GetInstanceScript();
                 memset(&m_auiAdvisorGuid, 0, sizeof(m_auiAdvisorGuid));
             }
 
-            InstanceScript* m_pInstance;
+            InstanceScript* instance;
 
             uint32 Fireball_Timer;
             uint32 ArcaneDisruption_Timer;
@@ -343,49 +336,50 @@ class boss_kaelthas : public CreatureScript
                 me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                 me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
 
-                if (m_pInstance)
-                    m_pInstance->SetData(DATA_KAELTHASEVENT, 0);
+                if (instance)
+                    instance->SetData(DATA_KAELTHASEVENT, 0);
             }
 
             void PrepareAdvisors()
             {
                 for (uint8 i = 0; i < MAX_ADVISORS; ++i)
                 {
-                    if (Creature *pCreature = Unit::GetCreature((*me), m_auiAdvisorGuid[i]))
+                    if (Creature* creature = Unit::GetCreature((*me), m_auiAdvisorGuid[i]))
                     {
-                        pCreature->Respawn();
-                        pCreature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-                        pCreature->setFaction(me->getFaction());
-                        pCreature->AI()->EnterEvadeMode();
+                        creature->Respawn();
+                        creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                        creature->setFaction(me->getFaction());
+                        creature->AI()->EnterEvadeMode();
                     }
                 }
             }
 
             void StartEvent()
             {
-                if (!m_pInstance)
+                if (!instance)
                     return;
 
-                m_auiAdvisorGuid[0] = m_pInstance->GetData64(DATA_THALADREDTHEDARKENER);
-                m_auiAdvisorGuid[1] = m_pInstance->GetData64(DATA_LORDSANGUINAR);
-                m_auiAdvisorGuid[2] = m_pInstance->GetData64(DATA_GRANDASTROMANCERCAPERNIAN);
-                m_auiAdvisorGuid[3] = m_pInstance->GetData64(DATA_MASTERENGINEERTELONICUS);
+                m_auiAdvisorGuid[0] = instance->GetData64(DATA_THALADREDTHEDARKENER);
+                m_auiAdvisorGuid[1] = instance->GetData64(DATA_LORDSANGUINAR);
+                m_auiAdvisorGuid[2] = instance->GetData64(DATA_GRANDASTROMANCERCAPERNIAN);
+                m_auiAdvisorGuid[3] = instance->GetData64(DATA_MASTERENGINEERTELONICUS);
 
                 if (!m_auiAdvisorGuid[0] || !m_auiAdvisorGuid[1] || !m_auiAdvisorGuid[2] || !m_auiAdvisorGuid[3])
                 {
-                    sLog->outError("TSCR: Kael'Thas One or more advisors missing, Skipping Phases 1-3");
+                    sLog->outError(LOG_FILTER_TSCR, "Kael'Thas One or more advisors missing, Skipping Phases 1-3");
 
                     DoScriptText(SAY_PHASE4_INTRO2, me);
 
                     Phase = 4;
 
-                    m_pInstance->SetData(DATA_KAELTHASEVENT, 4);
+                    instance->SetData(DATA_KAELTHASEVENT, 4);
 
                     me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                     me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
 
-                    if (Unit *pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0))
-                        AttackStart(pTarget);
+                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                        AttackStart(target);
+
                 }
                 else
                 {
@@ -393,7 +387,7 @@ class boss_kaelthas : public CreatureScript
 
                     DoScriptText(SAY_INTRO, me);
 
-                    m_pInstance->SetData(DATA_KAELTHASEVENT, 1);
+                    instance->SetData(DATA_KAELTHASEVENT, 1);
                     me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
 
                     PhaseSubphase = 0;
@@ -402,12 +396,11 @@ class boss_kaelthas : public CreatureScript
                 }
             }
 
-            void MoveInLineOfSight(Unit *who)
+            void MoveInLineOfSight(Unit* who)
             {
-                if (!me->HasUnitState(UNIT_STAT_STUNNED) && who->isTargetableForAttack() &&
-                    me->IsHostileTo(who) && who->isInAccessiblePlaceFor(me))
+                if (!me->HasUnitState(UNIT_STATE_STUNNED) && me->canCreatureAttack(who))
                 {
-                    if (!me->canFly() && me->GetDistanceZ(who) > CREATURE_Z_ATTACK_RANGE)
+                    if (!me->CanFly() && me->GetDistanceZ(who) > CREATURE_Z_ATTACK_RANGE)
                         return;
 
                     float attackRadius = me->GetAttackDistance(who);
@@ -420,7 +413,7 @@ class boss_kaelthas : public CreatureScript
                         }
                         else if (me->GetMap()->IsDungeon())
                         {
-                            if (m_pInstance && !m_pInstance->GetData(DATA_KAELTHASEVENT) && !Phase)
+                            if (instance && !instance->GetData(DATA_KAELTHASEVENT) && !Phase)
                                 StartEvent();
 
                             who->SetInCombatWith(me);
@@ -430,32 +423,35 @@ class boss_kaelthas : public CreatureScript
                 }
             }
 
-            void EnterCombat(Unit * /*who*/)
+            void EnterCombat(Unit* /*who*/)
             {
-                if (m_pInstance && !m_pInstance->GetData(DATA_KAELTHASEVENT) && !Phase)
+                if (instance && !instance->GetData(DATA_KAELTHASEVENT) && !Phase)
                     StartEvent();
             }
 
-            void KilledUnit()
+            void KilledUnit(Unit* /*victim*/)
             {
                 DoScriptText(RAND(SAY_SLAY1, SAY_SLAY2, SAY_SLAY3), me);
             }
 
-            void JustSummoned(Creature* pSummoned)
+            void JustSummoned(Creature* summoned)
             {
                 // if not phoenix, then it's one of the 7 weapons
-                if (pSummoned->GetEntry() != NPC_PHOENIX)
+                if (summoned->GetEntry() != NPC_PHOENIX)
                 {
-                    if (Unit* pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0))
-                        pSummoned->AI()->AttackStart(pTarget);
+                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                        summoned->AI()->AttackStart(target);
 
-                    summons.Summon(pSummoned);
+                    summons.Summon(summoned);
                 }
             }
 
-            void SummonedCreatureDespawn(Creature *summon) {summons.Despawn(summon);}
+            void SummonedCreatureDespawn(Creature* summon)
+            {
+                summons.Despawn(summon);
+            }
 
-            void JustDied(Unit* /*Killer*/)
+            void JustDied(Unit* /*killer*/)
             {
                 me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                 me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
@@ -464,12 +460,12 @@ class boss_kaelthas : public CreatureScript
 
                 summons.DespawnAll();
 
-                if (m_pInstance)
-                    m_pInstance->SetData(DATA_KAELTHASEVENT, 0);
+                if (instance)
+                    instance->SetData(DATA_KAELTHASEVENT, 0);
 
                 for (uint8 i = 0; i < MAX_ADVISORS; ++i)
                 {
-                    if (Unit* pAdvisor = Unit::GetUnit((*me), m_auiAdvisorGuid[i]))
+                    if (Unit* pAdvisor = Unit::GetUnit(*me, m_auiAdvisorGuid[i]))
                         pAdvisor->Kill(pAdvisor);
                 }
             }
@@ -481,7 +477,7 @@ class boss_kaelthas : public CreatureScript
                 {
                     case 1:
                     {
-                        Unit *pTarget = NULL;
+                        Unit* target = NULL;
                         Creature* Advisor = NULL;
 
                         //Subphase switch
@@ -510,9 +506,9 @@ class boss_kaelthas : public CreatureScript
                                         Advisor->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                                         Advisor->setFaction(me->getFaction());
 
-                                        pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0);
-                                        if (pTarget)
-                                            Advisor->AI()->AttackStart(pTarget);
+                                        target = SelectTarget(SELECT_TARGET_RANDOM, 0);
+                                        if (target)
+                                            Advisor->AI()->AttackStart(target);
                                     }
 
                                     ++PhaseSubphase;
@@ -544,9 +540,9 @@ class boss_kaelthas : public CreatureScript
                                         Advisor->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                                         Advisor->setFaction(me->getFaction());
 
-                                        pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0);
-                                        if (pTarget)
-                                            Advisor->AI()->AttackStart(pTarget);
+                                        target = SelectTarget(SELECT_TARGET_RANDOM, 0);
+                                        if (target)
+                                            Advisor->AI()->AttackStart(target);
                                     }
 
                                     ++PhaseSubphase;
@@ -578,9 +574,9 @@ class boss_kaelthas : public CreatureScript
                                         Advisor->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                                         Advisor->setFaction(me->getFaction());
 
-                                        pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0);
-                                        if (pTarget)
-                                            Advisor->AI()->AttackStart(pTarget);
+                                        target = SelectTarget(SELECT_TARGET_RANDOM, 0);
+                                        if (target)
+                                            Advisor->AI()->AttackStart(target);
                                     }
 
                                     ++PhaseSubphase;
@@ -612,9 +608,9 @@ class boss_kaelthas : public CreatureScript
                                         Advisor->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                                         Advisor->setFaction(me->getFaction());
 
-                                        pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0);
-                                        if (pTarget)
-                                            Advisor->AI()->AttackStart(pTarget);
+                                        target = SelectTarget(SELECT_TARGET_RANDOM, 0);
+                                        if (target)
+                                            Advisor->AI()->AttackStart(target);
                                     }
 
                                     Phase_Timer = 3000;
@@ -629,8 +625,8 @@ class boss_kaelthas : public CreatureScript
                                 if (Advisor && (Advisor->getStandState() == UNIT_STAND_STATE_DEAD))
                                 {
                                     Phase = 2;
-                                    if (m_pInstance)
-                                        m_pInstance->SetData(DATA_KAELTHASEVENT, 2);
+                                    if (instance)
+                                        instance->SetData(DATA_KAELTHASEVENT, 2);
 
                                     DoScriptText(SAY_PHASE2_WEAPON, me);
 
@@ -674,8 +670,8 @@ class boss_kaelthas : public CreatureScript
                             if (Phase_Timer <= diff)
                             {
                                 DoScriptText(SAY_PHASE3_ADVANCE, me);
-                                if (m_pInstance)
-                                    m_pInstance->SetData(DATA_KAELTHASEVENT, 3);
+                                if (instance)
+                                    instance->SetData(DATA_KAELTHASEVENT, 3);
                                 Phase = 3;
                                 PhaseSubphase = 0;
                             }
@@ -690,17 +686,17 @@ class boss_kaelthas : public CreatureScript
                         if (PhaseSubphase == 0)
                         {
                             //Respawn advisors
-                            Unit *pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0);
+                            Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0);
 
-                            Creature *Advisor;
+                            Creature* Advisor;
                             for (uint8 i = 0; i < MAX_ADVISORS; ++i)
                             {
                                 Advisor = Unit::GetCreature((*me), m_auiAdvisorGuid[i]);
 
                                 if (!Advisor)
-                                    sLog->outError("SD2: Kael'Thas Advisor %u does not exist. Possibly despawned? Incorrectly Killed?", i);
+                                    sLog->outError(LOG_FILTER_TSCR, "SD2: Kael'Thas Advisor %u does not exist. Possibly despawned? Incorrectly Killed?", i);
                                 else
-                                    CAST_AI(advisorbase_ai, Advisor->AI())->Revive(pTarget);
+                                    CAST_AI(advisorbase_ai, Advisor->AI())->Revive(target);
                             }
 
                             PhaseSubphase = 1;
@@ -712,8 +708,8 @@ class boss_kaelthas : public CreatureScript
                             DoScriptText(SAY_PHASE4_INTRO2, me);
                             Phase = 4;
 
-                            if (m_pInstance)
-                                m_pInstance->SetData(DATA_KAELTHASEVENT, 4);
+                            if (instance)
+                                instance->SetData(DATA_KAELTHASEVENT, 4);
 
                             // Sometimes people can collect Aggro in Phase 1-3. Reset threat before releasing Kael.
                             DoResetThreat();
@@ -721,8 +717,8 @@ class boss_kaelthas : public CreatureScript
                             me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                             me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
 
-                            if (Unit *pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0))
-                                AttackStart(pTarget);
+                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                                AttackStart(target);
 
                             Phase_Timer = 30000;
                         }
@@ -778,8 +774,8 @@ class boss_kaelthas : public CreatureScript
 
                             if (FlameStrike_Timer <= diff)
                             {
-                                if (Unit* pUnit = SelectUnit(SELECT_TARGET_RANDOM, 0))
-                                    DoCast(pUnit, SPELL_FLAME_STRIKE);
+                                if (Unit* unit = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                                    DoCast(unit, SPELL_FLAME_STRIKE);
 
                                 FlameStrike_Timer = 30000;
                             }
@@ -791,8 +787,8 @@ class boss_kaelthas : public CreatureScript
                                 if (me->getThreatManager().getThreatList().size() >= 2)
                                     for (uint32 i = 0; i < 3; ++i)
                                 {
-                                    sLog->outDebug(LOG_FILTER_TSCR, "TSCR: Kael'Thas mind control not supported.");
-                                    //DoCast(pUnit, SPELL_MIND_CONTROL);
+                                    sLog->outDebug(LOG_FILTER_TSCR, "SD2: Kael'Thas mind control not supported.");
+                                    //DoCast(unit, SPELL_MIND_CONTROL);
                                 }
 
                                 MindControl_Timer = 60000;
@@ -817,8 +813,8 @@ class boss_kaelthas : public CreatureScript
                         {
                             if (HealthBelowPct(50))
                             {
-                                if (m_pInstance)
-                                    m_pInstance->SetData(DATA_KAELTHASEVENT, 4);
+                                if (instance)
+                                    instance->SetData(DATA_KAELTHASEVENT, 4);
                                 Phase = 5;
                                 Phase_Timer = 10000;
 
@@ -827,8 +823,8 @@ class boss_kaelthas : public CreatureScript
                                 me->StopMoving();
                                 me->GetMotionMaster()->Clear();
                                 me->GetMotionMaster()->MoveIdle();
-                                me->GetMap()->CreatureRelocation(me, afGravityPos[0], afGravityPos[1], afGravityPos[2], 0);
-                                me->SendMonsterMove(afGravityPos[0], afGravityPos[1], afGravityPos[2], 0, 0, 0);
+                                me->SetPosition(afGravityPos[0], afGravityPos[1], afGravityPos[2], 0);
+                                me->MonsterMoveWithSpeed(afGravityPos[0], afGravityPos[1], afGravityPos[2], 1);
 
                                 me->InterruptNonMeleeSpells(false);
                                 DoCast(me, SPELL_FULLPOWER);
@@ -883,6 +879,7 @@ class boss_kaelthas : public CreatureScript
                         //Phase 5
                         if (Phase == 6)
                         {
+
                             //GravityLapse_Timer
                             if (GravityLapse_Timer <= diff)
                             {
@@ -893,17 +890,17 @@ class boss_kaelthas : public CreatureScript
                                         me->StopMoving();
                                         me->GetMotionMaster()->Clear();
                                         me->GetMotionMaster()->MoveIdle();
-                                        me->GetMap()->CreatureRelocation(me, afGravityPos[0], afGravityPos[1], afGravityPos[2], 0);
-                                        me->SendMonsterMove(afGravityPos[0], afGravityPos[1], afGravityPos[2], 0, MOVEMENTFLAG_NONE, 0);
+                                        me->SetPosition(afGravityPos[0], afGravityPos[1], afGravityPos[2], 0);
+                                        me->MonsterMoveWithSpeed(afGravityPos[0], afGravityPos[1], afGravityPos[2], 0);
 
                                         // 1) Kael'thas will portal the whole raid right into his body
                                         for (i = me->getThreatManager().getThreatList().begin(); i!= me->getThreatManager().getThreatList().end(); ++i)
                                         {
-                                            Unit* pUnit = Unit::GetUnit((*me), (*i)->getUnitGuid());
-                                            if (pUnit && (pUnit->GetTypeId() == TYPEID_PLAYER))
+                                            Unit* unit = Unit::GetUnit(*me, (*i)->getUnitGuid());
+                                            if (unit && (unit->GetTypeId() == TYPEID_PLAYER))
                                             {
                                                 //Use work around packet to prevent player from being dropped from combat
-                                                DoTeleportPlayer(pUnit, afGravityPos[0], afGravityPos[1], afGravityPos[2], pUnit->GetOrientation());
+                                                DoTeleportPlayer(unit, afGravityPos[0], afGravityPos[1], afGravityPos[2], unit->GetOrientation());
                                             }
                                         }
 
@@ -920,20 +917,19 @@ class boss_kaelthas : public CreatureScript
                                         // 2) At that point he will put a Gravity Lapse debuff on everyone
                                         for (i = me->getThreatManager().getThreatList().begin(); i != me->getThreatManager().getThreatList().end(); ++i)
                                         {
-                                            if (Unit* pUnit = Unit::GetUnit((*me), (*i)->getUnitGuid()))
+                                            if (Unit* unit = Unit::GetUnit(*me, (*i)->getUnitGuid()))
                                             {
-                                                DoCast(pUnit, SPELL_KNOCKBACK, true);
+                                                DoCast(unit, SPELL_KNOCKBACK, true);
                                                 //Gravity lapse - needs an exception in Spell system to work
 
-                                                pUnit->CastSpell(pUnit, SPELL_GRAVITY_LAPSE, true, 0, 0, me->GetGUID());
-                                                pUnit->CastSpell(pUnit, SPELL_GRAVITY_LAPSE_AURA, true, 0, 0, me->GetGUID());
+                                                unit->CastSpell(unit, SPELL_GRAVITY_LAPSE, true, 0, 0, me->GetGUID());
+                                                unit->CastSpell(unit, SPELL_GRAVITY_LAPSE_AURA, true, 0, 0, me->GetGUID());
 
                                                 //Using packet workaround
-                                                WorldPacket data;
-                                                data.SetOpcode(SMSG_MOVE_SET_CAN_FLY);
-                                                data.append(pUnit->GetPackGUID());
+                                                WorldPacket data(SMSG_MOVE_SET_CAN_FLY, 12);
+                                                data.append(unit->GetPackGUID());
                                                 data << uint32(0);
-                                                pUnit->SendMessageToSet(&data, true);
+                                                unit->SendMessageToSet(&data, true);
                                             }
                                         }
                                         GravityLapse_Timer = 10000;
@@ -953,14 +949,13 @@ class boss_kaelthas : public CreatureScript
                                         //Remove flight
                                         for (i = me->getThreatManager().getThreatList().begin(); i!= me->getThreatManager().getThreatList().end(); ++i)
                                         {
-                                            if (Unit* pUnit = Unit::GetUnit((*me), (*i)->getUnitGuid()))
+                                            if (Unit* unit = Unit::GetUnit(*me, (*i)->getUnitGuid()))
                                             {
                                                 //Using packet workaround
-                                                WorldPacket data;
-                                                data.SetOpcode(SMSG_MOVE_UNSET_CAN_FLY);
-                                                data.append(pUnit->GetPackGUID());
+                                                WorldPacket data(SMSG_MOVE_UNSET_CAN_FLY, 12);
+                                                data.append(unit->GetPackGUID());
                                                 data << uint32(0);
-                                                pUnit->SendMessageToSet(&data, true);
+                                                unit->SendMessageToSet(&data, true);
                                             }
                                         }
 
@@ -989,8 +984,8 @@ class boss_kaelthas : public CreatureScript
                                 //NetherBeam_Timer
                                 if (NetherBeam_Timer <= diff)
                                 {
-                                    if (Unit* pUnit = SelectUnit(SELECT_TARGET_RANDOM, 0))
-                                        DoCast(pUnit, SPELL_NETHER_BEAM);
+                                    if (Unit* unit = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                                        DoCast(unit, SPELL_NETHER_BEAM);
 
                                     NetherBeam_Timer = 4000;
                                 }
@@ -1005,9 +1000,9 @@ class boss_kaelthas : public CreatureScript
                 }
             }
         };
-        CreatureAI* GetAI(Creature* Creature) const
+        CreatureAI* GetAI(Creature* creature) const
         {
-            return new boss_kaelthasAI(Creature);
+            return new boss_kaelthasAI(creature);
         }
 };
 
@@ -1022,7 +1017,7 @@ class boss_thaladred_the_darkener : public CreatureScript
         }
         struct boss_thaladred_the_darkenerAI : public advisorbase_ai
         {
-            boss_thaladred_the_darkenerAI(Creature* pCreature) : advisorbase_ai(pCreature) {}
+            boss_thaladred_the_darkenerAI(Creature* creature) : advisorbase_ai(creature) {}
 
             uint32 Gaze_Timer;
             uint32 Silence_Timer;
@@ -1037,7 +1032,7 @@ class boss_thaladred_the_darkener : public CreatureScript
                 advisorbase_ai::Reset();
             }
 
-            void EnterCombat(Unit *who)
+            void EnterCombat(Unit* who)
             {
                 if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
                     return;
@@ -1049,9 +1044,9 @@ class boss_thaladred_the_darkener : public CreatureScript
                 me->AddThreat(who, 5000000.0f);
             }
 
-            void JustDied(Unit* /*pKiller*/)
+            void JustDied(Unit* /*killer*/)
             {
-                if (m_pInstance && m_pInstance->GetData(DATA_KAELTHASEVENT) == 3)
+                if (instance && instance->GetData(DATA_KAELTHASEVENT) == 3)
                     DoScriptText(SAY_THALADRED_DEATH, me);
             }
 
@@ -1070,11 +1065,11 @@ class boss_thaladred_the_darkener : public CreatureScript
                 //Gaze_Timer
                 if (Gaze_Timer <= diff)
                 {
-                    if (Unit *pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0))
+                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
                     {
                         DoResetThreat();
-                        me->AddThreat(pTarget, 5000000.0f);
-                        DoScriptText(EMOTE_THALADRED_GAZE, me, pTarget);
+                        me->AddThreat(target, 5000000.0f);
+                        DoScriptText(EMOTE_THALADRED_GAZE, me, target);
                         Gaze_Timer = 8500;
                     }
                 }
@@ -1103,9 +1098,9 @@ class boss_thaladred_the_darkener : public CreatureScript
             }
         };
 
-        CreatureAI* GetAI(Creature* Creature) const
+        CreatureAI* GetAI(Creature* creature) const
         {
-            return new boss_thaladred_the_darkenerAI(Creature);
+            return new boss_thaladred_the_darkenerAI(creature);
         }
 };
 
@@ -1120,7 +1115,7 @@ class boss_lord_sanguinar : public CreatureScript
         }
         struct boss_lord_sanguinarAI : public advisorbase_ai
         {
-            boss_lord_sanguinarAI(Creature* pCreature) : advisorbase_ai(pCreature) {}
+            boss_lord_sanguinarAI(Creature* creature) : advisorbase_ai(creature) {}
 
             uint32 Fear_Timer;
 
@@ -1130,7 +1125,7 @@ class boss_lord_sanguinar : public CreatureScript
                 advisorbase_ai::Reset();
             }
 
-            void EnterCombat(Unit *who)
+            void EnterCombat(Unit* who)
             {
                 if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
                     return;
@@ -1141,9 +1136,9 @@ class boss_lord_sanguinar : public CreatureScript
                 DoScriptText(SAY_SANGUINAR_AGGRO, me);
             }
 
-            void JustDied(Unit* /*Killer*/)
+            void JustDied(Unit* /*killer*/)
             {
-                if (m_pInstance && m_pInstance->GetData(DATA_KAELTHASEVENT) == 3)
+                if (instance && instance->GetData(DATA_KAELTHASEVENT) == 3)
                     DoScriptText(SAY_SANGUINAR_DEATH, me);
             }
 
@@ -1171,9 +1166,9 @@ class boss_lord_sanguinar : public CreatureScript
                 DoMeleeAttackIfReady();
             }
         };
-        CreatureAI* GetAI(Creature* Creature) const
+        CreatureAI* GetAI(Creature* creature) const
         {
-            return new boss_lord_sanguinarAI(Creature);
+            return new boss_lord_sanguinarAI(creature);
         }
 };
 //Grand Astromancer Capernian AI
@@ -1187,7 +1182,7 @@ class boss_grand_astromancer_capernian : public CreatureScript
         }
         struct boss_grand_astromancer_capernianAI : public advisorbase_ai
         {
-            boss_grand_astromancer_capernianAI(Creature* pCreature) : advisorbase_ai(pCreature) {}
+            boss_grand_astromancer_capernianAI(Creature* creature) : advisorbase_ai(creature) {}
 
             uint32 Fireball_Timer;
             uint32 Conflagration_Timer;
@@ -1206,9 +1201,9 @@ class boss_grand_astromancer_capernian : public CreatureScript
                 advisorbase_ai::Reset();
             }
 
-            void JustDied(Unit* /*pKiller*/)
+            void JustDied(Unit* /*killer*/)
             {
-                if (m_pInstance && m_pInstance->GetData(DATA_KAELTHASEVENT) == 3)
+                if (instance && instance->GetData(DATA_KAELTHASEVENT) == 3)
                     DoScriptText(SAY_CAPERNIAN_DEATH, me);
             }
 
@@ -1227,7 +1222,7 @@ class boss_grand_astromancer_capernian : public CreatureScript
                 }
             }
 
-            void EnterCombat(Unit *who)
+            void EnterCombat(Unit* who)
             {
                 if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
                     return;
@@ -1272,11 +1267,11 @@ class boss_grand_astromancer_capernian : public CreatureScript
                 //Conflagration_Timer
                 if (Conflagration_Timer <= diff)
                 {
-                    Unit *pTarget = NULL;
-                    pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0);
+                    Unit* target = NULL;
+                    target = SelectTarget(SELECT_TARGET_RANDOM, 0);
 
-                    if (pTarget && me->IsWithinDistInMap(pTarget, 30))
-                        DoCast(pTarget, SPELL_CONFLAGRATION);
+                    if (target && me->IsWithinDistInMap(target, 30))
+                        DoCast(target, SPELL_CONFLAGRATION);
                     else
                         DoCast(me->getVictim(), SPELL_CONFLAGRATION);
 
@@ -1289,22 +1284,22 @@ class boss_grand_astromancer_capernian : public CreatureScript
                 if (ArcaneExplosion_Timer <= diff)
                 {
                     bool InMeleeRange = false;
-                    Unit *pTarget = NULL;
+                    Unit* target = NULL;
                     std::list<HostileReference*>& m_threatlist = me->getThreatManager().getThreatList();
                     for (std::list<HostileReference*>::const_iterator i = m_threatlist.begin(); i!= m_threatlist.end(); ++i)
                     {
-                        Unit* pUnit = Unit::GetUnit((*me), (*i)->getUnitGuid());
+                        Unit* unit = Unit::GetUnit(*me, (*i)->getUnitGuid());
                                                                     //if in melee range
-                        if (pUnit && pUnit->IsWithinDistInMap(me, 5))
+                        if (unit && unit->IsWithinDistInMap(me, 5))
                         {
                             InMeleeRange = true;
-                            pTarget = pUnit;
+                            target = unit;
                             break;
                         }
                     }
 
                     if (InMeleeRange)
-                        DoCast(pTarget, SPELL_ARCANE_EXPLOSION);
+                        DoCast(target, SPELL_ARCANE_EXPLOSION);
 
                     ArcaneExplosion_Timer = 4000+rand()%2000;
                 }
@@ -1315,9 +1310,9 @@ class boss_grand_astromancer_capernian : public CreatureScript
             }
         };
 
-        CreatureAI* GetAI(Creature* Creature) const
+        CreatureAI* GetAI(Creature* creature) const
         {
-            return new boss_grand_astromancer_capernianAI(Creature);
+            return new boss_grand_astromancer_capernianAI(creature);
         }
 };
 
@@ -1332,7 +1327,7 @@ class boss_master_engineer_telonicus : public CreatureScript
         }
         struct boss_master_engineer_telonicusAI : public advisorbase_ai
         {
-            boss_master_engineer_telonicusAI(Creature* pCreature) : advisorbase_ai(pCreature) {}
+            boss_master_engineer_telonicusAI(Creature* creature) : advisorbase_ai(creature) {}
 
             uint32 Bomb_Timer;
             uint32 RemoteToy_Timer;
@@ -1345,13 +1340,13 @@ class boss_master_engineer_telonicus : public CreatureScript
                 advisorbase_ai::Reset();
             }
 
-            void JustDied(Unit* /*pKiller*/)
+            void JustDied(Unit* /*killer*/)
             {
-                if (m_pInstance && m_pInstance->GetData(DATA_KAELTHASEVENT) == 3)
+                if (instance && instance->GetData(DATA_KAELTHASEVENT) == 3)
                     DoScriptText(SAY_TELONICUS_DEATH, me);
             }
 
-            void EnterCombat(Unit *who)
+            void EnterCombat(Unit* who)
             {
                 if (me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE))
                     return;
@@ -1386,8 +1381,8 @@ class boss_master_engineer_telonicus : public CreatureScript
                 //RemoteToy_Timer
                 if (RemoteToy_Timer <= diff)
                 {
-                    if (Unit *pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0))
-                        DoCast(pTarget, SPELL_REMOTE_TOY);
+                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                        DoCast(target, SPELL_REMOTE_TOY);
 
                     RemoteToy_Timer = 10000+rand()%5000;
                 }
@@ -1398,9 +1393,9 @@ class boss_master_engineer_telonicus : public CreatureScript
             }
         };
 
-        CreatureAI* GetAI(Creature* Creature) const
+        CreatureAI* GetAI(Creature* creature) const
         {
-            return new boss_master_engineer_telonicusAI(Creature);
+            return new boss_master_engineer_telonicusAI(creature);
         }
 };
 
@@ -1415,7 +1410,7 @@ class mob_kael_flamestrike : public CreatureScript
         }
         struct mob_kael_flamestrikeAI : public Scripted_NoMovementAI
         {
-            mob_kael_flamestrikeAI(Creature* pCreature) : Scripted_NoMovementAI(pCreature) {}
+            mob_kael_flamestrikeAI(Creature* creature) : Scripted_NoMovementAI(creature) {}
 
             uint32 Timer;
             bool Casting;
@@ -1431,9 +1426,9 @@ class mob_kael_flamestrike : public CreatureScript
                 me->setFaction(14);
             }
 
-            void MoveInLineOfSight(Unit * /*who*/) {}
+            void MoveInLineOfSight(Unit* /*who*/) {}
 
-            void EnterCombat(Unit * /*who*/) {}
+            void EnterCombat(Unit* /*who*/) {}
 
             void UpdateAI(const uint32 diff)
             {
@@ -1462,9 +1457,9 @@ class mob_kael_flamestrike : public CreatureScript
             }
         };
 
-        CreatureAI* GetAI(Creature* Creature) const
+        CreatureAI* GetAI(Creature* creature) const
         {
-            return new mob_kael_flamestrikeAI(Creature);
+            return new mob_kael_flamestrikeAI(creature);
         }
 };
 
@@ -1479,7 +1474,7 @@ class mob_phoenix_tk : public CreatureScript
         }
         struct mob_phoenix_tkAI : public ScriptedAI
         {
-            mob_phoenix_tkAI(Creature* pCreature) : ScriptedAI(pCreature) {}
+            mob_phoenix_tkAI(Creature* creature) : ScriptedAI(creature) {}
 
             uint32 Cycle_Timer;
 
@@ -1516,9 +1511,9 @@ class mob_phoenix_tk : public CreatureScript
             }
         };
 
-        CreatureAI* GetAI(Creature* Creature) const
+        CreatureAI* GetAI(Creature* creature) const
         {
-            return new mob_phoenix_tkAI(Creature);
+            return new mob_phoenix_tkAI(creature);
         }
 };
 
@@ -1533,7 +1528,7 @@ class mob_phoenix_egg_tk : public CreatureScript
         }
         struct mob_phoenix_egg_tkAI : public ScriptedAI
         {
-            mob_phoenix_egg_tkAI(Creature* pCreature) : ScriptedAI(pCreature) {}
+            mob_phoenix_egg_tkAI(Creature* creature) : ScriptedAI(creature) {}
 
             uint32 Rebirth_Timer;
 
@@ -1577,9 +1572,9 @@ class mob_phoenix_egg_tk : public CreatureScript
             }
         };
 
-        CreatureAI* GetAI(Creature* pCreature) const
+        CreatureAI* GetAI(Creature* creature) const
         {
-            return new mob_phoenix_egg_tkAI(pCreature);
+            return new mob_phoenix_egg_tkAI(creature);
         }
 };
 

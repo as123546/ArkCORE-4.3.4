@@ -1,32 +1,27 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2011-2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ARKCORECORE_COMMON_H
-#define ARKCORECORE_COMMON_H
+#ifndef TRINITYCORE_COMMON_H
+#define TRINITYCORE_COMMON_H
 
 // config.h needs to be included 1st
-// TODO this thingy looks like hack , but its not, need to
+// TODO this thingy looks like hack, but its not, need to
 // make separate header however, because It makes mess here.
 #ifdef HAVE_CONFIG_H
 // Remove Some things that we will define
@@ -53,7 +48,8 @@
 #ifdef VERSION
 #undef VERSION
 #endif //VERSION
-# include "config.h"
+
+# include "Config.h"
 
 #undef PACKAGE
 #undef PACKAGE_BUGREPORT
@@ -63,6 +59,7 @@
 #undef PACKAGE_VERSION
 #undef VERSION
 #endif //HAVE_CONFIG_H
+
 #include "Define.h"
 
 #include "Dynamic/UnorderedMap.h"
@@ -120,9 +117,10 @@
 #define I32FMT "%08I32X"
 #define I64FMT "%016I64X"
 #define snprintf _snprintf
-#define atoll __atoi64
+#define atoll _atoi64
 #define vsnprintf _vsnprintf
 #define finite(X) _finite(X)
+#define llabs _abs64
 
 #else
 
@@ -133,58 +131,50 @@
 
 #endif
 
-#define UI64FMTD ACE_UINT64_FORMAT_SPECIFIER
-#define UI64LIT(N) ACE_UINT64_LITERAL(N)
-
-#define SI64FMTD ACE_INT64_FORMAT_SPECIFIER
-#define SI64LIT(N) ACE_INT64_LITERAL(N)
-
-#define SIZEFMTD ACE_SIZE_T_FORMAT_SPECIFIER
-
-inline float finiteAlways(float f) {
-	return finite(f) ? f : 0.0f;
-}
+inline float finiteAlways(float f) { return finite(f) ? f : 0.0f; }
 
 #define atol(a) strtoul( a, NULL, 10)
 
 #define STRINGIZE(a) #a
 
-enum TimeConstants {
-	MINUTE = 60,
-	HOUR = MINUTE * 60,
-	DAY = HOUR * 24,
-	WEEK = DAY * 7,
-	MONTH = DAY * 30,
-	YEAR = MONTH * 12,
-	IN_MILLISECONDS = 1000
+enum TimeConstants
+{
+    MINUTE          = 60,
+    HOUR            = MINUTE*60,
+    DAY             = HOUR*24,
+    WEEK            = DAY*7,
+    MONTH           = DAY*30,
+    YEAR            = MONTH*12,
+    IN_MILLISECONDS = 1000
 };
 
-enum AccountTypes {
-	SEC_PLAYER = 0,
-	SEC_MODERATOR = 1,
-	SEC_GAMEMASTER = 2,
-	SEC_ADMINISTRATOR = 3,
-	SEC_CONSOLE = 4
-// must be always last in list, accounts must have less security level always also
+enum AccountTypes
+{
+    SEC_PLAYER         = 0,
+    SEC_MODERATOR      = 1,
+    SEC_GAMEMASTER     = 2,
+    SEC_ADMINISTRATOR  = 3,
+    SEC_CONSOLE        = 4                                  // must be always last in list, accounts must have less security level always also
 };
 
-enum LocaleConstant {
-	LOCALE_enUS = 0,
-	LOCALE_koKR = 1,
-	LOCALE_frFR = 2,
-	LOCALE_deDE = 3,
-	LOCALE_zhCN = 4,
-	LOCALE_zhTW = 5,
-	LOCALE_esES = 6,
-	LOCALE_esMX = 7,
-	LOCALE_ruRU = 8
+enum LocaleConstant
+{
+    LOCALE_enUS = 0,
+    LOCALE_koKR = 1,
+    LOCALE_frFR = 2,
+    LOCALE_deDE = 3,
+    LOCALE_zhCN = 4,
+    LOCALE_zhTW = 5,
+    LOCALE_esES = 6,
+    LOCALE_esMX = 7,
+    LOCALE_ruRU = 8
 };
 
 const uint8 TOTAL_LOCALES = 9;
 const LocaleConstant DEFAULT_LOCALE = LOCALE_enUS;
 
 #define MAX_LOCALES 8
-#define MAX_CHARACTER_TUTORIAL_VALUES 8
+#define MAX_ACCOUNT_TUTORIAL_VALUES 8
 
 extern char const* localeNames[TOTAL_LOCALES];
 
@@ -206,4 +196,21 @@ typedef std::vector<std::string> StringVector;
 #endif
 
 #define MAX_QUERY_LEN 32*1024
+
+#define TRINITY_GUARD(MUTEX, LOCK) \
+  ACE_Guard< MUTEX > TRINITY_GUARD_OBJECT (LOCK); \
+    if (TRINITY_GUARD_OBJECT.locked() == 0) ASSERT(false);
+
+//! For proper implementation of multiple-read, single-write pattern, use
+//! ACE_RW_Mutex as underlying @MUTEX
+# define TRINITY_WRITE_GUARD(MUTEX, LOCK) \
+  ACE_Write_Guard< MUTEX > TRINITY_GUARD_OBJECT (LOCK); \
+    if (TRINITY_GUARD_OBJECT.locked() == 0) ASSERT(false);
+
+//! For proper implementation of multiple-read, single-write pattern, use
+//! ACE_RW_Mutex as underlying @MUTEX
+# define TRINITY_READ_GUARD(MUTEX, LOCK) \
+  ACE_Read_Guard< MUTEX > TRINITY_GUARD_OBJECT (LOCK); \
+    if (TRINITY_GUARD_OBJECT.locked() == 0) ASSERT(false);
+
 #endif

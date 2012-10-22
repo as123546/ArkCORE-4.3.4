@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
- *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
- *
- * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -27,7 +23,8 @@ SDComment: Heroic and Normal support. Needs further testing.
 SDCategory: Magister's Terrace
 EndScriptData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "magisters_terrace.h"
 
 enum eEnums
@@ -47,14 +44,14 @@ enum eEnums
 
     //Vexallus spell info
     SPELL_CHAIN_LIGHTNING           = 44318,
-    SPELL_H_CHAIN_LIGHTNING         = 46380,               //heroic spell
+    SPELL_H_CHAIN_LIGHTNING         = 46380,                //heroic spell
     SPELL_OVERLOAD                  = 44353,
     SPELL_ARCANE_SHOCK              = 44319,
-    SPELL_H_ARCANE_SHOCK            = 46381,               //heroic spell
+    SPELL_H_ARCANE_SHOCK            = 46381,                //heroic spell
 
-    SPELL_SUMMON_PURE_ENERGY        = 44322,               //mod scale -10
-    H_SPELL_SUMMON_PURE_ENERGY1     = 46154,               //mod scale -5
-    H_SPELL_SUMMON_PURE_ENERGY2     = 46159,               //mod scale -5
+    SPELL_SUMMON_PURE_ENERGY        = 44322,                //mod scale -10
+    H_SPELL_SUMMON_PURE_ENERGY1     = 46154,                //mod scale -5
+    H_SPELL_SUMMON_PURE_ENERGY2     = 46159,                //mod scale -5
 
     //Creatures
     NPC_PURE_ENERGY                 = 24745,
@@ -75,9 +72,9 @@ public:
 
     struct boss_vexallusAI : public ScriptedAI
     {
-        boss_vexallusAI(Creature* c) : ScriptedAI(c)
+        boss_vexallusAI(Creature* creature) : ScriptedAI(creature)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
         InstanceScript* instance;
@@ -105,7 +102,7 @@ public:
             DoScriptText(SAY_KILL, me);
         }
 
-        void JustDied(Unit* /*victim*/)
+        void JustDied(Unit* /*killer*/)
         {
             if (instance)
                 instance->SetData(DATA_VEXALLUS_EVENT, DONE);
@@ -195,6 +192,7 @@ public:
             DoMeleeAttackIfReady();
         }
     };
+
 };
 
 class mob_pure_energy : public CreatureScript
@@ -209,7 +207,7 @@ public:
 
     struct mob_pure_energyAI : public ScriptedAI
     {
-        mob_pure_energyAI(Creature* c) : ScriptedAI(c) {}
+        mob_pure_energyAI(Creature* creature) : ScriptedAI(creature) {}
 
         void Reset() {}
 
@@ -226,6 +224,7 @@ public:
         void MoveInLineOfSight(Unit* /*who*/) {}
         void AttackStart(Unit* /*who*/) {}
     };
+
 };
 
 void AddSC_boss_vexallus()

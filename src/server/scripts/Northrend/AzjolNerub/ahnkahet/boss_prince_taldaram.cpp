@@ -1,11 +1,5 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
- *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
- *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -21,7 +15,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "ahnkahet.h"
 
 enum Spells
@@ -42,27 +37,27 @@ enum Spells
     SPELL_VANISH                                  = 55964,
     CREATURE_FLAME_SPHERE                         = 30106,
     H_CREATURE_FLAME_SPHERE_1                     = 31686,
-    H_CREATURE_FLAME_SPHERE_2                     = 31687
+    H_CREATURE_FLAME_SPHERE_2                     = 31687,
+    SPELL_HOVER_FALL                              = 60425
 };
 enum Misc
 {
     DATA_EMBRACE_DMG                              = 20000,
     H_DATA_EMBRACE_DMG                            = 40000,
-    DATA_SPHERE_DISTANCE                          =   100
+    DATA_SPHERE_DISTANCE                          =    15
 };
 #define DATA_SPHERE_ANGLE_OFFSET            0.7f
-#define DATA_GROUND_POSITION_Z             11.4f
+#define DATA_GROUND_POSITION_Z             11.30809f
 
 enum Yells
 {
-    SAY_AGGRO                                     = -1619021,
-    SAY_SLAY_1                                    = -1619022,
-    SAY_SLAY_2                                    = -1619023,
-    SAY_DEATH                                     = -1619024,
-    SAY_FEED_1                                    = -1619025,
-    SAY_FEED_2                                    = -1619026,
-    SAY_VANISH_1                                  = -1619027,
-    SAY_VANISH_2                                  = -1619028
+    SAY_1                                         = 0,
+    SAY_WARNING                                   = 1,
+    SAY_AGGRO                                     = 2,
+    SAY_SLAY                                      = 3,
+    SAY_DEATH                                     = 4,
+    SAY_FEED                                      = 5,
+    SAY_VANISH                                    = 6,
 };
 enum CombatPhase
 {
@@ -85,11 +80,10 @@ public:
 
     struct boss_taldaramAI : public ScriptedAI
     {
-        boss_taldaramAI(Creature* c) : ScriptedAI(c)
+        boss_taldaramAI(Creature* creature) : ScriptedAI(creature)
         {
-            pInstance = c->GetInstanceScript();
-            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_OOC_NOT_ATTACKABLE);
-            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+            instance = creature->GetInstanceScript();
+            me->SetDisableGravity(true);
         }
 
         uint32 uiBloodthirstTimer;
@@ -104,7 +98,7 @@ public:
 
         CombatPhase Phase;
 
-        InstanceScript* pInstance;
+        InstanceScript* instance;
 
         void Reset()
         {
@@ -116,22 +110,21 @@ public:
             Phase = NORMAL;
             uiPhaseTimer = 0;
             uiEmbraceTarget = 0;
-            if (pInstance)
-                pInstance->SetData(DATA_PRINCE_TALDARAM_EVENT, NOT_STARTED);
+            if (instance)
+                instance->SetData(DATA_PRINCE_TALDARAM_EVENT, NOT_STARTED);
         }
 
         void EnterCombat(Unit* /*who*/)
         {
-            if (pInstance)
-                pInstance->SetData(DATA_PRINCE_TALDARAM_EVENT, IN_PROGRESS);
-            DoScriptText(SAY_AGGRO, me);
+            if (instance)
+                instance->SetData(DATA_PRINCE_TALDARAM_EVENT, IN_PROGRESS);
+            Talk(SAY_AGGRO);
         }
 
         void UpdateAI(const uint32 diff)
         {
             if (!UpdateVictim())
                 return;
-
             if (uiPhaseTimer <= diff)
             {
                 switch (Phase)
@@ -147,8 +140,8 @@ public:
                         {
                             float angle, x, y;
                             angle = pSpheres[0]->GetAngle(pSphereTarget);
-                            x = pSpheres[0]->GetPositionX() + DATA_SPHERE_DISTANCE * cos(angle);
-                            y = pSpheres[0]->GetPositionY() + DATA_SPHERE_DISTANCE * sin(angle);
+                            x = pSpheres[0]->GetPositionX() + DATA_SPHERE_DISTANCE * std::cos(angle);
+                            y = pSpheres[0]->GetPositionY() + DATA_SPHERE_DISTANCE * std::sin(angle);
                             pSpheres[0]->GetMotionMaster()->MovePoint(0, x, y, pSpheres[0]->GetPositionZ());
                         }
                         if (IsHeroic())
@@ -161,12 +154,12 @@ public:
                             {
                                 float angle, x, y;
                                 angle = pSpheres[1]->GetAngle(pSphereTarget) + DATA_SPHERE_ANGLE_OFFSET;
-                                x = pSpheres[1]->GetPositionX() + DATA_SPHERE_DISTANCE/2 * cos(angle);
-                                y = pSpheres[1]->GetPositionY() + DATA_SPHERE_DISTANCE/2 * sin(angle);
+                                x = pSpheres[1]->GetPositionX() + DATA_SPHERE_DISTANCE/2 * std::cos(angle);
+                                y = pSpheres[1]->GetPositionY() + DATA_SPHERE_DISTANCE/2 * std::sin(angle);
                                 pSpheres[1]->GetMotionMaster()->MovePoint(0, x, y, pSpheres[1]->GetPositionZ());
                                 angle = pSpheres[2]->GetAngle(pSphereTarget) - DATA_SPHERE_ANGLE_OFFSET;
-                                x = pSpheres[2]->GetPositionX() + DATA_SPHERE_DISTANCE/2 * cos(angle);
-                                y = pSpheres[2]->GetPositionY() + DATA_SPHERE_DISTANCE/2 * sin(angle);
+                                x = pSpheres[2]->GetPositionX() + DATA_SPHERE_DISTANCE/2 * std::cos(angle);
+                                y = pSpheres[2]->GetPositionY() + DATA_SPHERE_DISTANCE/2 * std::sin(angle);
                                 pSpheres[2]->GetMotionMaster()->MovePoint(0, x, y, pSpheres[2]->GetPositionZ());
                             }
                         }
@@ -186,9 +179,9 @@ public:
                         uiPhaseTimer = 1300;
                         break;
                     case VANISHED:
-                        me->SetVisible(true);
                         if (Unit* pEmbraceTarget = GetEmbraceTarget())
                             DoCast(pEmbraceTarget, DUNGEON_MODE(SPELL_EMBRACE_OF_THE_VAMPYR, H_SPELL_EMBRACE_OF_THE_VAMPYR));
+                        Talk(SAY_FEED);
                         me->GetMotionMaster()->Clear();
                         me->SetSpeed(MOVE_WALK, 1.0f, true);
                         me->GetMotionMaster()->MoveChase(me->getVictim());
@@ -209,7 +202,8 @@ public:
 
                         if (uiFlamesphereTimer <= diff)
                         {
-                            DoCast(me, SPELL_CONJURE_FLAME_SPHERE);
+                            // because TARGET_UNIT_TARGET_ENEMY we need a target selected to cast
+                            DoCastVictim(SPELL_CONJURE_FLAME_SPHERE);
                             Phase = CASTING_FLAME_SPHERES;
                             uiPhaseTimer = 3*IN_MILLISECONDS + diff;
                             uiFlamesphereTimer = 15*IN_MILLISECONDS;
@@ -232,13 +226,13 @@ public:
                             //He only vanishes if there are 3 or more alive players
                             if (target_list.size() > 2)
                             {
-                                DoScriptText(RAND(SAY_VANISH_1, SAY_VANISH_2), me);
-                                //DoCast(me, SPELL_VANISH);                             // causes health reset issue?
-                                me->SetVisible(false);
+                                Talk(SAY_VANISH);
+                                DoCast(me, SPELL_VANISH);
                                 Phase = JUST_VANISHED;
                                 uiPhaseTimer = 500;
                                 if (Unit* pEmbraceTarget = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
                                     uiEmbraceTarget = pEmbraceTarget->GetGUID();
+
                             }
                             uiVanishTimer = urand(25*IN_MILLISECONDS, 35*IN_MILLISECONDS);
                         } else uiVanishTimer -= diff;
@@ -268,10 +262,10 @@ public:
 
         void JustDied(Unit* /*killer*/)
         {
-            DoScriptText(SAY_DEATH, me);
+            Talk(SAY_DEATH);
 
-            if (pInstance)
-                pInstance->SetData(DATA_PRINCE_TALDARAM_EVENT, DONE);
+            if (instance)
+                instance->SetData(DATA_PRINCE_TALDARAM_EVENT, DONE);
         }
 
         void KilledUnit(Unit* victim)
@@ -286,21 +280,21 @@ public:
                 uiPhaseTimer = 0;
                 uiEmbraceTarget = 0;
             }
-            DoScriptText(RAND(SAY_SLAY_1, SAY_SLAY_2), me);
+            Talk(SAY_SLAY);
         }
 
         bool CheckSpheres()
         {
-            if (!pInstance)
+            if (!instance)
                 return false;
 
             uint64 uiSphereGuids[2];
-            uiSphereGuids[0] = pInstance->GetData64(DATA_SPHERE1);
-            uiSphereGuids[1] = pInstance->GetData64(DATA_SPHERE2);
+            uiSphereGuids[0] = instance->GetData64(DATA_SPHERE1);
+            uiSphereGuids[1] = instance->GetData64(DATA_SPHERE2);
 
             for (uint8 i=0; i < 2; ++i)
             {
-                GameObject* pSpheres = pInstance->instance->GetGameObject(uiSphereGuids[i]);
+                GameObject* pSpheres = instance->instance->GetGameObject(uiSphereGuids[i]);
                 if (!pSpheres)
                     return false;
                 if (pSpheres->GetGoState() != GO_STATE_ACTIVE)
@@ -320,16 +314,17 @@ public:
 
         void RemovePrison()
         {
-            if (!pInstance)
+            if (!instance)
                 return;
-            me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_OOC_NOT_ATTACKABLE);
-            me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
             me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
             me->RemoveAurasDueToSpell(SPELL_BEAM_VISUAL);
-            me->SetUnitMovementFlags(MOVEMENTFLAG_WALKING);
             me->SetHomePosition(me->GetPositionX(), me->GetPositionY(), DATA_GROUND_POSITION_Z, me->GetOrientation());
-            uint64 prison_GUID = pInstance->GetData64(DATA_PRINCE_TALDARAM_PLATFORM);
-            pInstance->HandleGameObject(prison_GUID, true);
+            DoCast(SPELL_HOVER_FALL);
+            me->SetDisableGravity(false);
+            me->GetMotionMaster()->MovePoint(0, me->GetHomePosition());
+            Talk(SAY_WARNING);
+            uint64 prison_GUID = instance->GetData64(DATA_PRINCE_TALDARAM_PLATFORM);
+            instance->HandleGameObject(prison_GUID, true);
         }
     };
 
@@ -346,30 +341,31 @@ public:
 
     struct mob_taldaram_flamesphereAI : public ScriptedAI
     {
-        mob_taldaram_flamesphereAI(Creature* c) : ScriptedAI(c)
+        mob_taldaram_flamesphereAI(Creature* creature) : ScriptedAI(creature)
         {
-            pInstance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
         uint32 uiDespawnTimer;
-        InstanceScript* pInstance;
+        InstanceScript* instance;
 
         void Reset()
         {
             me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+            //! HACK: Creature's can't have MOVEMENTFLAG_FLYING
             me->AddUnitMovementFlag(MOVEMENTFLAG_FLYING);
             me->setFaction(16);
-            me->SetFloatValue(OBJECT_FIELD_SCALE_X, 1.0f);
+            me->SetObjectScale(1.0f);
             DoCast(me, SPELL_FLAME_SPHERE_VISUAL);
             DoCast(me, SPELL_FLAME_SPHERE_SPAWN_EFFECT);
-            DoCast(me, DUNGEON_MODE(SPELL_FLAME_SPHERE_PERIODIC, H_SPELL_FLAME_SPHERE_PERIODIC));
+            DoCast(me, SPELL_FLAME_SPHERE_PERIODIC);
             uiDespawnTimer = 10*IN_MILLISECONDS;
         }
 
         void EnterCombat(Unit* /*who*/) {}
         void MoveInLineOfSight(Unit* /*who*/) {}
 
-        void JustDied(Unit* /*who*/)
+        void JustDied(Unit* /*killer*/)
         {
             DoCast(me, SPELL_FLAME_SPHERE_DEATH_EFFECT);
         }
@@ -394,21 +390,30 @@ class prince_taldaram_sphere : public GameObjectScript
 public:
     prince_taldaram_sphere() : GameObjectScript("prince_taldaram_sphere") { }
 
-    bool OnGossipHello(Player* /*player*/, GameObject* pGO)
+    bool OnGossipHello(Player* /*player*/, GameObject* go)
     {
-        InstanceScript* pInstance = pGO->GetInstanceScript();
+        InstanceScript* instance = go->GetInstanceScript();
+        if (!instance)
+            return true;
 
-        Creature* pPrinceTaldaram = Unit::GetCreature(*pGO, pInstance ? pInstance->GetData64(DATA_PRINCE_TALDARAM) : 0);
+        Creature* pPrinceTaldaram = Unit::GetCreature(*go, instance->GetData64(DATA_PRINCE_TALDARAM));
         if (pPrinceTaldaram && pPrinceTaldaram->isAlive())
         {
             // maybe these are hacks :(
-            pGO->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
-            pGO->SetGoState(GO_STATE_ACTIVE);
+            go->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
+            go->SetGoState(GO_STATE_ACTIVE);
 
-            switch (pGO->GetEntry())
+            switch (go->GetEntry())
             {
-                case GO_SPHERE1: pInstance->SetData(DATA_SPHERE1_EVENT, IN_PROGRESS); break;
-                case GO_SPHERE2: pInstance->SetData(DATA_SPHERE2_EVENT, IN_PROGRESS); break;
+                case GO_SPHERE1:
+                    instance->SetData(DATA_SPHERE1_EVENT, IN_PROGRESS);
+                    pPrinceTaldaram->AI()->Talk(SAY_1);
+                    break;
+
+                case GO_SPHERE2:
+                    instance->SetData(DATA_SPHERE2_EVENT, IN_PROGRESS);
+                    pPrinceTaldaram->AI()->Talk(SAY_1);
+                    break;
             }
 
             CAST_AI(boss_taldaram::boss_taldaramAI, pPrinceTaldaram->AI())->CheckSpheres();

@@ -1,30 +1,22 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "naxxramas.h"
 
 #define SPELL_BOMBARD_SLIME         28280
@@ -42,112 +34,117 @@
 
 #define MOB_FALLOUT_SLIME   16290
 
-class boss_grobbulus: public CreatureScript {
+class boss_grobbulus : public CreatureScript
+{
 public:
-    boss_grobbulus() :
-            CreatureScript("boss_grobbulus") {
+    boss_grobbulus() : CreatureScript("boss_grobbulus") { }
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return new boss_grobbulusAI (creature);
     }
 
-    CreatureAI* GetAI(Creature* pCreature) const {
-        return new boss_grobbulusAI(pCreature);
-    }
-
-    struct boss_grobbulusAI: public BossAI {
-        boss_grobbulusAI(Creature *c) :
-                BossAI(c, BOSS_GROBBULUS) {
+    struct boss_grobbulusAI : public BossAI
+    {
+        boss_grobbulusAI(Creature* creature) : BossAI(creature, BOSS_GROBBULUS)
+        {
             me->ApplySpellImmune(0, IMMUNITY_ID, SPELL_POISON_CLOUD_ADD, true);
-            me->ApplySpellImmune(0, IMMUNITY_EFFECT, SPELL_EFFECT_KNOCK_BACK,
-                    true);
-            me->ApplySpellImmune(0, IMMUNITY_MECHANIC, MECHANIC_GRIP, true);
         }
 
-        void EnterCombat(Unit * /*who*/) {
+        void EnterCombat(Unit* /*who*/)
+        {
             _EnterCombat();
             events.ScheduleEvent(EVENT_CLOUD, 15000);
             events.ScheduleEvent(EVENT_INJECT, 20000);
-            events.ScheduleEvent(EVENT_SPRAY, 15000 + rand() % 15000); //not sure
-            events.ScheduleEvent(EVENT_BERSERK, 12 * 60000);
+            events.ScheduleEvent(EVENT_SPRAY, 15000+rand()%15000); //not sure
+            events.ScheduleEvent(EVENT_BERSERK, 12*60000);
         }
 
-        void SpellHitTarget(Unit *pTarget, const SpellEntry *spell) {
-            if (spell->Id == uint32(SPELL_SLIME_SPRAY)) {
-                if (TempSummon *slime = me->SummonCreature(MOB_FALLOUT_SLIME, pTarget->GetPositionX(), pTarget->GetPositionY(), pTarget->GetPositionZ(), 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 0))
+        void SpellHitTarget(Unit* target, const SpellInfo* spell)
+        {
+            if (spell->Id == uint32(SPELL_SLIME_SPRAY))
+            {
+                if (TempSummon* slime = me->SummonCreature(MOB_FALLOUT_SLIME, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ(), 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 0))
                     DoZoneInCombat(slime);
             }
         }
 
-        void JustDied(Unit* /*killer*/) {
-            _JustDied();
-        }
-
-        void UpdateAI(const uint32 diff) {
+        void UpdateAI(const uint32 diff)
+        {
             if (!UpdateVictim())
                 return;
 
             events.Update(diff);
 
-            while (uint32 eventId = events.ExecuteEvent()) {
-                switch (eventId) {
-                case EVENT_CLOUD:
-                    DoCastAOE(SPELL_POISON_CLOUD);
-                    events.ScheduleEvent(EVENT_CLOUD, 15000);
-                    return;
-                case EVENT_BERSERK:
-                    DoCastAOE(SPELL_BERSERK);
-                    return;
-                case EVENT_SPRAY:
-                    DoCastAOE(SPELL_SLIME_SPRAY);
-                    events.ScheduleEvent(EVENT_SPRAY, 15000 + rand() % 15000);
-                    return;
-                case EVENT_INJECT:
-                    if (Unit *pTarget = SelectUnit(SELECT_TARGET_RANDOM, 1))
-                        if (!pTarget->HasAura(SPELL_MUTATING_INJECTION))
-                            DoCast(pTarget, SPELL_MUTATING_INJECTION);
-                    events.ScheduleEvent(EVENT_INJECT,
-                            8000 + uint32(120 * me->GetHealthPct()));
-                    return;
+            while (uint32 eventId = events.ExecuteEvent())
+            {
+                switch (eventId)
+                {
+                    case EVENT_CLOUD:
+                        DoCastAOE(SPELL_POISON_CLOUD);
+                        events.ScheduleEvent(EVENT_CLOUD, 15000);
+                        return;
+                    case EVENT_BERSERK:
+                        DoCastAOE(SPELL_BERSERK);
+                        return;
+                    case EVENT_SPRAY:
+                        DoCastAOE(SPELL_SLIME_SPRAY);
+                        events.ScheduleEvent(EVENT_SPRAY, 15000+rand()%15000);
+                        return;
+                    case EVENT_INJECT:
+                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1))
+                            if (!target->HasAura(SPELL_MUTATING_INJECTION))
+                                DoCast(target, SPELL_MUTATING_INJECTION);
+                        events.ScheduleEvent(EVENT_INJECT, 8000 + uint32(120 * me->GetHealthPct()));
+                        return;
                 }
             }
 
             DoMeleeAttackIfReady();
         }
     };
+
 };
 
-class npc_grobbulus_poison_cloud: public CreatureScript {
+class npc_grobbulus_poison_cloud : public CreatureScript
+{
 public:
-    npc_grobbulus_poison_cloud() :
-            CreatureScript("npc_grobbulus_poison_cloud") {
+    npc_grobbulus_poison_cloud() : CreatureScript("npc_grobbulus_poison_cloud") { }
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return new npc_grobbulus_poison_cloudAI(creature);
     }
 
-    CreatureAI* GetAI(Creature* pCreature) const {
-        return new npc_grobbulus_poison_cloudAI(pCreature);
-    }
-
-    struct npc_grobbulus_poison_cloudAI: public Scripted_NoMovementAI {
-        npc_grobbulus_poison_cloudAI(Creature* pCreature) :
-                Scripted_NoMovementAI(pCreature) {
+    struct npc_grobbulus_poison_cloudAI : public Scripted_NoMovementAI
+    {
+        npc_grobbulus_poison_cloudAI(Creature* creature) : Scripted_NoMovementAI(creature)
+        {
             Reset();
         }
 
         uint32 Cloud_Timer;
 
-        void Reset() {
+        void Reset()
+        {
             Cloud_Timer = 1000;
             me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
         }
 
-        void UpdateAI(const uint32 diff) {
-            if (Cloud_Timer <= diff) {
+        void UpdateAI(const uint32 diff)
+        {
+            if (Cloud_Timer <= diff)
+            {
                 DoCast(me, SPELL_POISON_CLOUD_ADD);
                 Cloud_Timer = 10000;
-            } else
-                Cloud_Timer -= diff;
+            } else Cloud_Timer -= diff;
         }
     };
+
 };
 
-void AddSC_boss_grobbulus() {
+void AddSC_boss_grobbulus()
+{
     new boss_grobbulus();
     new npc_grobbulus_poison_cloud();
 }

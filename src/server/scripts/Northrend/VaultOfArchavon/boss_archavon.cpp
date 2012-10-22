@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
- *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
- *
- * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -19,7 +15,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "vault_of_archavon.h"
 
 #define EMOTE_BERSERK           -1590002
@@ -27,7 +24,7 @@
 //Spells Archavon
 #define SPELL_ROCK_SHARDS        58678
 #define SPELL_CRUSHING_LEAP      RAID_MODE(58960, 60894)//Instant (10-80yr range) -- Leaps at an enemy, inflicting 8000 Physical damage, knocking all nearby enemies away, and creating a cloud of choking debris.
-#define SPELL_STOMP              RAID_MODE(58663, 60880) // Forcing cast of Impale
+#define SPELL_STOMP              RAID_MODE(58663, 60880)
 #define SPELL_IMPALE             RAID_MODE(58666, 60882) //Lifts an enemy off the ground with a spiked fist, inflicting 47125 to 52875 Physical damage and 9425 to 10575 additional damage each second for 8 sec.
 #define SPELL_BERSERK            47008
 //Spells Archavon Warders
@@ -44,30 +41,16 @@
 enum Events
 {
     // Archavon
-    EVENT_ROCK_SHARDS       = 1,   // 15s cd
-    EVENT_CRUSHING_LEAP     = 2,   // 30s cd
-    EVENT_STOMP             = 3,   // 45s cd
+    EVENT_ROCK_SHARDS       = 1,    // 15s cd
+    EVENT_CHOKING_CLOUD     = 2,    // 30s cd
+    EVENT_STOMP             = 3,    // 45s cd
     EVENT_IMPALE            = 4,
-    EVENT_BERSERK           = 5,   // 300s cd
+    EVENT_BERSERK           = 5,    // 300s cd
 
     //mob
-    EVENT_ROCK_SHOWER       = 6,   // set = 20s cd, unkown cd
-    EVENT_SHIELD_CRUSH      = 7,   // set = 30s cd
-    EVENT_WHIRL             = 8,   // set= 10s cd
-};
-
-// predicate function to select player between given distances
-struct InRangePlayerSelector : public std::unary_function<Unit*, bool>
-{
-    InRangePlayerSelector(Creature* me, float minRange, float maxRange) : _me(me), _minRange(minRange), _maxRange(maxRange) {}
-
-    bool operator()(Unit const* target) const
-    {
-        return (target->GetTypeId() == TYPEID_PLAYER && target->IsInRange(_me, _minRange, _maxRange) && target->IsWithinLOSInMap(_me));
-    }
-
-    Creature* _me;
-    float _minRange, _maxRange;
+    EVENT_ROCK_SHOWER       = 6,    // set = 20s cd, unkown cd
+    EVENT_SHIELD_CRUSH      = 7,    // set = 30s cd
+    EVENT_WHIRL             = 8,    // set= 10s cd
 };
 
 class boss_archavon : public CreatureScript
@@ -81,28 +64,10 @@ class boss_archavon : public CreatureScript
             {
             }
 
-            void Reset()
-            {
-                events.Reset();
-                if (instance)
-                    instance->SetData(DATA_ARCHAVON, NOT_STARTED);
-            }
-
-            void JustDied(Unit* killer)
-            {
-                if (instance)
-                    instance->SetData(DATA_ARCHAVON, DONE);
-
-                _JustDied();
-            }
-
             void EnterCombat(Unit* /*who*/)
             {
-                if (instance)
-                    instance->SetData(DATA_ARCHAVON, IN_PROGRESS);
-
                 events.ScheduleEvent(EVENT_ROCK_SHARDS, 15000);
-                events.ScheduleEvent(EVENT_CRUSHING_LEAP, 30000);
+                events.ScheduleEvent(EVENT_CHOKING_CLOUD, 30000);
                 events.ScheduleEvent(EVENT_STOMP, 45000);
                 events.ScheduleEvent(EVENT_BERSERK, 300000);
 
@@ -117,7 +82,7 @@ class boss_archavon : public CreatureScript
 
                 events.Update(diff);
 
-                if (me->HasUnitState(UNIT_STAT_CASTING))
+                if (me->HasUnitState(UNIT_STATE_CASTING))
                     return;
 
                 while (uint32 eventId = events.ExecuteEvent())
@@ -129,10 +94,10 @@ class boss_archavon : public CreatureScript
                                 DoCast(target, SPELL_ROCK_SHARDS);
                             events.ScheduleEvent(EVENT_ROCK_SHARDS, 15000);
                             break;
-                        case EVENT_CRUSHING_LEAP:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, InRangePlayerSelector(me, 10, 80)))
-                                DoCast(target, SPELL_CRUSHING_LEAP, true);
-                            events.ScheduleEvent(EVENT_CRUSHING_LEAP, 30000);
+                        case EVENT_CHOKING_CLOUD:
+                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                                DoCast(target, SPELL_CRUSHING_LEAP, true); //10y~80y, ignore range
+                            events.ScheduleEvent(EVENT_CHOKING_CLOUD, 30000);
                             break;
                         case EVENT_STOMP:
                             DoCastVictim(SPELL_STOMP);
@@ -197,7 +162,7 @@ class mob_archavon_warder : public CreatureScript
 
                 events.Update(diff);
 
-                if (me->HasUnitState(UNIT_STAT_CASTING))
+                if (me->HasUnitState(UNIT_STATE_CASTING))
                     return;
 
                 while (uint32 eventId = events.ExecuteEvent())

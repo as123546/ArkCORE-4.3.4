@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008 - 2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -68,8 +68,8 @@ enum Phases
 
 class boss_baltharus_the_warborn : public CreatureScript
 {
-public:
-    boss_baltharus_the_warborn() : CreatureScript("boss_baltharus_the_warborn") { }
+    public:
+        boss_baltharus_the_warborn() : CreatureScript("boss_baltharus_the_warborn") { }
 
         struct boss_baltharus_the_warbornAI : public BossAI
         {
@@ -78,8 +78,8 @@ public:
                 _introDone = false;
             }
 
-        void Reset()
-        {
+            void Reset()
+            {
                 _Reset();
                 events.SetPhase(PHASE_INTRO);
                 events.ScheduleEvent(EVENT_OOC_CHANNEL, 0, 0, PHASE_INTRO);
@@ -93,11 +93,11 @@ public:
                 {
                     case ACTION_INTRO_BALTHARUS:
                         if (_introDone)
-                return;
+                            return;
                         _introDone = true;
                         me->setActive(true);
                         events.ScheduleEvent(EVENT_INTRO_TALK, 7000, 0, PHASE_INTRO);
-                   break;
+                        break;
                     case ACTION_CLONE:
                     {
                         DoCast(me, SPELL_CLEAR_DEBUFFS);
@@ -105,11 +105,11 @@ public:
                         DoCast(me, SPELL_REPELLING_WAVE);
                         Talk(SAY_CLONE);
                         --_cloneCount;
-                   break;
-            }
-                default:
-                     break;
-            }
+                        break;
+                    }
+                    default:
+                        break;
+                }
             }
 
             void EnterCombat(Unit* /*who*/)
@@ -130,10 +130,10 @@ public:
                 Talk(SAY_DEATH);
                 if (Creature* xerestrasza = ObjectAccessor::GetCreature(*me, instance->GetData64(DATA_XERESTRASZA)))
                     xerestrasza->AI()->DoAction(ACTION_BALTHARUS_DEATH);
-        }
+            }
 
-        void KilledUnit(Unit* victim)
-        {
+            void KilledUnit(Unit* victim)
+            {
                 if (victim->GetTypeId() == TYPEID_PLAYER)
                     Talk(SAY_KILL);
             }
@@ -154,8 +154,9 @@ public:
                 }
                 else
                 {
-                    if ((me->HealthBelowPctDamaged(66, damage) && _cloneCount == 2)
-                        || (me->HealthBelowPctDamaged(33, damage) && _cloneCount == 1))
+                    if (me->HealthBelowPctDamaged(66, damage) && _cloneCount == 2)
+                        DoAction(ACTION_CLONE);
+                    else if (me->HealthBelowPctDamaged(33, damage) && _cloneCount == 1)
                         DoAction(ACTION_CLONE);
                 }
 
@@ -166,14 +167,14 @@ public:
             void UpdateAI(uint32 const diff)
             {
                 if (!UpdateVictim() && !(events.GetPhaseMask() & PHASE_INTRO_MASK))
-                return;
+                    return;
 
                 if (!(events.GetPhaseMask() & PHASE_INTRO_MASK))
                     me->SetHealth(instance->GetData(DATA_BALTHARUS_SHARED_HEALTH));
 
                 events.Update(diff);
 
-                if (me->HasUnitState(UNIT_STAT_CASTING) && !(events.GetPhaseMask() & PHASE_INTRO_MASK))
+                if (me->HasUnitState(UNIT_STATE_CASTING) && !(events.GetPhaseMask() & PHASE_INTRO_MASK))
                     return;
 
                 while (uint32 eventId = events.ExecuteEvent())
@@ -193,7 +194,7 @@ public:
                             events.ScheduleEvent(EVENT_CLEAVE, 24000, 0, PHASE_COMBAT);
                             break;
                         case EVENT_BLADE_TEMPEST:
-                DoCast(me, SPELL_BLADE_TEMPEST);
+                            DoCast(me, SPELL_BLADE_TEMPEST);
                             events.ScheduleEvent(EVENT_BLADE_TEMPEST, 24000, 0, PHASE_COMBAT);
                             break;
                         case EVENT_ENERVATING_BRAND:
@@ -207,13 +208,13 @@ public:
                     }
                 }
 
-            DoMeleeAttackIfReady();
-        }
+                DoMeleeAttackIfReady();
+            }
 
         private:
             uint8 _cloneCount;
             bool _introDone;
-    };
+        };
 
         CreatureAI* GetAI(Creature* creature) const
         {
@@ -223,7 +224,7 @@ public:
 
 class npc_baltharus_the_warborn_clone : public CreatureScript
 {
-public:
+    public:
         npc_baltharus_the_warborn_clone() : CreatureScript("npc_baltharus_the_warborn_clone") { }
 
         struct npc_baltharus_the_warborn_cloneAI : public ScriptedAI
@@ -260,15 +261,15 @@ public:
             void UpdateAI(uint32 const diff)
             {
                 if (!UpdateVictim())
-            return;
+                    return;
 
                 if (_instance)
                     me->SetHealth(_instance->GetData(DATA_BALTHARUS_SHARED_HEALTH));
 
                 _events.Update(diff);
 
-                if (me->HasUnitState(UNIT_STAT_CASTING))
-                return;
+                if (me->HasUnitState(UNIT_STATE_CASTING))
+                    return;
 
                 while (uint32 eventId = _events.ExecuteEvent())
                 {
@@ -277,19 +278,19 @@ public:
                         case EVENT_CLEAVE:
                             DoCastVictim(SPELL_CLEAVE);
                             _events.ScheduleEvent(EVENT_CLEAVE, 24000);
-                              break;
+                            break;
                         case EVENT_BLADE_TEMPEST:
                             DoCastVictim(SPELL_BLADE_TEMPEST);
                             _events.ScheduleEvent(EVENT_BLADE_TEMPEST, 24000);
-                              break;
+                           break;
                         case EVENT_ENERVATING_BRAND:
                             for (uint8 i = 0; i < RAID_MODE<uint8>(4, 8, 8, 10); i++)
                                 if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 45.0f, true))
                                     DoCast(target, SPELL_ENERVATING_BRAND);
                             _events.ScheduleEvent(EVENT_ENERVATING_BRAND, 26000);
-                              break;
+                            break;
                         default:
-                              break;
+                            break;
                     }
                }
 
@@ -299,7 +300,7 @@ public:
         private:
             EventMap _events;
             InstanceScript* _instance;
-    };
+        };
 
         CreatureAI* GetAI(Creature* creature) const
         {

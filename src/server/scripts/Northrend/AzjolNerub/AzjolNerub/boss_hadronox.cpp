@@ -1,11 +1,5 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
- *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
- *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -34,7 +28,8 @@
 * Hadronox to make his way to you. When Hadronox enters the main room, she will web the doors, and no more non-elites will spawn.
 */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "azjol_nerub.h"
 
 enum Spells
@@ -57,9 +52,9 @@ public:
 
     struct boss_hadronoxAI : public ScriptedAI
     {
-        boss_hadronoxAI(Creature* c) : ScriptedAI(c)
+        boss_hadronoxAI(Creature* creature) : ScriptedAI(creature)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
             fMaxDistance = 50.0f;
             bFirstTime = true;
         }
@@ -105,7 +100,7 @@ public:
             me->ModifyHealth(int32(me->CountPctFromMaxHealth(10)));
         }
 
-        void JustDied(Unit* /*Killer*/)
+        void JustDied(Unit* /*killer*/)
         {
             if (instance)
                 instance->SetData(DATA_HADRONOX_EVENT, DONE);
@@ -124,7 +119,7 @@ public:
                 return;
 
             float x=0.0f, y=0.0f, z=0.0f;
-            me->GetRespawnCoord(x, y, z);
+            me->GetRespawnPosition(x, y, z);
 
             if (uiCheckDistanceTimer <= uiDiff)
                 uiCheckDistanceTimer = 5*IN_MILLISECONDS;
@@ -142,17 +137,18 @@ public:
         void UpdateAI(const uint32 diff)
         {
             //Return since we have no target
-            if (!UpdateVictim()) return;
+            if (!UpdateVictim())
+                return;
 
             // Without he comes up through the air to players on the bridge after krikthir if players crossing this bridge!
             CheckDistance(fMaxDistance, diff);
 
             if (me->HasAura(SPELL_WEB_FRONT_DOORS) || me->HasAura(SPELL_WEB_SIDE_DOORS))
             {
-                if (IsCombatMovement())
+                if (IsCombatMovementAllowed())
                     SetCombatMovement(false);
             }
-            else if (!IsCombatMovement())
+            else if (!IsCombatMovementAllowed())
                 SetCombatMovement(true);
 
             if (uiPierceTimer <= diff)

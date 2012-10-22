@@ -1,7 +1,5 @@
 /*
- * Copyright (C) 2008 - 2012 TrinityCore <http://www.trinitycore.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -25,7 +23,8 @@ SDComment: TODO: Intro & outro
 SDCategory:
 Script Data End */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "culling_of_stratholme.h"
 
 enum Spells
@@ -36,7 +35,9 @@ enum Spells
     H_SPELL_MIND_BLAST                          = 58850,
     SPELL_SLEEP                                 = 52721, //Puts an enemy to sleep for up to 10 sec. Any damage caused will awaken the target.
     H_SPELL_SLEEP                               = 58849,
-    SPELL_VAMPIRIC_TOUCH                        = 52723 //Heals the caster for half the damage dealt by a melee attack.
+    SPELL_VAMPIRIC_TOUCH                        = 52723, //Heals the caster for half the damage dealt by a melee attack.
+    SPELL_MAL_GANIS_KILL_CREDIT                 = 58124, // Quest credit
+    SPELL_KILL_CREDIT                           = 58630  // Non-existing spell as encounter credit, created in spell_dbc
 };
 
 enum Yells
@@ -78,9 +79,9 @@ public:
 
     struct boss_mal_ganisAI : public ScriptedAI
     {
-        boss_mal_ganisAI(Creature* c) : ScriptedAI(c)
+        boss_mal_ganisAI(Creature* creature) : ScriptedAI(creature)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
         uint32 uiCarrionSwarmTimer;
@@ -226,6 +227,7 @@ public:
                                 me->SetVisible(false);
                                 me->Kill(me);
                                 break;
+
                         }
                     } else uiOutroTimer -= diff;
                     break;
@@ -237,10 +239,9 @@ public:
             if (instance)
             {
                 instance->SetData(DATA_MAL_GANIS_EVENT, DONE);
-
-                // give achievement credit to players. criteria use spell 58630 which doesn't exist.
-                if (instance)
-                    instance->DoUpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_BE_SPELL_TARGET, 58630);
+                DoCastAOE(SPELL_MAL_GANIS_KILL_CREDIT);
+                // give achievement credit and LFG rewards to players. criteria use spell 58630 which doesn't exist, but it was created in spell_dbc
+                DoCastAOE(SPELL_KILL_CREDIT);
             }
         }
 
@@ -252,6 +253,7 @@ public:
             DoScriptText(RAND(SAY_SLAY_1, SAY_SLAY_2, SAY_SLAY_3, SAY_SLAY_4), me);
         }
     };
+
 };
 
 void AddSC_boss_mal_ganis()

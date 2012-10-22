@@ -1,105 +1,111 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* ScriptData
- SDName: Boss_Halycon
- SD%Complete: 100
- SDComment:
- SDCategory: Blackrock Spire
- EndScriptData */
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
+#include "blackrock_spire.h"
 
-#include "ScriptPCH.h"
+enum Spells
+{
+    SPELL_CROWDPUMMEL               = 10887,
+    SPELL_MIGHTYBLOW                = 14099,
+};
 
-#define SPELL_CROWDPUMMEL       10887
-#define SPELL_MIGHTYBLOW        14099
+enum Events
+{
+    EVENT_CROWD_PUMMEL              = 1,
+    EVENT_MIGHTY_BLOW               = 2,
+};
 
-#define ADD_1X                  -169.839203f
-#define ADD_1Y                  -324.961395f
-#define ADD_1Z                  64.401443f
-#define ADD_1O                  3.124724f
+const Position SummonLocation = { -169.839f, -324.961f, 64.401f, 3.124f };
 
-class boss_halycon: public CreatureScript {
+class boss_halycon : public CreatureScript
+{
 public:
-    boss_halycon() :
-            CreatureScript("boss_halycon") {
+    boss_halycon() : CreatureScript("boss_halycon") { }
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return new boss_halyconAI(creature);
     }
 
-    CreatureAI* GetAI(Creature* pCreature) const {
-        return new boss_halyconAI(pCreature);
-    }
+    struct boss_halyconAI : public BossAI
+    {
+        boss_halyconAI(Creature* creature) : BossAI(creature, DATA_HALYCON) {}
 
-    struct boss_halyconAI: public ScriptedAI {
-        boss_halyconAI(Creature *c) :
-                ScriptedAI(c) {
-        }
-
-        uint32 CrowdPummel_Timer;
-        uint32 MightyBlow_Timer;
         bool Summoned;
 
-        void Reset() {
-            CrowdPummel_Timer = 8000;
-            MightyBlow_Timer = 14000;
+        void Reset()
+        {
+            _Reset();
             Summoned = false;
         }
 
-        void EnterCombat(Unit * /*who*/) {
+        void EnterCombat(Unit* /*who*/)
+        {
+            _EnterCombat();
+            events.ScheduleEvent(EVENT_CROWD_PUMMEL, 8 * IN_MILLISECONDS);
+            events.ScheduleEvent(EVENT_MIGHTY_BLOW, 14 * IN_MILLISECONDS);
         }
 
-        void UpdateAI(const uint32 diff) {
-            //Return since we have no target
+        void JustDied(Unit* /*killer*/)
+        {
+            _JustDied();
+        }
+
+        void UpdateAI(uint32 const diff)
+        {
             if (!UpdateVictim())
                 return;
 
-            //CrowdPummel_Timer
-            if (CrowdPummel_Timer <= diff) {
-                DoCast(me->getVictim(), SPELL_CROWDPUMMEL);
-                CrowdPummel_Timer = 14000;
-            } else
-                CrowdPummel_Timer -= diff;
-
-            //MightyBlow_Timer
-            if (MightyBlow_Timer <= diff) {
-                DoCast(me->getVictim(), SPELL_MIGHTYBLOW);
-                MightyBlow_Timer = 10000;
-            } else
-                MightyBlow_Timer -= diff;
-
             //Summon Gizrul
-            if (!Summoned && HealthBelowPct(25)) {
-                me->SummonCreature(10268, ADD_1X, ADD_1Y, ADD_1Z, ADD_1O,
-                        TEMPSUMMON_TIMED_DESPAWN, 300000);
+            if (!Summoned && HealthBelowPct(25))
+            {
+                me->SummonCreature(NPC_GIZRUL_THE_SLAVENER, SummonLocation, TEMPSUMMON_TIMED_DESPAWN, 300 * IN_MILLISECONDS);
                 Summoned = true;
             }
 
+            events.Update(diff);
+
+            if (me->HasUnitState(UNIT_STATE_CASTING))
+                return;
+
+            while (uint32 eventId = events.ExecuteEvent())
+            {
+                switch (eventId)
+                {
+                    case EVENT_CROWD_PUMMEL:
+                        DoCast(me->getVictim(), SPELL_CROWDPUMMEL);
+                        events.ScheduleEvent(EVENT_CROWD_PUMMEL, 14 * IN_MILLISECONDS);
+                        break;
+                    case EVENT_MIGHTY_BLOW:
+                        DoCast(me->getVictim(), SPELL_MIGHTYBLOW);
+                        events.ScheduleEvent(EVENT_MIGHTY_BLOW, 10 * IN_MILLISECONDS);
+                        break;
+                }
+            }
             DoMeleeAttackIfReady();
         }
     };
+
 };
 
-void AddSC_boss_halycon() {
+void AddSC_boss_halycon()
+{
     new boss_halycon();
 }

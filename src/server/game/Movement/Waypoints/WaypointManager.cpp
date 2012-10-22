@@ -1,36 +1,33 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2011-2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gamePCH.h"
 #include "DatabaseEnv.h"
 #include "GridDefines.h"
 #include "WaypointManager.h"
 #include "MapManager.h"
+#include "Log.h"
 
-WaypointMgr::WaypointMgr ()
+WaypointMgr::WaypointMgr()
 {
 }
 
-WaypointMgr::~WaypointMgr ()
+WaypointMgr::~WaypointMgr()
 {
     for (WaypointPathContainer::iterator itr = _waypointStore.begin(); itr != _waypointStore.end(); ++itr)
     {
@@ -43,16 +40,17 @@ WaypointMgr::~WaypointMgr ()
     _waypointStore.clear();
 }
 
-void WaypointMgr::Load ()
+void WaypointMgr::Load()
 {
     uint32 oldMSTime = getMSTime();
 
-    QueryResult result = WorldDatabase.Query("SELECT id, point, position_x, position_y, position_z, move_flag, delay, action, action_chance FROM waypoint_data ORDER BY id, point");
+    //                                                0    1         2           3          4            5           6        7      8           9
+    QueryResult result = WorldDatabase.Query("SELECT id, point, position_x, position_y, position_z, orientation, move_flag, delay, action, action_chance FROM waypoint_data ORDER BY id, point");
 
     if (!result)
     {
-        sLog->outErrorDb(">> Loaded 0 waypoints. DB table `waypoint_data` is empty!");
-        sLog->outString();
+        sLog->outError(LOG_FILTER_SERVER_LOADING, ">> Loaded 0 waypoints. DB table `waypoint_data` is empty!");
+
         return;
     }
 
@@ -69,6 +67,7 @@ void WaypointMgr::Load ()
         float x = fields[2].GetFloat();
         float y = fields[3].GetFloat();
         float z = fields[4].GetFloat();
+        float o = fields[5].GetFloat();
 
         Trinity::NormalizeMapCoord(x);
         Trinity::NormalizeMapCoord(y);
@@ -77,21 +76,22 @@ void WaypointMgr::Load ()
         wp->x = x;
         wp->y = y;
         wp->z = z;
-        wp->run = fields[5].GetBool();
-        wp->delay = fields[6].GetUInt32();
-        wp->event_id = fields[7].GetUInt32();
-        wp->event_chance = fields[8].GetUInt8();
+        wp->orientation = o;
+        wp->run = fields[6].GetBool();
+        wp->delay = fields[7].GetUInt32();
+        wp->event_id = fields[8].GetUInt32();
+        wp->event_chance = fields[9].GetInt16();
 
         path.push_back(wp);
         ++count;
     }
     while (result->NextRow());
 
-    sLog->outString(">> Loaded %u waypoints in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
-    sLog->outString();
+    sLog->outInfo(LOG_FILTER_SERVER_LOADING, ">> Loaded %u waypoints in %u ms", count, GetMSTimeDiffToNow(oldMSTime));
+
 }
 
-void WaypointMgr::ReloadPath (uint32 id)
+void WaypointMgr::ReloadPath(uint32 id)
 {
     WaypointPathContainer::iterator itr = _waypointStore.find(id);
     if (itr != _waypointStore.end())
@@ -102,7 +102,12 @@ void WaypointMgr::ReloadPath (uint32 id)
         _waypointStore.erase(itr);
     }
 
-    QueryResult result = WorldDatabase.PQuery("SELECT point, position_x, position_y, position_z, move_flag, delay, action, action_chance FROM waypoint_data WHERE id = %u ORDER BY point", id);
+    PreparedStatement* stmt = WorldDatabase.GetPreparedStatement(WORLD_SEL_WAYPOINT_DATA_BY_ID);
+
+    stmt->setUInt32(0, id);
+
+    PreparedQueryResult result = WorldDatabase.Query(stmt);
+
     if (!result)
         return;
 
@@ -111,11 +116,12 @@ void WaypointMgr::ReloadPath (uint32 id)
     do
     {
         Field* fields = result->Fetch();
-        WaypointData *wp = new WaypointData();
+        WaypointData* wp = new WaypointData();
 
         float x = fields[1].GetFloat();
         float y = fields[2].GetFloat();
         float z = fields[3].GetFloat();
+        float o = fields[4].GetFloat();
 
         Trinity::NormalizeMapCoord(x);
         Trinity::NormalizeMapCoord(y);
@@ -124,12 +130,14 @@ void WaypointMgr::ReloadPath (uint32 id)
         wp->x = x;
         wp->y = y;
         wp->z = z;
-        wp->run = fields[4].GetBool();
-        wp->delay = fields[5].GetUInt32();
-        wp->event_id = fields[6].GetUInt32();
-        wp->event_chance = fields[7].GetUInt8();
+        wp->orientation = o;
+        wp->run = fields[5].GetBool();
+        wp->delay = fields[6].GetUInt32();
+        wp->event_id = fields[7].GetUInt32();
+        wp->event_chance = fields[8].GetUInt8();
 
         path.push_back(wp);
+
     }
     while (result->NextRow());
 }

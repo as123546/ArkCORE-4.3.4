@@ -1,97 +1,106 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* ScriptData
- SDName: Boss_Mother_Smolderweb
- SD%Complete: 100
- SDComment: Uncertain how often mother's milk is casted
- SDCategory: Blackrock Spire
- EndScriptData */
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
+#include "blackrock_spire.h"
 
-#include "ScriptPCH.h"
+enum Spells
+{
+    SPELL_CRYSTALIZE                = 16104,
+    SPELL_MOTHERSMILK               = 16468,
+    SPELL_SUMMON_SPIRE_SPIDERLING   = 16103,
+};
 
-#define SPELL_CRYSTALIZE                16104
-#define SPELL_MOTHERSMILK               16468
-#define SPELL_SUMMON_SPIRE_SPIDERLING   16103
+enum Events
+{
+    EVENT_CRYSTALIZE                = 1,
+    EVENT_MOTHERS_MILK              = 2,
+};
 
-class boss_mother_smolderweb: public CreatureScript {
+class boss_mother_smolderweb : public CreatureScript
+{
 public:
-    boss_mother_smolderweb() :
-            CreatureScript("boss_mother_smolderweb") {
+    boss_mother_smolderweb() : CreatureScript("boss_mother_smolderweb") { }
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return new boss_mothersmolderwebAI(creature);
     }
 
-    CreatureAI* GetAI(Creature* pCreature) const {
-        return new boss_mothersmolderwebAI(pCreature);
-    }
+    struct boss_mothersmolderwebAI : public BossAI
+    {
+        boss_mothersmolderwebAI(Creature* creature) : BossAI(creature, DATA_MOTHER_SMOLDERWEB) {}
 
-    struct boss_mothersmolderwebAI: public ScriptedAI {
-        boss_mothersmolderwebAI(Creature *c) :
-                ScriptedAI(c) {
+        void Reset()
+        {
+            _Reset();
         }
 
-        uint32 Crystalize_Timer;
-        uint32 MothersMilk_Timer;
-
-        void Reset() {
-            Crystalize_Timer = 20000;
-            MothersMilk_Timer = 10000;
+        void EnterCombat(Unit* /*who*/)
+        {
+            _EnterCombat();
+            events.ScheduleEvent(EVENT_CRYSTALIZE,   20 * IN_MILLISECONDS);
+            events.ScheduleEvent(EVENT_MOTHERS_MILK, 10 * IN_MILLISECONDS);
         }
 
-        void EnterCombat(Unit * /*who*/) {
+        void JustDied(Unit* /*killer*/)
+        {
+            _JustDied();
         }
 
-        void DamageTaken(Unit * /*done_by*/, uint32 &damage) {
+        void DamageTaken(Unit* /*done_by*/, uint32 &damage)
+        {
             if (me->GetHealth() <= damage)
                 DoCast(me, SPELL_SUMMON_SPIRE_SPIDERLING, true);
         }
 
-        void UpdateAI(const uint32 diff) {
-            //Return since we have no target
+        void UpdateAI(uint32 const diff)
+        {
             if (!UpdateVictim())
                 return;
 
-            //Crystalize_Timer
-            if (Crystalize_Timer <= diff) {
-                DoCast(me, SPELL_CRYSTALIZE);
-                Crystalize_Timer = 15000;
-            } else
-                Crystalize_Timer -= diff;
+            events.Update(diff);
 
-            //MothersMilk_Timer
-            if (MothersMilk_Timer <= diff) {
-                DoCast(me, SPELL_MOTHERSMILK);
-                MothersMilk_Timer = urand(5000, 12500);
-            } else
-                MothersMilk_Timer -= diff;
+            if (me->HasUnitState(UNIT_STATE_CASTING))
+                return;
 
+            while (uint32 eventId = events.ExecuteEvent())
+            {
+                switch (eventId)
+                {
+                    case EVENT_CRYSTALIZE:
+                        DoCast(me, SPELL_CRYSTALIZE);
+                        events.ScheduleEvent(EVENT_CRYSTALIZE, 15 * IN_MILLISECONDS);
+                        break;
+                    case EVENT_MOTHERS_MILK:
+                        DoCast(me, SPELL_MOTHERSMILK);
+                        events.ScheduleEvent(EVENT_MOTHERS_MILK, urand(5 * IN_MILLISECONDS, 12500));
+                        break;
+                }
+            }
             DoMeleeAttackIfReady();
         }
     };
+
 };
 
-void AddSC_boss_mothersmolderweb() {
+void AddSC_boss_mothersmolderweb()
+{
     new boss_mother_smolderweb();
 }

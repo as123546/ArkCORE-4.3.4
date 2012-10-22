@@ -1,11 +1,5 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
- *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
- *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -21,7 +15,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "forge_of_souls.h"
 
 /*
@@ -62,9 +57,9 @@ enum Spells
     SPELL_MIRRORED_SOUL                           = 69051,
     SPELL_WELL_OF_SOULS                           = 68820,
     SPELL_UNLEASHED_SOULS                         = 68939,
-    SPELL_WAILING_SOULS_STARTING                  = 68912, // Initial spell cast at begining of wailing souls phase
-    SPELL_WAILING_SOULS_BEAM                      = 68875, // the beam visual
-    SPELL_WAILING_SOULS                           = 68873, // the actual spell
+    SPELL_WAILING_SOULS_STARTING                  = 68912,  // Initial spell cast at begining of wailing souls phase
+    SPELL_WAILING_SOULS_BEAM                      = 68875,  // the beam visual
+    SPELL_WAILING_SOULS                           = 68873,  // the actual spell
     H_SPELL_WAILING_SOULS                         = 70324,
 //    68871, 68873, 68875, 68876, 68899, 68912, 70324,
 // 68899 trigger 68871
@@ -120,7 +115,7 @@ struct outroPosition
     { { 0, 0 }, { 0.0f, 0.0f, 0.0f, 0.0f } }
 };
 
-Position const CrucibleSummonPos = {5672.294f, 2520.686f, 713.4386f, 0.9599311f};
+Position const CrucibleSummonPos = {5672.294f,2520.686f, 713.4386f, 0.9599311f};
 
 #define DATA_THREE_FACED        1
 
@@ -226,7 +221,7 @@ class boss_devourer_of_souls : public CreatureScript
                 instance->SetData(DATA_DEVOURER_EVENT, DONE);
 
                 int32 entryIndex;
-                if (instance->GetData(DATA_TEAM_IN_INSTANCE) == TEAM_ALLIANCE)
+                if (instance->GetData(DATA_TEAM_IN_INSTANCE) == ALLIANCE)
                     entryIndex = 0;
                 else
                     entryIndex = 1;
@@ -244,7 +239,7 @@ class boss_devourer_of_souls : public CreatureScript
                 }
             }
 
-            void SpellHitTarget(Unit* /*target*/, const SpellEntry* spell)
+            void SpellHitTarget(Unit* /*target*/, const SpellInfo* spell)
             {
                 if (spell->Id == H_SPELL_PHANTOM_BLAST)
                     threeFaced = false;
@@ -266,7 +261,7 @@ class boss_devourer_of_souls : public CreatureScript
 
                 events.Update(diff);
 
-                if (me->HasUnitState(UNIT_STAT_CASTING))
+                if (me->HasUnitState(UNIT_STATE_CASTING))
                     return;
 
                 while (uint32 eventId = events.ExecuteEvent())
@@ -312,6 +307,7 @@ class boss_devourer_of_souls : public CreatureScript
                             if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
                             {
                                 me->SetOrientation(me->GetAngle(target));
+                                me->SendMovementFlagUpdate();
                                 DoCast(me, SPELL_WAILING_SOULS_BEAM);
                             }
 
@@ -338,6 +334,7 @@ class boss_devourer_of_souls : public CreatureScript
                         case EVENT_WAILING_SOULS_TICK:
                             beamAngle += beamAngleDiff;
                             me->SetOrientation(beamAngle);
+                            me->SendMovementFlagUpdate();
                             me->StopMoving();
 
                             DoCast(me, SPELL_WAILING_SOULS);

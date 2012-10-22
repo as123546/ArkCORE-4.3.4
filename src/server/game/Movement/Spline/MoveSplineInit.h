@@ -30,7 +30,7 @@ namespace Movement
         ToGround    = 0, // 460 = ToGround, index of AnimationData.dbc
         FlyToFly    = 1, // 461 = FlyToFly?
         ToFly       = 2, // 458 = ToFly
-        FlyToGround = 3, // 463 = FlyToGround
+        FlyToGround = 3  // 463 = FlyToGround
     };
 
     // Transforms coordinates from global to transport offsets
@@ -57,6 +57,10 @@ namespace Movement
         /*  Final pass of initialization that launches spline movement.
          */
         void Launch();
+
+        /*  Final pass of initialization that stops movement.
+         */
+        void Stop();
 
         /* Adds movement by parabolic trajectory
          * @param amplitude  - the maximum height of parabola, value could be negative and positive
@@ -102,6 +106,10 @@ namespace Movement
         void SetFly();
         /* Enables walk mode. Disabled by default
          */
+        void EnableTaxiFlight();
+        /* Flags used in taxi
+        */
+
         void SetWalk(bool enable);
         /* Makes movement cyclic. Disabled by default
          */
@@ -140,16 +148,15 @@ namespace Movement
         Unit&  unit;
     };
 
-    inline void MoveSplineInit::SetFly() { args.flags.EnableFlying(); }
-    inline void MoveSplineInit::SetWalk(bool enable) { args.flags.walkmode = enable;}
-    inline void MoveSplineInit::SetSmooth() { args.flags.EnableCatmullRom();}
-    inline void MoveSplineInit::SetCyclic() { args.flags.cyclic = true;}
-    inline void MoveSplineInit::SetFall() { args.flags.EnableFalling();}
+    inline void MoveSplineInit::SetFly() { args.flags.flying = true; }
+    inline void MoveSplineInit::SetWalk(bool enable) { args.flags.walkmode = enable; }
+    inline void MoveSplineInit::SetSmooth() { args.flags.EnableCatmullRom(); }
+    inline void MoveSplineInit::SetCyclic() { args.flags.cyclic = true; }
     inline void MoveSplineInit::SetVelocity(float vel) { args.velocity = vel; args.HasVelocity = true; }
     inline void MoveSplineInit::SetOrientationInversed() { args.flags.orientationInversed = true;}
     inline void MoveSplineInit::SetTransportEnter() { args.flags.EnableTransportEnter(); }
     inline void MoveSplineInit::SetTransportExit() { args.flags.EnableTransportExit(); }
-    inline void MoveSplineInit::SetOrientationFixed(bool enable) { args.flags.orientationFixed = enable;}
+    inline void MoveSplineInit::SetOrientationFixed(bool enable) { args.flags.orientationFixed = enable; }
 
     inline void MoveSplineInit::MovebyPath(const PointsArray& controls, int32 path_offset)
     {

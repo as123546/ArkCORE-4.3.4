@@ -1,62 +1,44 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* ScriptData
- SDName: Boss_General_Angerforge
- SD%Complete: 100
- SDComment:
- SDCategory: Blackrock Depths
- EndScriptData */
-
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 
 enum Spells
 {
-    SPELL_MIGHTYBLOW = 14099, SPELL_HAMSTRING = 9080, SPELL_CLEAVE = 20691
+    SPELL_MIGHTYBLOW                                       = 14099,
+    SPELL_HAMSTRING                                        = 9080,
+    SPELL_CLEAVE                                           = 20691
 };
 
-class boss_general_angerforge: public CreatureScript
+class boss_general_angerforge : public CreatureScript
 {
 public:
-    boss_general_angerforge () :
-            CreatureScript("boss_general_angerforge")
+    boss_general_angerforge() : CreatureScript("boss_general_angerforge") { }
+
+    CreatureAI* GetAI(Creature* creature) const
     {
+        return new boss_general_angerforgeAI (creature);
     }
 
-    CreatureAI* GetAI (Creature* pCreature) const
+    struct boss_general_angerforgeAI : public ScriptedAI
     {
-        return new boss_general_angerforgeAI(pCreature);
-    }
-
-    struct boss_general_angerforgeAI: public ScriptedAI
-    {
-        boss_general_angerforgeAI (Creature *c) :
-                ScriptedAI(c)
-        {
-        }
+        boss_general_angerforgeAI(Creature* creature) : ScriptedAI(creature) {}
 
         uint32 MightyBlow_Timer;
         uint32 HamString_Timer;
@@ -64,7 +46,7 @@ public:
         uint32 Adds_Timer;
         bool Medics;
 
-        void Reset ()
+        void Reset()
         {
             MightyBlow_Timer = 8000;
             HamString_Timer = 12000;
@@ -73,23 +55,21 @@ public:
             Medics = false;
         }
 
-        void EnterCombat (Unit * /*who*/)
-        {
-        }
+        void EnterCombat(Unit* /*who*/) {}
 
-        void SummonAdds (Unit* victim)
+        void SummonAdds(Unit* victim)
         {
-            if (Creature *SummonedAdd = DoSpawnCreature(8901, float(irand(-14, 14)), float(irand(-14, 14)), 0, 0, TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 120000))
+            if (Creature* SummonedAdd = DoSpawnCreature(8901, float(irand(-14, 14)), float(irand(-14, 14)), 0, 0, TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 120000))
                 SummonedAdd->AI()->AttackStart(victim);
         }
 
-        void SummonMedics (Unit* victim)
+        void SummonMedics(Unit* victim)
         {
-            if (Creature *SummonedMedic = DoSpawnCreature(8894, float(irand(-9, 9)), float(irand(-9, 9)), 0, 0, TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 120000))
+            if (Creature* SummonedMedic = DoSpawnCreature(8894, float(irand(-9, 9)), float(irand(-9, 9)), 0, 0, TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 120000))
                 SummonedMedic->AI()->AttackStart(victim);
         }
 
-        void UpdateAI (const uint32 diff)
+        void UpdateAI(const uint32 diff)
         {
             //Return since we have no target
             if (!UpdateVictim())
@@ -100,27 +80,21 @@ public:
             {
                 DoCast(me->getVictim(), SPELL_MIGHTYBLOW);
                 MightyBlow_Timer = 18000;
-            }
-            else
-                MightyBlow_Timer -= diff;
+            } else MightyBlow_Timer -= diff;
 
             //HamString_Timer
             if (HamString_Timer <= diff)
             {
                 DoCast(me->getVictim(), SPELL_HAMSTRING);
                 HamString_Timer = 15000;
-            }
-            else
-                HamString_Timer -= diff;
+            } else HamString_Timer -= diff;
 
             //Cleave_Timer
             if (Cleave_Timer <= diff)
             {
                 DoCast(me->getVictim(), SPELL_CLEAVE);
                 Cleave_Timer = 9000;
-            }
-            else
-                Cleave_Timer -= diff;
+            } else Cleave_Timer -= diff;
 
             //Adds_Timer
             if (HealthBelowPct(21))
@@ -133,9 +107,7 @@ public:
                     SummonAdds(me->getVictim());
 
                     Adds_Timer = 25000;
-                }
-                else
-                    Adds_Timer -= diff;
+                } else Adds_Timer -= diff;
             }
 
             //Summon Medics
@@ -151,7 +123,7 @@ public:
     };
 };
 
-void AddSC_boss_general_angerforge ()
+void AddSC_boss_general_angerforge()
 {
     new boss_general_angerforge();
 }

@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
- *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
- *
- * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -27,7 +23,8 @@ SDComment: Heroic and Normal Support. Needs further testing.
 SDCategory: Magister's Terrace
 EndScriptData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "magisters_terrace.h"
 
 #define SAY_AGGRO                       -1585000
@@ -67,9 +64,9 @@ public:
 
     struct boss_selin_fireheartAI : public ScriptedAI
     {
-        boss_selin_fireheartAI(Creature* c) : ScriptedAI(c)
+        boss_selin_fireheartAI(Creature* creature) : ScriptedAI(creature)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
 
             Crystals.clear();
             //GUIDs per instance is static, so we only need to load them once.
@@ -79,7 +76,7 @@ public:
                 for (uint8 i = 0; i < size; ++i)
                 {
                     uint64 guid = instance->GetData64(DATA_FEL_CRYSTAL);
-                    sLog->outDebug(LOG_FILTER_TSCR, "TSCR: Selin: Adding Fel Crystal " UI64FMTD " to list", guid);
+                    sLog->outDebug(LOG_FILTER_TSCR, "Selin: Adding Fel Crystal " UI64FMTD " to list", guid);
                     Crystals.push_back(guid);
                 }
             }
@@ -124,15 +121,15 @@ public:
                                                                 // Small door opened after event are expected to be closed by default
                 // Set Inst data for encounter
                 instance->SetData(DATA_SELIN_EVENT, NOT_STARTED);
-            } else sLog->outError(ERROR_INST_DATA);
+            } else sLog->outError(LOG_FILTER_TSCR, ERROR_INST_DATA);
 
-            DrainLifeTimer = 3000 + rand()%4000;
+            DrainLifeTimer = urand(3000, 7000);
             DrainManaTimer = DrainLifeTimer + 5000;
             FelExplosionTimer = 2100;
             if (IsHeroic())
-                DrainCrystalTimer = 10000 + rand()%5000;
+                DrainCrystalTimer = urand(10000, 15000);
             else
-                DrainCrystalTimer = 20000 + rand()%5000;
+                DrainCrystalTimer = urand(20000, 25000);
             EmpowerTimer = 10000;
 
             IsDraining = false;
@@ -175,7 +172,7 @@ public:
                 float x, y, z;                                  // coords that we move to, close to the crystal.
                 CrystalChosen->GetClosePoint(x, y, z, me->GetObjectSize(), CONTACT_DISTANCE);
 
-                me->RemoveUnitMovementFlag(MOVEMENTFLAG_WALKING);
+                me->SetWalk(false);
                 me->GetMotionMaster()->MovePoint(1, x, y, z);
                 DrainingCrystal = true;
             }
@@ -226,7 +223,7 @@ public:
                 else
                 {
                     // Make an error message in case something weird happened here
-                    sLog->outError("TSCR: Selin Fireheart unable to drain crystal as the crystal is either dead or despawned");
+                    sLog->outError(LOG_FILTER_TSCR, "Selin Fireheart unable to drain crystal as the crystal is either dead or despawned");
                     DrainingCrystal = false;
                 }
             }
@@ -289,11 +286,12 @@ public:
                     {
                         SelectNearestCrystal();
                         if (IsHeroic())
-                            DrainCrystalTimer = 10000 + rand()%5000;
+                            DrainCrystalTimer = urand(10000, 15000);
                         else
-                            DrainCrystalTimer = 20000 + rand()%5000;
+                            DrainCrystalTimer = urand(20000, 25000);
                     } else DrainCrystalTimer -= diff;
                 }
+
             }else
             {
                 if (IsDraining)
@@ -321,6 +319,7 @@ public:
             DoMeleeAttackIfReady();                             // No need to check if we are draining crystal here, as the spell has a stun.
         }
     };
+
 };
 
 class mob_fel_crystal : public CreatureScript
@@ -335,7 +334,7 @@ public:
 
     struct mob_fel_crystalAI : public ScriptedAI
     {
-        mob_fel_crystalAI(Creature* c) : ScriptedAI(c) {}
+        mob_fel_crystalAI(Creature* creature) : ScriptedAI(creature) {}
 
         void Reset() {}
         void EnterCombat(Unit* /*who*/) {}
@@ -363,9 +362,10 @@ public:
                         }
                     }
                 }
-            } else sLog->outError(ERROR_INST_DATA);
+            } else sLog->outError(LOG_FILTER_TSCR, ERROR_INST_DATA);
         }
     };
+
 };
 
 void AddSC_boss_selin_fireheart()

@@ -1,91 +1,87 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* ScriptData
- SDName: Boss_Emperor_Dagran_Thaurissan
- SD%Complete: 99
- SDComment:
- SDCategory: Blackrock Depths
- EndScriptData */
-
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
+#include "blackrock_depths.h"
 
 enum Yells
 {
-    SAY_AGGRO = -1230001, SAY_SLAY = -1230002
+    SAY_AGGRO                                              = -1230001,
+    SAY_SLAY                                               = -1230002
 };
 
 enum Spells
 {
-    SPELL_HANDOFTHAURISSAN = 17492, SPELL_AVATAROFFLAME = 15636
+    SPELL_HANDOFTHAURISSAN                                 = 17492,
+    SPELL_AVATAROFFLAME                                    = 15636
 };
 
-class boss_emperor_dagran_thaurissan: public CreatureScript
+class boss_emperor_dagran_thaurissan : public CreatureScript
 {
 public:
-    boss_emperor_dagran_thaurissan () :
-            CreatureScript("boss_emperor_dagran_thaurissan")
+    boss_emperor_dagran_thaurissan() : CreatureScript("boss_emperor_dagran_thaurissan") { }
+
+    CreatureAI* GetAI(Creature* creature) const
     {
+        return new boss_draganthaurissanAI (creature);
     }
 
-    CreatureAI* GetAI (Creature* pCreature) const
+    struct boss_draganthaurissanAI : public ScriptedAI
     {
-        return new boss_draganthaurissanAI(pCreature);
-    }
-
-    struct boss_draganthaurissanAI: public ScriptedAI
-    {
-        boss_draganthaurissanAI (Creature *c) :
-                ScriptedAI(c)
+        boss_draganthaurissanAI(Creature* creature) : ScriptedAI(creature)
         {
+            instance = me->GetInstanceScript();
         }
 
+        InstanceScript* instance;
         uint32 HandOfThaurissan_Timer;
         uint32 AvatarOfFlame_Timer;
         //uint32 Counter;
 
-        void Reset ()
+        void Reset()
         {
             HandOfThaurissan_Timer = 4000;
             AvatarOfFlame_Timer = 25000;
             //Counter= 0;
         }
 
-        void EnterCombat (Unit * /*who*/)
+        void EnterCombat(Unit* /*who*/)
         {
             DoScriptText(SAY_AGGRO, me);
             me->CallForHelp(VISIBLE_RANGE);
         }
 
-        void KilledUnit (Unit* /*victim*/)
+        void KilledUnit(Unit* /*victim*/)
         {
             DoScriptText(SAY_SLAY, me);
         }
 
-        void UpdateAI (const uint32 diff)
+        void JustDied(Unit* /*killer*/)
+        {
+            if (Creature* Moira = ObjectAccessor::GetCreature(*me, instance ? instance->GetData64(DATA_MOIRA) : 0))
+            {
+                Moira->AI()->EnterEvadeMode();
+                Moira->setFaction(35);
+            }
+        }
+
+        void UpdateAI(const uint32 diff)
         {
             //Return since we have no target
             if (!UpdateVictim())
@@ -93,8 +89,8 @@ public:
 
             if (HandOfThaurissan_Timer <= diff)
             {
-                if (Unit *pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0))
-                    DoCast(pTarget, SPELL_HANDOFTHAURISSAN);
+                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                    DoCast(target, SPELL_HANDOFTHAURISSAN);
 
                 //3 Hands of Thaurissan will be casted
                 //if (Counter < 3)
@@ -104,28 +100,24 @@ public:
                 //}
                 //else
                 //{
-                HandOfThaurissan_Timer = 5000;
-                //Counter = 0;
+                    HandOfThaurissan_Timer = 5000;
+                    //Counter = 0;
                 //}
-            }
-            else
-                HandOfThaurissan_Timer -= diff;
+            } else HandOfThaurissan_Timer -= diff;
 
             //AvatarOfFlame_Timer
             if (AvatarOfFlame_Timer <= diff)
             {
                 DoCast(me->getVictim(), SPELL_AVATAROFFLAME);
                 AvatarOfFlame_Timer = 18000;
-            }
-            else
-                AvatarOfFlame_Timer -= diff;
+            } else AvatarOfFlame_Timer -= diff;
 
             DoMeleeAttackIfReady();
         }
     };
 };
 
-void AddSC_boss_draganthaurissan ()
+void AddSC_boss_draganthaurissan()
 {
     new boss_emperor_dagran_thaurissan();
 }

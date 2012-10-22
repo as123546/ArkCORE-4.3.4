@@ -1,27 +1,19 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 /* ScriptData
@@ -31,7 +23,8 @@ SDComment:
 SDCategory: Gruul's Lair
 EndScriptData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "InstanceScript.h"
 #include "gruuls_lair.h"
 
 #define MAX_ENCOUNTER 2
@@ -46,14 +39,14 @@ class instance_gruuls_lair : public InstanceMapScript
 public:
     instance_gruuls_lair() : InstanceMapScript("instance_gruuls_lair", 565) { }
 
-    InstanceScript* GetInstanceScript(InstanceMap* pMap) const
+    InstanceScript* GetInstanceScript(InstanceMap* map) const
     {
-        return new instance_gruuls_lair_InstanceMapScript(pMap);
+        return new instance_gruuls_lair_InstanceMapScript(map);
     }
 
     struct instance_gruuls_lair_InstanceMapScript : public InstanceScript
     {
-        instance_gruuls_lair_InstanceMapScript(Map* pMap) : InstanceScript(pMap) {Initialize();};
+        instance_gruuls_lair_InstanceMapScript(Map* map) : InstanceScript(map) {}
 
         uint32 m_auiEncounter[MAX_ENCOUNTER];
 
@@ -85,32 +78,36 @@ public:
         bool IsEncounterInProgress() const
         {
             for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
-                if (m_auiEncounter[i] == IN_PROGRESS) return true;
+                if (m_auiEncounter[i] == IN_PROGRESS)
+                    return true;
 
             return false;
         }
 
-        void OnCreatureCreate(Creature* pCreature, bool /*add*/)
+        void OnCreatureCreate(Creature* creature)
         {
-            switch (pCreature->GetEntry())
+            switch (creature->GetEntry())
             {
-                case 18835: KigglerTheCrazed = pCreature->GetGUID(); break;
-                case 18836: BlindeyeTheSeer = pCreature->GetGUID();  break;
-                case 18834: OlmTheSummoner = pCreature->GetGUID();   break;
-                case 18832: KroshFirehand = pCreature->GetGUID();    break;
-                case 18831: Maulgar = pCreature->GetGUID();          break;
+                case 18835: KigglerTheCrazed = creature->GetGUID(); break;
+                case 18836: BlindeyeTheSeer = creature->GetGUID();  break;
+                case 18834: OlmTheSummoner = creature->GetGUID();   break;
+                case 18832: KroshFirehand = creature->GetGUID();    break;
+                case 18831: Maulgar = creature->GetGUID();          break;
             }
         }
 
-        void OnGameObjectCreate(GameObject* pGo, bool /*add*/)
+        void OnGameObjectCreate(GameObject* go)
         {
-            switch (pGo->GetEntry())
+            switch (go->GetEntry())
             {
                 case 184468:
-                    MaulgarDoor = pGo->GetGUID();
-                    if (m_auiEncounter[0] == DONE) HandleGameObject(NULL, true, pGo);
+                    MaulgarDoor = go->GetGUID();
+                    if (m_auiEncounter[0] == DONE)
+                        HandleGameObject(0, true, go);
                     break;
-                case 184662: GruulDoor = pGo->GetGUID(); break;
+                case 184662:
+                    GruulDoor = go->GetGUID();
+                    break;
             }
         }
 
@@ -141,12 +138,18 @@ public:
             switch (type)
             {
                 case DATA_MAULGAREVENT:
-                    if (data == DONE) HandleGameObject(MaulgarDoor, true);
-                    m_auiEncounter[0] = data; break;
+                    if (data == DONE)
+                        HandleGameObject(MaulgarDoor, true);
+                    m_auiEncounter[0] = data;
+                    break;
+
                 case DATA_GRUULEVENT:
-                    if (data == IN_PROGRESS) HandleGameObject(GruulDoor, false);
-                    else HandleGameObject(GruulDoor, true);
-                    m_auiEncounter[1] = data; break;
+                    if (data == IN_PROGRESS)
+                        HandleGameObject(GruulDoor, false);
+                    else
+                        HandleGameObject(GruulDoor, true);
+                    m_auiEncounter[1] = data;
+                    break;
             }
 
             if (data == DONE)
@@ -167,16 +170,10 @@ public:
         {
             OUT_SAVE_INST_DATA;
             std::ostringstream stream;
-            stream << m_auiEncounter[0] << " " << m_auiEncounter[1];
-            char* out = new char[stream.str().length() + 1];
-            strcpy(out, stream.str().c_str());
-            if (out)
-            {
-                OUT_SAVE_INST_DATA_COMPLETE;
-                return out;
-            }
+            stream << m_auiEncounter[0] << ' ' << m_auiEncounter[1];
 
-            return NULL;
+            OUT_SAVE_INST_DATA_COMPLETE;
+            return stream.str();
         }
 
         void Load(const char* in)
@@ -196,6 +193,7 @@ public:
             OUT_LOAD_INST_DATA_COMPLETE;
         }
     };
+
 };
 
 void AddSC_instance_gruuls_lair()

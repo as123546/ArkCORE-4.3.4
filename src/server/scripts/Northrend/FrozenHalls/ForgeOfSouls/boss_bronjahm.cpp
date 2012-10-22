@@ -1,11 +1,5 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
- *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
- *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -21,7 +15,9 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
+#include "SpellScript.h"
 #include "SpellAuraEffects.h"
 #include "forge_of_souls.h"
 
@@ -44,8 +40,8 @@ enum Spells
     SPELL_TELEPORT              = 68988,
     SPELL_FEAR                  = 68950,
     SPELL_SOULSTORM             = 68872,
-    SPELL_SOULSTORM_CHANNEL     = 69008,   // pre-fight
-    SPELL_SOULSTORM_VISUAL      = 68870,   // pre-cast soulstorm
+    SPELL_SOULSTORM_CHANNEL     = 69008,    // pre-fight
+    SPELL_SOULSTORM_VISUAL      = 68870,    // pre-cast soulstorm
     SPELL_PURPLE_BANISH_VISUAL  = 68862     // Used by Soul Fragment (Aura)
 };
 
@@ -73,6 +69,7 @@ class boss_bronjahm : public CreatureScript
         {
             boss_bronjahmAI(Creature* creature) : BossAI(creature, DATA_BRONJAHM)
             {
+                DoCast(me, SPELL_SOULSTORM_CHANNEL, true);
             }
 
             void InitializeAI()
@@ -88,13 +85,16 @@ class boss_bronjahm : public CreatureScript
                 events.Reset();
                 events.SetPhase(PHASE_1);
                 events.ScheduleEvent(EVENT_SHADOW_BOLT, 2000);
-                events.ScheduleEvent(EVENT_MAGIC_BANE, urand(8000, 15000));
+                events.ScheduleEvent(EVENT_MAGIC_BANE, urand(8000, 20000));
                 events.ScheduleEvent(EVENT_CORRUPT_SOUL, urand(25000, 35000), 0, PHASE_1);
-
-                me->CastSpell(me, SPELL_SOULSTORM_CHANNEL, true);
 
                 instance->SetBossState(DATA_BRONJAHM, NOT_STARTED);
             }
+
+           void JustReachedHome()
+           {
+               DoCast(me, SPELL_SOULSTORM_CHANNEL, true);
+           }
 
             void EnterCombat(Unit* /*who*/)
             {
@@ -124,7 +124,7 @@ class boss_bronjahm : public CreatureScript
                     events.SetPhase(PHASE_2);
                     DoCast(me, SPELL_TELEPORT);
                     events.ScheduleEvent(EVENT_FEAR, urand(12000, 16000), 0, PHASE_2);
-                    events.ScheduleEvent(EVENT_SOULSTORM, 700, 0, PHASE_2);
+                    events.ScheduleEvent(EVENT_SOULSTORM, 100, 0, PHASE_2);
                 }
             }
 
@@ -144,7 +144,7 @@ class boss_bronjahm : public CreatureScript
 
                 events.Update(diff);
 
-                if (me->HasUnitState(UNIT_STAT_CASTING))
+                if (me->HasUnitState(UNIT_STATE_CASTING))
                     return;
 
                 while (uint32 eventId = events.ExecuteEvent())
@@ -153,7 +153,7 @@ class boss_bronjahm : public CreatureScript
                     {
                         case EVENT_MAGIC_BANE:
                             DoCastVictim(SPELL_MAGIC_S_BANE);
-                            events.ScheduleEvent(EVENT_MAGIC_BANE, urand(8000, 15000));
+                            events.ScheduleEvent(EVENT_MAGIC_BANE, urand(8000, 20000));
                             break;
                         case EVENT_SHADOW_BOLT:
                             if (!me->IsWithinMeleeRange(me->getVictim()))
@@ -207,7 +207,7 @@ class mob_corrupted_soul_fragment : public CreatureScript
 
             void MovementInform(uint32 type, uint32 id)
             {
-                if (type != TARGETED_MOTION_TYPE)
+                if (type != CHASE_MOTION_TYPE)
                     return;
 
                 if (instance)
@@ -221,7 +221,6 @@ class mob_corrupted_soul_fragment : public CreatureScript
                         if (Creature* bronjahm = ObjectAccessor::GetCreature(*me, BronjahmGUID))
                             me->CastSpell(bronjahm, SPELL_CONSUME_SOUL, true);
 
-                        summ->GetMotionMaster()->MoveIdle();
                         summ->UnSummon();
                     }
                 }
@@ -362,7 +361,7 @@ class DistanceCheck
     public:
         explicit DistanceCheck(Unit* _caster) : caster(_caster) { }
 
-        bool operator() (Unit* unit)
+        bool operator() (WorldObject* unit) const
         {
             if (caster->GetExactDist2d(unit) <= 10.0f)
                 return true;
@@ -381,25 +380,25 @@ class spell_bronjahm_soulstorm_targeting : public SpellScriptLoader
         {
             PrepareSpellScript(spell_bronjahm_soulstorm_targeting_SpellScript);
 
-            void FilterTargetsInitial(std::list<Unit*>& unitList)
+            void FilterTargetsInitial(std::list<WorldObject*>& targets)
             {
-                unitList.remove_if (DistanceCheck(GetCaster()));
-                sharedUnitList = unitList;
+                targets.remove_if(DistanceCheck(GetCaster()));
+                sharedTargets = targets;
             }
 
             // use the same target for first and second effect
-            void FilterTargetsSubsequent(std::list<Unit*>& unitList)
+            void FilterTargetsSubsequent(std::list<WorldObject*>& targets)
             {
-                unitList = sharedUnitList;
+                targets = sharedTargets;
             }
 
             void Register()
             {
-                OnUnitTargetSelect += SpellUnitTargetFn(spell_bronjahm_soulstorm_targeting_SpellScript::FilterTargetsInitial, EFFECT_1, TARGET_UNIT_AREA_ENEMY_DST);
-                OnUnitTargetSelect += SpellUnitTargetFn(spell_bronjahm_soulstorm_targeting_SpellScript::FilterTargetsSubsequent, EFFECT_2, TARGET_UNIT_AREA_ENEMY_DST);
+                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_bronjahm_soulstorm_targeting_SpellScript::FilterTargetsInitial, EFFECT_1, TARGET_UNIT_DEST_AREA_ENEMY);
+                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_bronjahm_soulstorm_targeting_SpellScript::FilterTargetsSubsequent, EFFECT_2, TARGET_UNIT_DEST_AREA_ENEMY);
             }
 
-            std::list<Unit*> sharedUnitList;
+            std::list<WorldObject*> sharedTargets;
         };
 
         SpellScript* GetSpellScript() const

@@ -1,242 +1,258 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
+#include "ScriptedGossip.h"
 #include "blackfathom_deeps.h"
 #include "ScriptedEscortAI.h"
 
-enum eSpells {
-    SPELL_BLESSING_OF_BLACKFATHOM = 8733,
-    SPELL_RAVAGE = 8391,
-    SPELL_FROST_NOVA = 865,
-    SPELL_FROST_BOLT_VOLLEY = 8398,
-    SPELL_TELEPORT_DARNASSUS = 9268
+enum Spells
+{
+    SPELL_BLESSING_OF_BLACKFATHOM                           = 8733,
+    SPELL_RAVAGE                                            = 8391,
+    SPELL_FROST_NOVA                                        = 865,
+    SPELL_FROST_BOLT_VOLLEY                                 = 8398,
+    SPELL_TELEPORT_DARNASSUS                                = 9268
 };
 
 #define GOSSIP_ITEM_MORRIDUNE "Please port me to Darnassus"
 
-const Position HomePosition = { -815.817f, -145.299f, -25.870f, 0 };
+const Position HomePosition = {-815.817f, -145.299f, -25.870f, 0};
 
-class go_blackfathom_altar: public GameObjectScript {
+class go_blackfathom_altar : public GameObjectScript
+{
 public:
-    go_blackfathom_altar() :
-            GameObjectScript("go_blackfathom_altar") {
-    }
+    go_blackfathom_altar() : GameObjectScript("go_blackfathom_altar") { }
 
-    bool OnGossipHello(Player *pPlayer, GameObject* /*pGo*/) {
-        if (!pPlayer->HasAura(SPELL_BLESSING_OF_BLACKFATHOM))
-            pPlayer->AddAura(SPELL_BLESSING_OF_BLACKFATHOM, pPlayer);
+    bool OnGossipHello(Player* player, GameObject* /*go*/)
+    {
+        if (!player->HasAura(SPELL_BLESSING_OF_BLACKFATHOM))
+            player->AddAura(SPELL_BLESSING_OF_BLACKFATHOM, player);
         return true;
     }
 };
 
-class go_blackfathom_fire: public GameObjectScript {
+class go_blackfathom_fire : public GameObjectScript
+{
 public:
-    go_blackfathom_fire() :
-            GameObjectScript("go_blackfathom_fire") {
-    }
+    go_blackfathom_fire() : GameObjectScript("go_blackfathom_fire") { }
 
-    bool OnGossipHello(Player * /*pPlayer*/, GameObject* pGo) {
-        InstanceScript *pInstance = pGo->GetInstanceScript();
+    bool OnGossipHello(Player* /*player*/, GameObject* go)
+    {
+        InstanceScript* instance = go->GetInstanceScript();
 
-        if (pInstance) {
-            pGo->SetGoState(GO_STATE_ACTIVE);
-            pGo->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
-            pInstance->SetData(DATA_FIRE, pInstance->GetData(DATA_FIRE) + 1);
+        if (instance)
+        {
+            go->SetGoState(GO_STATE_ACTIVE);
+            go->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
+            instance->SetData(DATA_FIRE, instance->GetData(DATA_FIRE) + 1);
             return true;
         }
         return false;
     }
 };
 
-class npc_blackfathom_deeps_event: public CreatureScript {
+class npc_blackfathom_deeps_event : public CreatureScript
+{
 public:
-    npc_blackfathom_deeps_event() :
-            CreatureScript("npc_blackfathom_deeps_event") {
+    npc_blackfathom_deeps_event() : CreatureScript("npc_blackfathom_deeps_event") { }
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return new npc_blackfathom_deeps_eventAI (creature);
     }
 
-    CreatureAI* GetAI(Creature* pCreature) const {
-        return new npc_blackfathom_deeps_eventAI(pCreature);
-    }
-
-    struct npc_blackfathom_deeps_eventAI: public ScriptedAI {
-        npc_blackfathom_deeps_eventAI(Creature* pCreature) :
-                ScriptedAI(pCreature) {
-            if (pCreature->isSummon()) {
-                pCreature->SetHomePosition(HomePosition);
+    struct npc_blackfathom_deeps_eventAI : public ScriptedAI
+    {
+        npc_blackfathom_deeps_eventAI(Creature* creature) : ScriptedAI(creature)
+        {
+            if (creature->isSummon())
+            {
+                creature->SetHomePosition(HomePosition);
                 AttackPlayer();
             }
 
-            pInstance = pCreature->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
-        InstanceScript* pInstance;
+        InstanceScript* instance;
 
-        uint32 uiRavageTimer;
-        uint32 uiFrostNovaTimer;
-        uint32 uiFrostBoltVolleyTimer;
+        uint32 ravageTimer;
+        uint32 frostNovaTimer;
+        uint32 frostBoltVolleyTimer;
 
-        bool bFlee;
+        bool Flee;
 
-        void Reset() {
-            bFlee = false;
+        void Reset()
+        {
+            Flee = false;
 
-            uiRavageTimer = urand(5000, 8000);
-            uiFrostNovaTimer = urand(9000, 12000);
-            uiFrostBoltVolleyTimer = urand(2000, 4000);
+            ravageTimer           = urand(5000, 8000);
+            frostNovaTimer        = urand(9000, 12000);
+            frostBoltVolleyTimer  = urand(2000, 4000);
         }
 
-        void AttackPlayer() {
+        void AttackPlayer()
+        {
             Map::PlayerList const &PlList = me->GetMap()->GetPlayers();
 
             if (PlList.isEmpty())
                 return;
 
-            for (Map::PlayerList::const_iterator i = PlList.begin();
-                    i != PlList.end(); ++i) {
-                if (Player* pPlayer = i->getSource()) {
-                    if (pPlayer->isGameMaster())
+            for (Map::PlayerList::const_iterator i = PlList.begin(); i != PlList.end(); ++i)
+            {
+                if (Player* player = i->getSource())
+                {
+                    if (player->isGameMaster())
                         continue;
 
-                    if (pPlayer->isAlive()) {
-                        me->SetInCombatWith(pPlayer);
-                        pPlayer->SetInCombatWith(me);
-                        me->AddThreat(pPlayer, 0.0f);
+                    if (player->isAlive())
+                    {
+                        me->SetInCombatWith(player);
+                        player->SetInCombatWith(me);
+                        me->AddThreat(player, 0.0f);
                     }
                 }
             }
         }
 
-        void UpdateAI(const uint32 uiDiff) {
+        void UpdateAI(const uint32 diff)
+        {
             if (!UpdateVictim())
                 return;
 
-            switch (me->GetEntry()) {
-            case NPC_AKU_MAI_SNAPJAW: {
-                if (uiRavageTimer <= uiDiff) {
-                    DoCast(me->getVictim(), SPELL_RAVAGE);
-                    uiRavageTimer = urand(9000, 14000);
-                } else
-                    uiRavageTimer -= uiDiff;
-                break;
-            }
-            case NPC_MURKSHALLOW_SOFTSHELL:
-            case NPC_BARBED_CRUSTACEAN: {
-                if (!bFlee && HealthBelowPct(15)) {
-                    bFlee = true;
-                    me->DoFleeToGetAssistance();
+            switch (me->GetEntry())
+            {
+                case NPC_AKU_MAI_SNAPJAW:
+                {
+                    if (ravageTimer <= diff)
+                    {
+                        DoCastVictim(SPELL_RAVAGE);
+                        ravageTimer = urand(9000, 14000);
+                    } else ravageTimer -= diff;
+                    break;
                 }
-                break;
-            }
-            case NPC_AKU_MAI_SERVANT: {
-                if (uiFrostBoltVolleyTimer <= uiDiff) {
-                    if (Unit* pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0)) {
-                        if (pTarget)
-                            DoCast(pTarget, SPELL_FROST_BOLT_VOLLEY);
+                case NPC_MURKSHALLOW_SOFTSHELL:
+                case NPC_BARBED_CRUSTACEAN:
+                {
+                    if (!Flee && HealthBelowPct(15))
+                    {
+                        Flee = true;
+                        me->DoFleeToGetAssistance();
                     }
-                    uiFrostBoltVolleyTimer = urand(5000, 8000);
-                } else
-                    uiFrostBoltVolleyTimer -= uiDiff;
-                if (uiFrostNovaTimer <= uiDiff) {
-                    DoCastAOE(SPELL_FROST_NOVA, false);
-                    uiFrostNovaTimer = urand(25000, 30000);
-                } else
-                    uiFrostNovaTimer -= uiDiff;
-                break;
-            }
+                    break;
+                }
+                case NPC_AKU_MAI_SERVANT:
+                {
+                    if (frostBoltVolleyTimer <= diff)
+                    {
+                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                            DoCast(target, SPELL_FROST_BOLT_VOLLEY);
+                        frostBoltVolleyTimer = urand(5000, 8000);
+                    }
+                    else frostBoltVolleyTimer -= diff;
+
+                    if (frostNovaTimer <= diff)
+                    {
+                        DoCastAOE(SPELL_FROST_NOVA, false);
+                        frostNovaTimer = urand(25000, 30000);
+                    }
+                    else frostNovaTimer -= diff;
+                    break;
+                }
             }
 
             DoMeleeAttackIfReady();
         }
 
-        void JustDied(Unit* /*pKiller*/) {
+        void JustDied(Unit* /*killer*/)
+        {
             if (me->isSummon()) //we are not a normal spawn.
-                if (pInstance)
-                    pInstance->SetData(DATA_EVENT,
-                            pInstance->GetData(DATA_EVENT) + 1);
+                if (instance)
+                    instance->SetData(DATA_EVENT, instance->GetData(DATA_EVENT) + 1);
         }
     };
 };
 
-enum eMorridune {
-    SAY_MORRIDUNE_1 = -1048003, SAY_MORRIDUNE_2 = -1048004
+enum Morridune
+{
+    SAY_MORRIDUNE_1 = -1048003,
+    SAY_MORRIDUNE_2 = -1048004
 };
 
-class npc_morridune: public CreatureScript {
+class npc_morridune : public CreatureScript
+{
 public:
-    npc_morridune() :
-            CreatureScript("npc_morridune") {
-    }
+    npc_morridune() : CreatureScript("npc_morridune") { }
 
-    bool OnGossipSelect(Player* pPlayer, Creature* /*pCreature*/,
-            uint32 /*uiSender*/, uint32 uiAction) {
-        pPlayer->PlayerTalkClass->ClearMenus();
-        switch (uiAction) {
-        case GOSSIP_ACTION_INFO_DEF + 1:
-            pPlayer->TeleportTo(1, 9952.239f, 2284.277f, 1341.394f, 1.595f);
-            pPlayer->CLOSE_GOSSIP_MENU();
-            break;
-        }
-        return true;
-    }
-
-    bool OnGossipHello(Player* pPlayer, Creature* pCreature) {
-        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_MORRIDUNE, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
-
-        pPlayer->SEND_GOSSIP_MENU(pPlayer->GetGossipTextId(pCreature), pCreature->GetGUID());
-        return true;
-    }
-
-    CreatureAI* GetAI(Creature* pCreature) const {
-        return new npc_morriduneAI(pCreature);
-    }
-
-    struct npc_morriduneAI: public npc_escortAI {
-        npc_morriduneAI(Creature* pCreature) :
-                npc_escortAI(pCreature) {
-            DoScriptText(SAY_MORRIDUNE_1, pCreature);
-            me->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
-            Start(false, false, NULL);
-        }
-
-        void WaypointReached(uint32 uiPoint) {
-            switch (uiPoint) {
-            case 4:
-                SetEscortPaused(true);
-                me->SetOrientation(1.775791f);
-                me->SendMovementFlagUpdate();
-                me->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
-                DoScriptText(SAY_MORRIDUNE_2, me);
+    bool OnGossipSelect(Player* player, Creature* /*creature*/, uint32 /*sender*/, uint32 action)
+    {
+        player->PlayerTalkClass->ClearMenus();
+        switch (action)
+        {
+            case GOSSIP_ACTION_INFO_DEF + 1:
+                player->TeleportTo(1, 9952.239f, 2284.277f, 1341.394f, 1.595f);
+                player->CLOSE_GOSSIP_MENU();
                 break;
+        }
+        return true;
+    }
+
+    bool OnGossipHello(Player* player, Creature* creature)
+    {
+        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_MORRIDUNE, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
+
+        player->SEND_GOSSIP_MENU(player->GetGossipTextId(creature), creature->GetGUID());
+        return true;
+    }
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return new npc_morriduneAI (creature);
+    }
+
+    struct npc_morriduneAI : public npc_escortAI
+    {
+        npc_morriduneAI(Creature* creature) : npc_escortAI(creature)
+        {
+            DoScriptText(SAY_MORRIDUNE_1, creature);
+            me->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
+            Start(false, false, 0);
+        }
+
+        void WaypointReached(uint32 waypointId)
+        {
+            switch (waypointId)
+            {
+                case 4:
+                    SetEscortPaused(true);
+                    me->SetOrientation(1.775791f);
+                    me->SendMovementFlagUpdate();
+                    me->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
+                    DoScriptText(SAY_MORRIDUNE_2, me);
+                    break;
             }
         }
     };
 };
 
-void AddSC_blackfathom_deeps() {
+void AddSC_blackfathom_deeps()
+{
     new go_blackfathom_altar();
     new go_blackfathom_fire();
     new npc_blackfathom_deeps_event();

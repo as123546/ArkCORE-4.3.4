@@ -1,29 +1,24 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2011-2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ARKCORE_COMBATAI_H
-#define ARKCORE_COMBATAI_H
+#ifndef TRINITY_COMBATAI_H
+#define TRINITY_COMBATAI_H
 
 #include "CreatureAI.h"
 #include "CreatureAIImpl.h"
@@ -31,120 +26,94 @@
 
 class Creature;
 
-class AggressorAI: public CreatureAI
+class AggressorAI : public CreatureAI
 {
-public:
-    explicit AggressorAI(Creature *c) :
-            CreatureAI(c)
-    {
-    }
+    public:
+        explicit AggressorAI(Creature* c) : CreatureAI(c) {}
 
-    void UpdateAI(const uint32);
-    static int Permissible(const Creature *);
+        void UpdateAI(const uint32);
+        static int Permissible(const Creature*);
 };
 
 typedef std::vector<uint32> SpellVct;
 
-class CombatAI: public CreatureAI
+class CombatAI : public CreatureAI
 {
-public:
-    explicit CombatAI(Creature *c) :
-            CreatureAI(c)
-    {
-    }
+    public:
+        explicit CombatAI(Creature* c) : CreatureAI(c) {}
 
-    void InitializeAI();
-    void Reset();
-    void EnterCombat(Unit* who);
-    void JustDied(Unit *killer);
-    void UpdateAI(const uint32 diff);
-    static int Permissible(const Creature *);
-protected:
-    EventMap events;
-    SpellVct spells;
+        void InitializeAI();
+        void Reset();
+        void EnterCombat(Unit* who);
+        void JustDied(Unit* killer);
+        void UpdateAI(const uint32 diff);
+        void SpellInterrupted(uint32 spellId, uint32 unTimeMs);
+        static int Permissible(const Creature*);
+    protected:
+        EventMap events;
+        SpellVct spells;
 };
 
-class CasterAI: public CombatAI
+class CasterAI : public CombatAI
 {
-public:
-    explicit CasterAI(Creature *c) :
-            CombatAI(c)
-    {
-        m_attackDist = MELEE_RANGE;
-    }
-    void InitializeAI();
-    void AttackStart(Unit * victim)
-    {
-        AttackStartCaster(victim, m_attackDist);
-    }
-    void UpdateAI(const uint32 diff);
-    void EnterCombat(Unit * /*who*/);
-private:
-    float m_attackDist;
+    public:
+        explicit CasterAI(Creature* c) : CombatAI(c) { m_attackDist = MELEE_RANGE; }
+        void InitializeAI();
+        void AttackStart(Unit* victim) { AttackStartCaster(victim, m_attackDist); }
+        void UpdateAI(const uint32 diff);
+        void EnterCombat(Unit* /*who*/);
+    private:
+        float m_attackDist;
 };
 
-struct ArchorAI: public CreatureAI
+struct ArcherAI : public CreatureAI
 {
-public:
-    explicit ArchorAI(Creature *c);
-    void AttackStart(Unit *who);
-    void UpdateAI(const uint32 diff);
+    public:
+        explicit ArcherAI(Creature* c);
+        void AttackStart(Unit* who);
+        void UpdateAI(const uint32 diff);
 
-    static int Permissible(const Creature *);
-protected:
-    float m_minRange;
+        static int Permissible(const Creature*);
+    protected:
+        float m_minRange;
 };
 
-struct TurretAI: public CreatureAI
+struct TurretAI : public CreatureAI
 {
-public:
-    explicit TurretAI(Creature *c);
-    bool CanAIAttack(const Unit *who) const;
-    void AttackStart(Unit *who);
-    void UpdateAI(const uint32 diff);
+    public:
+        explicit TurretAI(Creature* c);
+        bool CanAIAttack(const Unit* who) const;
+        void AttackStart(Unit* who);
+        void UpdateAI(const uint32 diff);
 
-    static int Permissible(const Creature *);
-protected:
-    float m_minRange;
+        static int Permissible(const Creature*);
+    protected:
+        float m_minRange;
 };
 
-struct AOEAI: public CreatureAI
-{
-public:
-    explicit AOEAI(Creature *c);
-    bool CanAIAttack(const Unit *who) const;
-    void AttackStart(Unit *who);
-    void UpdateAI(const uint32 diff);
-
-    static int Permissible(const Creature *);
-};
 #define VEHICLE_CONDITION_CHECK_TIME 1000
 #define VEHICLE_DISMISS_TIME 5000
-struct VehicleAI: public CreatureAI
+struct VehicleAI : public CreatureAI
 {
-public:
-    explicit VehicleAI(Creature *c);
+    public:
+        explicit VehicleAI(Creature* c);
 
-    void UpdateAI(const uint32 diff);
-    static int Permissible(const Creature *);
-    void Reset();
-    void MoveInLineOfSight(Unit *)
-    {
-    }
-    void AttackStart(Unit *)
-    {
-    }
-    void OnCharmed(bool apply);
+        void UpdateAI(const uint32 diff);
+        static int Permissible(const Creature*);
+        void Reset();
+        void MoveInLineOfSight(Unit*) {}
+        void AttackStart(Unit*) {}
+        void OnCharmed(bool apply);
 
-private:
-    Vehicle* m_vehicle;
-    bool m_IsVehicleInUse;
-    void LoadConditions();
-    void CheckConditions(const uint32 diff);
-    ConditionList conditions;
-    uint32 m_ConditionsTimer;
-    bool m_DoDismiss;
-    uint32 m_DismissTimer;
+    private:
+        Vehicle* m_vehicle;
+        bool m_IsVehicleInUse;
+        void LoadConditions();
+        void CheckConditions(const uint32 diff);
+        ConditionList conditions;
+        uint32 m_ConditionsTimer;
+        bool m_DoDismiss;
+        uint32 m_DismissTimer;
 };
 
 #endif

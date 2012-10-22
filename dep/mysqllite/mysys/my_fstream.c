@@ -1,4 +1,4 @@
-/* Copyright (c) 2000, 2011, Oracle and/or its affiliates. All rights reserved.
+/* Copyright (C) 2000 MySQL AB
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -11,7 +11,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA */
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
 /* USE_MY_STREAM isn't set because we can't thrust my_fclose! */
 
@@ -70,6 +70,7 @@ size_t my_fread(FILE *stream, uchar *Buffer, size_t Count, myf MyFlags)
     DBUG_RETURN(0);				/* Read ok */
   DBUG_RETURN(readbytes);
 } /* my_fread */
+
 
 /*
   Write a chunk of bytes to a stream
@@ -155,6 +156,7 @@ size_t my_fwrite(FILE *stream, const uchar *Buffer, size_t Count, myf MyFlags)
   DBUG_RETURN(writtenbytes);
 } /* my_fwrite */
 
+
 /* Seek to position in file */
 
 my_off_t my_fseek(FILE *stream, my_off_t pos, int whence,
@@ -167,6 +169,7 @@ my_off_t my_fseek(FILE *stream, my_off_t pos, int whence,
 	      MY_FILEPOS_ERROR : (my_off_t) ftell(stream));
 } /* my_seek */
 
+
 /* Tell current position of file */
 
 my_off_t my_ftell(FILE *stream, myf MyFlags __attribute__((unused)))
@@ -178,6 +181,7 @@ my_off_t my_ftell(FILE *stream, myf MyFlags __attribute__((unused)))
   DBUG_PRINT("exit",("ftell: %lu",(ulong) pos));
   DBUG_RETURN((my_off_t) pos);
 } /* my_ftell */
+
 
 /* Get a File corresponding to the stream*/
 int my_fileno(FILE *f)

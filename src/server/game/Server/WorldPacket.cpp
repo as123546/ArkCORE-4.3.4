@@ -1,46 +1,41 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "gamePCH.h"
-#include "WorldPacket.h"
 #include <zlib.h>
+#include "WorldPacket.h"
 #include "World.h"
 
-void WorldPacket::Compress(Opcodes opcode)
+//! Compresses packet in place
+void WorldPacket::Compress(z_stream* compressionStream)
 {
-    if (opcode == UNKNOWN_OPCODE || opcode == NULL_OPCODE)
+    Opcodes uncompressedOpcode = GetOpcode();
+    if (uncompressedOpcode & COMPRESSED_OPCODE_MASK)
     {
-        sLog->outError("Tried to compress packet with unknown opcode (%u)", uint32(opcode));
+        sLog->outError(LOG_FILTER_NETWORKIO, "Packet with opcode 0x%04X is already compressed!", uncompressedOpcode);
         return;
     }
 
-    Opcodes uncompressedOpcode = GetOpcode();
+    Opcodes opcode = Opcodes(uncompressedOpcode | COMPRESSED_OPCODE_MASK);
     uint32 size = wpos();
     uint32 destsize = compressBound(size);
 
     std::vector<uint8> storage(destsize);
 
+    _compressionStream = compressionStream;
     Compress(static_cast<void*>(&storage[0]), &destsize, static_cast<const void*>(contents()), size);
     if (destsize == 0)
         return;
@@ -51,62 +46,62 @@ void WorldPacket::Compress(Opcodes opcode)
     append(&storage[0], destsize);
     SetOpcode(opcode);
 
-    sLog->outStaticDebug("Successfully compressed opcode %u (len %u) to %u (len %u)",
-        uncompressedOpcode, size, opcode, destsize);
+    sLog->outInfo(LOG_FILTER_NETWORKIO, "Successfully compressed opcode %u (len %u) to %u (len %u)", uncompressedOpcode, size, opcode, destsize);
+}
+
+//! Compresses another packet and stores it in self (source left intact)
+void WorldPacket::Compress(z_stream* compressionStream, WorldPacket const* source)
+{
+    ASSERT(source != this);
+
+    Opcodes uncompressedOpcode = source->GetOpcode();
+    if (uncompressedOpcode & COMPRESSED_OPCODE_MASK)
+    {
+        sLog->outError(LOG_FILTER_NETWORKIO, "Packet with opcode 0x%04X is already compressed!", uncompressedOpcode);
+        return;
+    }
+
+    Opcodes opcode = Opcodes(uncompressedOpcode | COMPRESSED_OPCODE_MASK);
+    uint32 size = source->size();
+    uint32 destsize = compressBound(size);
+
+    size_t sizePos = 0;
+    resize(destsize + sizeof(uint32));
+
+    _compressionStream = compressionStream;
+    Compress(static_cast<void*>(&_storage[0] + sizeof(uint32)), &destsize, static_cast<const void*>(source->contents()), size);
+    if (destsize == 0)
+        return;
+
+    put<uint32>(sizePos, size);
+    resize(destsize + sizeof(uint32));
+
+    SetOpcode(opcode);
+
+    sLog->outInfo(LOG_FILTER_NETWORKIO, "Successfully compressed opcode %u (len %u) to %u (len %u)", uncompressedOpcode, size, opcode, destsize);
 }
 
 void WorldPacket::Compress(void* dst, uint32 *dst_size, const void* src, int src_size)
 {
-    z_stream c_stream;
+    _compressionStream->next_out = (Bytef*)dst;
+    _compressionStream->avail_out = *dst_size;
+    _compressionStream->next_in = (Bytef*)src;
+    _compressionStream->avail_in = (uInt)src_size;
 
-    c_stream.zalloc = (alloc_func)NULL;
-    c_stream.zfree = (free_func)NULL;
-    c_stream.opaque = (voidpf)NULL;
-
-    // default Z_BEST_SPEED (1)
-    int z_res = deflateInit(&c_stream, sWorld->getIntConfig(CONFIG_COMPRESSION));
+    int32 z_res = deflate(_compressionStream, Z_SYNC_FLUSH);
     if (z_res != Z_OK)
     {
-        sLog->outError("Can't compress packet (zlib: deflateInit) Error code: %i (%s)",z_res,zError(z_res));
+        sLog->outError(LOG_FILTER_NETWORKIO, "Can't compress packet (zlib: deflate) Error code: %i (%s, msg: %s)", z_res, zError(z_res), _compressionStream->msg);
         *dst_size = 0;
         return;
     }
 
-    c_stream.next_out = (Bytef*)dst;
-    c_stream.avail_out = *dst_size;
-    c_stream.next_in = (Bytef*)src;
-    c_stream.avail_in = (uInt)src_size;
-
-    z_res = deflate(&c_stream, Z_NO_FLUSH);
-    if (z_res != Z_OK)
+    if (_compressionStream->avail_in != 0)
     {
-        sLog->outError("Can't compress packet (zlib: deflate) Error code: %i (%s)",z_res,zError(z_res));
+        sLog->outError(LOG_FILTER_NETWORKIO, "Can't compress packet (zlib: deflate not greedy)");
         *dst_size = 0;
         return;
     }
 
-    if (c_stream.avail_in != 0)
-    {
-        sLog->outError("Can't compress packet (zlib: deflate not greedy)");
-        *dst_size = 0;
-        return;
-    }
-
-    z_res = deflate(&c_stream, Z_FINISH);
-    if (z_res != Z_STREAM_END)
-    {
-        sLog->outError("Can't compress packet (zlib: deflate should report Z_STREAM_END instead %i (%s)",z_res,zError(z_res));
-        *dst_size = 0;
-        return;
-    }
-
-    z_res = deflateEnd(&c_stream);
-    if (z_res != Z_OK)
-    {
-        sLog->outError("Can't compress packet (zlib: deflateEnd) Error code: %i (%s)",z_res,zError(z_res));
-        *dst_size = 0;
-        return;
-    }
-
-    *dst_size = c_stream.total_out;
+    *dst_size -= _compressionStream->avail_out;
 }

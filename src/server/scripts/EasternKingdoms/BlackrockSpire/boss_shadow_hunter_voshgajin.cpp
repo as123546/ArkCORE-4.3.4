@@ -1,104 +1,108 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* ScriptData
- SDName: Boss_Shadow_Hunter_Voshgajin
- SD%Complete: 100
- SDComment:
- SDCategory: Blackrock Spire
- EndScriptData */
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
+#include "blackrock_spire.h"
 
-#include "ScriptPCH.h"
+enum Spells
+{
+    SPELL_CURSEOFBLOOD              = 24673,
+    SPELL_HEX                       = 16708,
+    SPELL_CLEAVE                    = 20691,
+};
 
-#define SPELL_CURSEOFBLOOD      24673
-#define SPELL_HEX               16708
-#define SPELL_CLEAVE            20691
+enum Events
+{
+    EVENT_CURSE_OF_BLOOD            = 1,
+    EVENT_HEX                       = 2,
+    EVENT_CLEAVE                    = 3,
+};
 
-class boss_shadow_hunter_voshgajin: public CreatureScript {
+class boss_shadow_hunter_voshgajin : public CreatureScript
+{
 public:
-    boss_shadow_hunter_voshgajin() :
-            CreatureScript("boss_shadow_hunter_voshgajin") {
+    boss_shadow_hunter_voshgajin() : CreatureScript("boss_shadow_hunter_voshgajin") { }
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return new boss_shadowvoshAI(creature);
     }
 
-    CreatureAI* GetAI(Creature* pCreature) const {
-        return new boss_shadowvoshAI(pCreature);
-    }
+    struct boss_shadowvoshAI : public BossAI
+    {
+        boss_shadowvoshAI(Creature* creature) : BossAI(creature, DATA_SHADOW_HUNTER_VOSHGAJIN) {}
 
-    struct boss_shadowvoshAI: public ScriptedAI {
-        boss_shadowvoshAI(Creature *c) :
-                ScriptedAI(c) {
-        }
-
-        uint32 CurseOfBlood_Timer;
-        uint32 Hex_Timer;
-        uint32 Cleave_Timer;
-
-        void Reset() {
-            CurseOfBlood_Timer = 2000;
-            Hex_Timer = 8000;
-            Cleave_Timer = 14000;
-
+        void Reset()
+        {
+            _Reset();
             //DoCast(me, SPELL_ICEARMOR, true);
         }
 
-        void EnterCombat(Unit * /*who*/) {
+        void EnterCombat(Unit* /*who*/)
+        {
+            _EnterCombat();
+            events.ScheduleEvent(EVENT_CURSE_OF_BLOOD, 2 * IN_MILLISECONDS);
+            events.ScheduleEvent(EVENT_HEX,     8 * IN_MILLISECONDS);
+            events.ScheduleEvent(EVENT_CLEAVE, 14 * IN_MILLISECONDS);
         }
 
-        void UpdateAI(const uint32 diff) {
-            //Return since we have no target
+        void JustDied(Unit* /*killer*/)
+        {
+            _JustDied();
+        }
+
+        void UpdateAI(uint32 const diff)
+        {
             if (!UpdateVictim())
                 return;
 
-            //CurseOfBlood_Timer
-            if (CurseOfBlood_Timer <= diff) {
-                DoCast(me->getVictim(), SPELL_CURSEOFBLOOD);
-                CurseOfBlood_Timer = 45000;
-            } else
-                CurseOfBlood_Timer -= diff;
+            events.Update(diff);
 
-            //Hex_Timer
-            if (Hex_Timer <= diff) {
-                if (Unit *pTarget = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
-                    DoCast(pTarget, SPELL_HEX);
-                Hex_Timer = 15000;
-            } else
-                Hex_Timer -= diff;
+            if (me->HasUnitState(UNIT_STATE_CASTING))
+                return;
 
-            //Cleave_Timer
-            if (Cleave_Timer <= diff) {
-                DoCast(me->getVictim(), SPELL_CLEAVE);
-                Cleave_Timer = 7000;
-            } else
-                Cleave_Timer -= diff;
-
+            while (uint32 eventId = events.ExecuteEvent())
+            {
+                switch (eventId)
+                {
+                    case EVENT_CURSE_OF_BLOOD:
+                        DoCast(me->getVictim(), SPELL_CURSEOFBLOOD);
+                        events.ScheduleEvent(EVENT_CURSE_OF_BLOOD, 45 * IN_MILLISECONDS);
+                        break;
+                    case EVENT_HEX:
+                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
+                            DoCast(target, SPELL_HEX);
+                        events.ScheduleEvent(EVENT_HEX, 15 * IN_MILLISECONDS);
+                        break;
+                    case EVENT_CLEAVE:
+                        DoCast(me->getVictim(), SPELL_CLEAVE);
+                        events.ScheduleEvent(EVENT_CLEAVE, 7 * IN_MILLISECONDS);
+                        break;
+                }
+            }
             DoMeleeAttackIfReady();
         }
     };
+
 };
 
-void AddSC_boss_shadowvosh() {
+void AddSC_boss_shadowvosh()
+{
     new boss_shadow_hunter_voshgajin();
 }

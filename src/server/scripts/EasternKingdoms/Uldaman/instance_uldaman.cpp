@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
- *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
- *
- * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2006-2007 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -27,7 +23,8 @@ SDComment: Need some cosmetics updates when archeadas door are closing (Guardian
 SDCategory: Uldaman
 EndScriptData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "InstanceScript.h"
 #include "uldaman.h"
 
 enum eSpells
@@ -188,8 +185,8 @@ class instance_uldaman : public InstanceMapScript
                     return;        // only want the first one we find
                 }
                 // if we get this far than all four are dead so open the door
-                SetData (DATA_ALTAR_DOORS, DONE);
-                SetDoor (uiArchaedasTempleDoor, true); //open next the door too
+                SetData(DATA_ALTAR_DOORS, DONE);
+                SetDoor(uiArchaedasTempleDoor, true); //open next the door too
             }
 
             void ActivateWallMinions()
@@ -205,6 +202,9 @@ class instance_uldaman : public InstanceMapScript
                         continue;
                     archaedas->CastSpell(target, SPELL_AWAKEN_VAULT_WALKER, true);
                     target->CastSpell(target, SPELL_ARCHAEDAS_AWAKEN, true);
+                    target->RemoveFlag(UNIT_FIELD_FLAGS,UNIT_FLAG_DISABLE_MOVE);
+                    target->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+                    target->setFaction(14);
                     return;        // only want the first one we find
                 }
             }
@@ -324,7 +324,7 @@ class instance_uldaman : public InstanceMapScript
                     uiIronayaSealDoorTimer -= diff;
             }
 
-            void SetData (uint32 type, uint32 data)
+            void SetData(uint32 type, uint32 data)
             {
                 switch (type)
                 {
@@ -390,7 +390,7 @@ class instance_uldaman : public InstanceMapScript
                 }
             }
 
-            void SetData64 (uint32 type, uint64 data)
+            void SetData64(uint32 type, uint64 data)
             {
                 // Archaedas
                 if (type == 0)
@@ -429,7 +429,8 @@ class instance_uldaman : public InstanceMapScript
 
             void OnCreatureCreate(Creature* creature)
             {
-                switch (creature->GetEntry()) {
+                switch (creature->GetEntry())
+                {
                     case 4857:    // Stone Keeper
                         SetFrozenState (creature);
                         vStoneKeeper.push_back(creature->GetGUID());
@@ -461,10 +462,11 @@ class instance_uldaman : public InstanceMapScript
                     case 2748:    // Archaedas
                         uiArchaedasGUID = creature->GetGUID();
                         break;
-                } // end switch
-            } // end OnCreatureCreate
 
-            uint64 GetData64 (uint32 identifier)
+                }
+            }
+
+            uint64 GetData64(uint32 identifier)
             {
                 if (identifier == 0) return uiWhoWokeuiArchaedasGUID;
                 if (identifier == 1) return vVaultWalker[0];    // VaultWalker1

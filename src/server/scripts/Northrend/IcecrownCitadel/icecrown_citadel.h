@@ -1,7 +1,5 @@
 /*
- * Copyright (C) 2008 - 2012 TrinityCore <http://www.trinitycore.org/>
- *
- * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -53,6 +51,7 @@ enum SharedSpells
     SPELL_GREEN_BLIGHT_RESIDUE          = 72145,
 
     // The Lich King
+    SPELL_ARTHAS_TELEPORTER_CEREMONY    = 72915,
     SPELL_FROSTMOURNE_TELEPORT_VISUAL   = 73078,
 };
 
@@ -112,22 +111,6 @@ enum DataTypes
     DATA_HIGHLORD_TIRION_FORDRING   = 37,
     DATA_ARTHAS_PLATFORM            = 38,
     DATA_TERENAS_MENETHIL           = 39,
-
-    // GunshipBattle
-    DATA_FIRST_SQUAD_STATE                  = 100,
-    DATA_SECOND_SQUAD_STATE                 = 101,
-    DATA_SPIRE_FROSTWYRM_STATE              = 102,
-    DATA_GB_HIGH_OVERLORD_SAURFANG          = 103,
-    DATA_GB_MURADIN_BRONZEBEARD             = 104,
-    DATA_HIGH_OVERLORD_SAURFANG_NOT_VISUAL  = 105,
-    DATA_GB_BATTLE_MAGE                     = 106,
-    DATA_SKYBREAKER_BOSS                    = 107,
-    DATA_ORGRIMMAR_HAMMER_BOSS              = 108,
-    DATA_MURADIN_BRONZEBEARD_NOT_VISUAL     = 109,
-    // misc
-    DATA_MURADIN_BRONZEBEARD                = 66,
-    DATA_GUNSHIP_BATTLE                     = 67,
-    GUID_PLAYER_LOCATION                    = 69,
 };
 
 enum CreaturesIds
@@ -138,18 +121,18 @@ enum CreaturesIds
     NPC_HIGHLORD_BOLVAR_FORDRAGON_LH            = 37183,
     NPC_KOR_KRON_GENERAL                        = 37189,
     NPC_ALLIANCE_COMMANDER                      = 37190,
-    NPC_TORTUNOK                                = 37992,   // Druid Armor H
-    NPC_ALANA_MOONSTRIKE                        = 37999,   // Druid Armor A
-    NPC_GERARDO_THE_SUAVE                       = 37993,   // Hunter Armor H
-    NPC_TALAN_MOONSTRIKE                        = 37998,   // Hunter Armor A
-    NPC_UVLUS_BANEFIRE                          = 38284,   // Mage Armor H
-    NPC_MALFUS_GRIMFROST                        = 38283,   // Mage Armor A
-    NPC_IKFIRUS_THE_VILE                        = 37991,   // Rogue Armor H
-    NPC_YILI                                    = 37997,   // Rogue Armor A
-    NPC_VOL_GUK                                 = 38841,   // Shaman Armor H
-    NPC_JEDEBIA                                 = 38840,   // Shaman Armor A
-    NPC_HARAGG_THE_UNSEEN                       = 38181,   // Warlock Armor H
-    NPC_NIBY_THE_ALMIGHTY                       = 38182,   // Warlock Armor N
+    NPC_TORTUNOK                                = 37992,    // Druid Armor H
+    NPC_ALANA_MOONSTRIKE                        = 37999,    // Druid Armor A
+    NPC_GERARDO_THE_SUAVE                       = 37993,    // Hunter Armor H
+    NPC_TALAN_MOONSTRIKE                        = 37998,    // Hunter Armor A
+    NPC_UVLUS_BANEFIRE                          = 38284,    // Mage Armor H
+    NPC_MALFUS_GRIMFROST                        = 38283,    // Mage Armor A
+    NPC_IKFIRUS_THE_VILE                        = 37991,    // Rogue Armor H
+    NPC_YILI                                    = 37997,    // Rogue Armor A
+    NPC_VOL_GUK                                 = 38841,    // Shaman Armor H
+    NPC_JEDEBIA                                 = 38840,    // Shaman Armor A
+    NPC_HARAGG_THE_UNSEEN                       = 38181,    // Warlock Armor H
+    NPC_NIBY_THE_ALMIGHTY                       = 38182,    // Warlock Armor N
     NPC_GARROSH_HELLSCREAM                      = 39372,
     NPC_KING_VARIAN_WRYNN                       = 39371,
     NPC_DEATHBOUND_WARD                         = 37007,
@@ -181,40 +164,10 @@ enum CreaturesIds
     NPC_REANIMATED_ADHERENT                     = 38010,
     NPC_VENGEFUL_SHADE                          = 38222,
 
-    // Gunship Battle
-    NPC_GB_SKYBREAKER                           = 37540,
-    NPC_GB_ORGRIMS_HAMMER                       = 37215,
-    NPC_GB_HIGH_OVERLORD_SAURFANG               = 36939,
-    NPC_GB_MURADIN_BRONZEBEARD                  = 36948,
-    NPC_GB_HIHG_CAPTAIN_JUSTIN_BARTLETT         = 37182,
-    NPC_GB_HIGH_OVERLORD_SAURFANG_NOT_VISUAL    = 50004,
-    NPC_GB_MURADIN_BRONZEBEARD_NOT_VISUAL       = 50006,
-    NPC_GB_SKYBREAKER_SORCERER                  = 37026,
-    NPC_GB_SKYBREAKER_SORCERERS                 = 37116,
-    NPC_GB_KORKRON_REAVER                       = 37920,
-    NPC_GB_KORKRON_REAVERS                      = 36957,
-    NPC_GB_KORKRON_SERGANTE                     = 36960,
-    NPC_GB_SKYBREAKER_SERGANTE                  = 36961,
-    NPC_GB_KORKRON_BATTLE_MAGE                  = 37117,
-    NPC_GB_SKYBREAKER_MARINE                    = 36950,
-    NPC_GB_KORKRON_ROCKETEER                    = 36982,
-    NPC_GB_SKYBREAKER_MORTAR_SOLDIER            = 36978,
-    NPC_GB_KORKRON_AXETHROWER                   = 36968,
-    NPC_GB_SKYBREAKER_RIFLEMAN                  = 36969,
-    NPC_GB_SKYBREAKER_DECKHAND                  = 36970,
-    NPC_GB_ZAFOD_BOOMBOX                        = 37184,
-    NPC_GB_ALLIANCE_CANON                       = 36838,
-    NPC_GB_HORDE_CANON                          = 36839,
-    NPC_GB_INVISIBLE_STALKER                    = 32780,
-    NPC_GB_PORTAL                               = 37227,
-    NPC_GB_GUNSHIP_HULL                         = 37547,
-    NPC_KORKRON_INVOKER                         = 37033,
-    NPC_SPIRE_FROSTWYRM                         = 37230,
-
     // Deathbringer Saurfang
     NPC_DEATHBRINGER_SAURFANG                   = 37813,
     NPC_BLOOD_BEAST                             = 38508,
-    NPC_SE_JAINA_PROUDMOORE                     = 37188,   // SE means Saurfang Event
+    NPC_SE_JAINA_PROUDMOORE                     = 37188,    // SE means Saurfang Event
     NPC_SE_MURADIN_BRONZEBEARD                  = 37200,
     NPC_SE_KING_VARIAN_WRYNN                    = 37879,
     NPC_SE_HIGH_OVERLORD_SAURFANG               = 37187,
@@ -303,7 +256,6 @@ enum CreaturesIds
     NPC_ICY_BLAST                               = 38223,
     NPC_FROST_BOMB                              = 37186,
     NPC_ICE_TOMB                                = 36980,
-    NPC_TRIGGER                                 = 38667,
 
     // The Lich King
     NPC_THE_LICH_KING                           = 36597,
@@ -324,6 +276,9 @@ enum CreaturesIds
     NPC_WORLD_TRIGGER_INFINITE_AOI              = 36171,
     NPC_SPIRIT_BOMB                             = 39189,
     NPC_FROSTMOURNE_TRIGGER                     = 38584,
+
+    // Generic
+    NPC_INVISIBLE_STALKER                       = 30298,
 };
 
 enum GameObjectsIds
@@ -342,20 +297,6 @@ enum GameObjectsIds
     // Lady Deathwhisper
     GO_ORATORY_OF_THE_DAMNED_ENTRANCE       = 201563,
     GO_LADY_DEATHWHISPER_ELEVATOR           = 202220,
-
-    //Gunship Battle
-    GO_ORGRIM_S_HAMMER_HORDE_ICC            = 201812,
-    GO_ORGRIM_S_HAMMER_ALLIANCE_ICC         = 201581,
-    GO_THE_SKYBREAKER_HORDE_ICC             = 201811,
-    GO_THE_SKYBREAKER_ALLIANCE_ICC          = 201580,
-    GO_CAPITAN_CHEST_A_10N                  = 201872,
-    GO_CAPITAN_CHEST_A_25N                  = 201873,
-    GO_CAPITAN_CHEST_A_10H                  = 201874,
-    GO_CAPITAN_CHEST_A_25H                  = 201875,
-    GO_CAPITAN_CHEST_H_10N                  = 202177,
-    GO_CAPITAN_CHEST_H_25N                  = 202178,
-    GO_CAPITAN_CHEST_H_10H                  = 202179,
-    GO_CAPITAN_CHEST_H_25H                  = 202180,
 
     // Deathbringer Saurfang
     GO_SAURFANG_S_DOOR                      = 201825,
@@ -394,10 +335,10 @@ enum GameObjectsIds
     GO_DOODAD_ICECROWN_ROOSTPORTCULLIS_02   = 201381,
     GO_DOODAD_ICECROWN_ROOSTPORTCULLIS_03   = 201382,
     GO_DOODAD_ICECROWN_ROOSTPORTCULLIS_04   = 201383,
-    GO_DREAMWALKER_CACHE_10_N               = 201959,
-    GO_DREAMWALKER_CACHE_10_H               = 202338,
-    GO_DREAMWALKER_CACHE_25_N               = 202339,
-    GO_DREAMWALKER_CACHE_25_H               = 202340,
+    GO_CACHE_OF_THE_DREAMWALKER_10N         = 201959,
+    GO_CACHE_OF_THE_DREAMWALKER_25N         = 202339,
+    GO_CACHE_OF_THE_DREAMWALKER_10H         = 202338,
+    GO_CACHE_OF_THE_DREAMWALKER_25H         = 202340,
 
     // Sindragosa
     GO_SINDRAGOSA_ENTRANCE_DOOR             = 201373,
@@ -408,6 +349,7 @@ enum GameObjectsIds
     GO_SIGIL_OF_THE_FROSTWING               = 202181,
 
     // The Lich King
+    GO_SCOURGE_TRANSPORTER_LK               = 202223,
     GO_ARTHAS_PLATFORM                      = 202161,
     GO_ARTHAS_PRECIPICE                     = 202078,
     GO_DOODAD_ICECROWN_THRONEFROSTYWIND01   = 202188,
@@ -479,7 +421,6 @@ enum SharedActions
     // Sindragosa
     ACTION_START_FROSTWYRM      = -368530,
     ACTION_TRIGGER_ASPHYXIATION = -368531,
-    ACTION_BOMB_LANDED          = -368532,
 
     // The Lich King
     ACTION_RESTORE_LIGHT        = -72262,
@@ -526,7 +467,7 @@ class spell_trigger_spell_from_caster : public SpellScriptLoader
         public:
             spell_trigger_spell_from_caster_SpellScript(uint32 triggerId) : SpellScript(), _triggerId(triggerId) { }
 
-            bool Validate(SpellEntry const* /*spell*/)
+            bool Validate(SpellInfo const* /*spell*/)
             {
                 if (!sSpellMgr->GetSpellInfo(_triggerId))
                     return false;

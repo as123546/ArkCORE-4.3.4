@@ -1,4 +1,4 @@
-/* Copyright (c) 2000, 2010, Oracle and/or its affiliates. All rights reserved.
+/* Copyright (C) 2000 MySQL AB
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -11,7 +11,7 @@
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA */
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
 
 /*
   Code for handling red-black (balanced) binary trees.
@@ -75,6 +75,7 @@ static void right_rotate(TREE_ELEMENT **parent, TREE_ELEMENT *leaf);
 static void rb_insert(TREE *tree,TREE_ELEMENT ***parent,
 		      TREE_ELEMENT *leaf);
 static void rb_delete_fixup(TREE *tree,TREE_ELEMENT ***parent);
+
 
 	/* The actuall code for handling binary trees */
 
@@ -172,6 +173,7 @@ void reset_tree(TREE* tree)
   free_tree(tree, MYF(MY_MARK_BLOCKS_FREE));
 }
 
+
 static void delete_tree_element(TREE *tree, TREE_ELEMENT *element)
 {
   if (element != &tree->null_element)
@@ -185,6 +187,7 @@ static void delete_tree_element(TREE *tree, TREE_ELEMENT *element)
   }
 }
 
+
 /*
   insert, search and delete of elements
 
@@ -193,7 +196,7 @@ static void delete_tree_element(TREE *tree, TREE_ELEMENT *element)
     parent[0] = & parent[-1][0]->right
 */
 
-TREE_ELEMENT *tree_insert(TREE *tree, void *key, uint key_size,
+TREE_ELEMENT *tree_insert(TREE *tree, void *key, uint key_size, 
                           void* custom_arg)
 {
   int cmp;
@@ -328,6 +331,7 @@ int tree_delete(TREE *tree, void *key, uint key_size, void *custom_arg)
   return 0;
 }
 
+
 void *tree_search(TREE *tree, void *key, void *custom_arg)
 {
   int cmp;
@@ -347,7 +351,7 @@ void *tree_search(TREE *tree, void *key, void *custom_arg)
   }
 }
 
-void *tree_search_key(TREE *tree, const void *key,
+void *tree_search_key(TREE *tree, const void *key, 
                       TREE_ELEMENT **parents, TREE_ELEMENT ***last_pos,
                       enum ha_rkey_function flag, void *custom_arg)
 {
@@ -356,7 +360,7 @@ void *tree_search_key(TREE *tree, const void *key,
   TREE_ELEMENT **last_left_step_parent= NULL, **last_right_step_parent= NULL;
   TREE_ELEMENT **last_equal_element= NULL;
 
-/*
+/* 
   TODO: support for HA_READ_KEY_OR_PREV, HA_READ_PREFIX flags if needed.
 */
 
@@ -364,7 +368,7 @@ void *tree_search_key(TREE *tree, const void *key,
   while (element != &tree->null_element)
   {
     *++parents= element;
-    if ((cmp= (*tree->compare)(custom_arg, ELEMENT_KEY(tree, element),
+    if ((cmp= (*tree->compare)(custom_arg, ELEMENT_KEY(tree, element), 
 			       key)) == 0)
     {
       switch (flag) {
@@ -420,14 +424,14 @@ void *tree_search_key(TREE *tree, const void *key,
   return *last_pos ? ELEMENT_KEY(tree, **last_pos) : NULL;
 }
 
-/*
-  Search first (the most left) or last (the most right) tree element
+/* 
+  Search first (the most left) or last (the most right) tree element 
 */
-void *tree_search_edge(TREE *tree, TREE_ELEMENT **parents,
+void *tree_search_edge(TREE *tree, TREE_ELEMENT **parents, 
 		       TREE_ELEMENT ***last_pos, int child_offs)
 {
   TREE_ELEMENT *element= tree->root;
-
+  
   *parents= &tree->null_element;
   while (element != &tree->null_element)
   {
@@ -435,15 +439,15 @@ void *tree_search_edge(TREE *tree, TREE_ELEMENT **parents,
     element= ELEMENT_CHILD(element, child_offs);
   }
   *last_pos= parents;
-  return **last_pos != &tree->null_element ?
+  return **last_pos != &tree->null_element ? 
     ELEMENT_KEY(tree, **last_pos) : NULL;
 }
 
-void *tree_search_next(TREE *tree, TREE_ELEMENT ***last_pos, int l_offs,
+void *tree_search_next(TREE *tree, TREE_ELEMENT ***last_pos, int l_offs, 
                        int r_offs)
 {
   TREE_ELEMENT *x= **last_pos;
-
+  
   if (ELEMENT_CHILD(x, r_offs) != &tree->null_element)
   {
     x= ELEMENT_CHILD(x, r_offs);
@@ -471,7 +475,7 @@ void *tree_search_next(TREE *tree, TREE_ELEMENT ***last_pos, int l_offs,
   Expected that tree is fully balanced
   (each path from root to leaf has the same length)
 */
-ha_rows tree_record_pos(TREE *tree, const void *key,
+ha_rows tree_record_pos(TREE *tree, const void *key, 
 			enum ha_rkey_function flag, void *custom_arg)
 {
   int cmp;
@@ -481,7 +485,7 @@ ha_rows tree_record_pos(TREE *tree, const void *key,
 
   while (element != &tree->null_element)
   {
-    if ((cmp= (*tree->compare)(custom_arg, ELEMENT_KEY(tree, element),
+    if ((cmp= (*tree->compare)(custom_arg, ELEMENT_KEY(tree, element), 
 			       key)) == 0)
     {
       switch (flag) {
@@ -560,6 +564,7 @@ static int tree_walk_right_root_left(TREE *tree, TREE_ELEMENT *element, tree_wal
   }
   return 0;
 }
+
 
 	/* Functions to fix up the tree after insert and delete */
 

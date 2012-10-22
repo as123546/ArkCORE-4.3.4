@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- * Copyright (C) 2008 - 2012 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -19,15 +15,18 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
+#include "SpellScript.h"
+#include "SpellAuraEffects.h"
 #include "pit_of_saron.h"
 #include "Vehicle.h"
 
 enum Yells
 {
-    SAY_AMBUSH_1                                = -1658050,
-    SAY_AMBUSH_2                                = -1658051,
-    SAY_GAUNTLET_START                          = -1658052,
+    SAY_AMBUSH_1                    = -1658050,
+    SAY_AMBUSH_2                    = -1658051,
+    SAY_GAUNTLET_START              = -1658052,
     SAY_TYRANNUS_INTRO_1            = -1658053,
     SAY_GORKUN_INTRO_2              = -1658054,
     SAY_TYRANNUS_INTRO_3            = -1658055,
@@ -55,10 +54,10 @@ enum Spells
     SPELL_OVERLORD_BRAND            = 69172,
     SPELL_OVERLORD_BRAND_HEAL       = 69190,
     SPELL_OVERLORD_BRAND_DAMAGE     = 69189,
-    SPELL_FORCEFUL_SMASH                        = 69155,
+    SPELL_FORCEFUL_SMASH            = 69155,
     SPELL_UNHOLY_POWER              = 69167,
     SPELL_MARK_OF_RIMEFANG          = 69275,
-    SPELL_HOARFROST                             = 69246,
+    SPELL_HOARFROST                 = 69246,
 
     SPELL_ICY_BLAST                 = 69232,
     SPELL_ICY_BLAST_AURA            = 69238,
@@ -121,8 +120,8 @@ static const Position miscPos = {1018.376f, 167.2495f, 628.2811f, 0.000000f};   
 
 class boss_tyrannus : public CreatureScript
 {
-public:
-    boss_tyrannus() : CreatureScript("boss_tyrannus") { }
+    public:
+        boss_tyrannus() : CreatureScript("boss_tyrannus") { }
 
         struct boss_tyrannusAI : public BossAI
         {
@@ -140,23 +139,23 @@ public:
                     me->DespawnOrUnsummon();
             }
 
-        void Reset()
-        {
-            events.Reset();
+            void Reset()
+            {
+                events.Reset();
                 events.SetPhase(PHASE_NONE);
-            me->SetReactState(REACT_PASSIVE);
+                me->SetReactState(REACT_PASSIVE);
                 me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                 instance->SetBossState(DATA_TYRANNUS, NOT_STARTED);
-        }
+            }
 
-        Creature* GetRimefang()
-        {
+            Creature* GetRimefang()
+            {
                 return ObjectAccessor::GetCreature(*me, instance->GetData64(DATA_RIMEFANG));
-        }
+            }
 
-        void EnterCombat(Unit* /*who*/)
-        {
-            DoScriptText(SAY_AGGRO, me);
+            void EnterCombat(Unit* /*who*/)
+            {
+                DoScriptText(SAY_AGGRO, me);
             }
 
             void AttackStart(Unit* victim)
@@ -180,20 +179,12 @@ public:
             void KilledUnit(Unit* victim)
             {
                 if (victim->GetTypeId() == TYPEID_PLAYER)
-            DoScriptText(RAND(SAY_SLAY_1, SAY_SLAY_2), me);
-        }
+                    DoScriptText(RAND(SAY_SLAY_1, SAY_SLAY_2), me);
+            }
 
-        void JustDied(Unit* /*killer*/)
-        {
-            uint64 temp;
-            float x, y, z, o;
-            me->GetPosition(x, y, z, o);
-            if (instance->GetData(DATA_TEAM_IN_INSTANCE) == ALLIANCE)
-                temp=NPC_JAINA_PART2;
-            else
-                temp=NPC_SYLVANAS_PART2;
-            me->SummonCreature(temp, x+30, y+30, z, o, TEMPSUMMON_CORPSE_DESPAWN);
-            DoScriptText(SAY_DEATH, me);
+            void JustDied(Unit* /*killer*/)
+            {
+                DoScriptText(SAY_DEATH, me);
                 instance->SetBossState(DATA_TYRANNUS, DONE);
 
                 // Prevent corpse despawning
@@ -216,11 +207,11 @@ public:
                     events.ScheduleEvent(EVENT_INTRO_3, 34000, 0, PHASE_INTRO);
                     events.ScheduleEvent(EVENT_COMBAT_START, 36000, 0, PHASE_INTRO);
                     instance->SetBossState(DATA_TYRANNUS, IN_PROGRESS);
+                }
             }
-        }
 
-        void UpdateAI(const uint32 diff)
-        {
+            void UpdateAI(const uint32 diff)
+            {
                 if (!UpdateVictim() && !(events.GetPhaseMask() & (1 << PHASE_INTRO)))
                     return;
 
@@ -245,8 +236,6 @@ public:
                                 rimefang->AI()->DoAction(ACTION_START_RIMEFANG);    //set rimefang also infight
                             events.SetPhase(PHASE_COMBAT);
                             me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-                            me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_OOC_NOT_ATTACKABLE);
-                            me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                             me->SetReactState(REACT_AGGRESSIVE);
                             DoCast(me, SPELL_FULL_HEAL);
                             DoZoneInCombat();
@@ -259,13 +248,13 @@ public:
                                 DoCast(target, SPELL_OVERLORD_BRAND);
                             events.ScheduleEvent(EVENT_OVERLORD_BRAND, urand(11000, 12000));
                             break;
-                    case EVENT_FORCEFUL_SMASH:
+                        case EVENT_FORCEFUL_SMASH:
                             DoCastVictim(SPELL_FORCEFUL_SMASH);
                             events.ScheduleEvent(EVENT_UNHOLY_POWER, 1000);
                             break;
                         case EVENT_UNHOLY_POWER:
-                        DoScriptText(SAY_DARK_MIGHT_1, me);
-                        DoScriptText(SAY_DARK_MIGHT_2, me);
+                            DoScriptText(SAY_DARK_MIGHT_1, me);
+                            DoScriptText(SAY_DARK_MIGHT_2, me);
                             DoCast(me, SPELL_UNHOLY_POWER);
                             events.ScheduleEvent(EVENT_FORCEFUL_SMASH, urand(40000, 48000));
                             break;
@@ -278,12 +267,12 @@ public:
                             }
                             events.ScheduleEvent(EVENT_MARK_OF_RIMEFANG, urand(24000, 26000));
                             break;
+                    }
                 }
-            }
 
-            DoMeleeAttackIfReady();
-        }
-    };
+                DoMeleeAttackIfReady();
+            }
+        };
 
         CreatureAI* GetAI(Creature* creature) const
         {
@@ -293,30 +282,30 @@ public:
 
 class boss_rimefang : public CreatureScript
 {
-public:
-    boss_rimefang() : CreatureScript("boss_rimefang") { }
+    public:
+        boss_rimefang() : CreatureScript("boss_rimefang") { }
 
-    struct boss_rimefangAI : public ScriptedAI
-    {
+        struct boss_rimefangAI : public ScriptedAI
+        {
             boss_rimefangAI(Creature* creature) : ScriptedAI(creature), _vehicle(creature->GetVehicleKit())
-        {
+            {
                 ASSERT(_vehicle);
-        }
+            }
 
-        void Reset()
-        {
+            void Reset()
+            {
                 _events.Reset();
                 _events.SetPhase(PHASE_NONE);
                 _currentWaypoint = 0;
                 _hoarfrostTargetGUID = 0;
-            me->SetFlying(true);
+                me->SetCanFly(true);
                 me->SetReactState(REACT_PASSIVE);
                 me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
             }
 
             void JustReachedHome()
             {
-                _vehicle->InstallAllAccessories(true);
+                _vehicle->InstallAllAccessories(false);
             }
 
             void DoAction(const int32 actionId)
@@ -339,19 +328,19 @@ public:
                     _hoarfrostTargetGUID = guid;
                     _events.ScheduleEvent(EVENT_HOARFROST, 1000);
                 }
-        }
+            }
 
-        void UpdateAI(const uint32 diff)
-        {
+            void UpdateAI(const uint32 diff)
+            {
                 if (!UpdateVictim() && !(_events.GetPhaseMask() & (1 << PHASE_COMBAT)))
-                return;
+                    return;
 
                 _events.Update(diff);
 
                 while (uint32 eventId = _events.ExecuteEvent())
-            {
-                switch (eventId)
                 {
+                    switch (eventId)
+                    {
                         case EVENT_MOVE_NEXT:
                             if (_currentWaypoint >= 10 || _currentWaypoint == 0)
                                 _currentWaypoint = 1;
@@ -364,7 +353,7 @@ public:
                                 DoCast(target, SPELL_ICY_BLAST);
                             _events.ScheduleEvent(EVENT_ICY_BLAST, 15000, 0, PHASE_COMBAT);
                             break;
-                    case EVENT_HOARFROST:
+                        case EVENT_HOARFROST:
                             if (Unit* target = me->GetUnit(*me, _hoarfrostTargetGUID))
                             {
                                 DoCast(target, SPELL_HOARFROST);
@@ -382,7 +371,7 @@ public:
             uint64 _hoarfrostTargetGUID;
             EventMap _events;
             uint8 _currentWaypoint;
-    };
+        };
 
         CreatureAI* GetAI(Creature* creature) const
         {
@@ -401,14 +390,13 @@ class player_overlord_brandAI : public PlayerAI
         void SetGUID(uint64 guid, int32 /*type*/)
         {
             tyrannus = ObjectAccessor::GetCreature(*me, guid);
-            if (!tyrannus)
-                me->IsAIEnabled = false;
+            me->IsAIEnabled = tyrannus != NULL;
         }
 
         void DamageDealt(Unit* /*victim*/, uint32& damage, DamageEffectType /*damageType*/)
         {
             if (tyrannus->getVictim())
-            me->CastCustomSpell(SPELL_OVERLORD_BRAND_DAMAGE, SPELLVALUE_BASE_POINT0, damage, tyrannus->getVictim(), true, NULL, NULL, tyrannus->GetGUID());
+                me->CastCustomSpell(SPELL_OVERLORD_BRAND_DAMAGE, SPELLVALUE_BASE_POINT0, damage, tyrannus->getVictim(), true, NULL, NULL, tyrannus->GetGUID());
         }
 
         void HealDone(Unit* /*target*/, uint32& addHealth)
@@ -437,10 +425,9 @@ class spell_tyrannus_overlord_brand : public SpellScriptLoader
                     return;
 
                 oldAI = GetTarget()->GetAI();
+                oldAIState = GetTarget()->IsAIEnabled;
                 GetTarget()->SetAI(new player_overlord_brandAI(GetTarget()->ToPlayer()));
                 GetTarget()->GetAI()->SetGUID(GetCasterGUID());
-                oldAIState = GetTarget()->IsAIEnabled;
-                GetTarget()->IsAIEnabled = true;
             }
 
             void OnRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)

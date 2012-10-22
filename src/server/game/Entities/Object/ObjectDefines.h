@@ -1,29 +1,24 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2011-2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ARKCORE_OBJECTDEFINES_H
-#define ARKCORE_OBJECTDEFINES_H
+#ifndef TRINITY_OBJECTDEFINES_H
+#define TRINITY_OBJECTDEFINES_H
 
 #include "Define.h"
 
@@ -48,10 +43,11 @@ enum HighGuid
     HIGHGUID_PET            = 0xF14,                       // blizz F140
     HIGHGUID_VEHICLE        = 0xF15,                       // blizz F550
     HIGHGUID_DYNAMICOBJECT  = 0xF10,                       // blizz F100
-    HIGHGUID_CORPSE         = 0xF101,                       // blizz F100
+    HIGHGUID_CORPSE         = 0xF101,                      // blizz F100
+    HIGHGUID_TYPE_BATTLEGROUND = 0x1F1,                    // new 4.x
     HIGHGUID_MO_TRANSPORT   = 0x1FC,                       // blizz 1FC0 (for GAMEOBJECT_TYPE_MO_TRANSPORT)
     HIGHGUID_GROUP          = 0x1F5,
-    HIGHGUID_GUILD          = 0x1FF5,                       // new 4.x
+    HIGHGUID_GUILD          = 0x1FF5                       // new 4.x
 };
 
 #define IS_EMPTY_GUID(Guid)          (Guid == 0)
@@ -62,8 +58,9 @@ enum HighGuid
 #define IS_CRE_OR_VEH_GUID(Guid)     (IS_CREATURE_GUID(Guid) || IS_VEHICLE_GUID(Guid))
 #define IS_CRE_OR_VEH_OR_PET_GUID(Guid)(IS_CRE_OR_VEH_GUID(Guid) || IS_PET_GUID(Guid))
 #define IS_PLAYER_GUID(Guid)         (GUID_HIPART(Guid) == HIGHGUID_PLAYER && Guid != 0)
+#define IS_GUILD_GUID(Guid)          (GUID_HIPART(Guid) == HIGHGUID_GUILD && Guid != 0)
 #define IS_UNIT_GUID(Guid)           (IS_CRE_OR_VEH_OR_PET_GUID(Guid) || IS_PLAYER_GUID(Guid))
-// special case for empty guid need check
+                                                            // special case for empty guid need check
 #define IS_ITEM_GUID(Guid)           (GUID_HIPART(Guid) == HIGHGUID_ITEM)
 #define IS_GAMEOBJECT_GUID(Guid)     (GUID_HIPART(Guid) == HIGHGUID_GAMEOBJECT)
 #define IS_DYNAMICOBJECT_GUID(Guid)  (GUID_HIPART(Guid) == HIGHGUID_DYNAMICOBJECT)
@@ -78,6 +75,7 @@ enum HighGuid
 // h - OBJECT_FIELD_GUID + 1
 #define MAKE_NEW_GUID(l, e, h)   uint64(uint64(l) | (uint64(e) << 32) | (uint64(h) << ((h == HIGHGUID_GUILD || h == HIGHGUID_CORPSE) ? 48 : 52)))
 
+//#define GUID_HIPART(x)   (uint32)((uint64(x) >> 52)) & 0x0000FFFF)
 inline uint32 GUID_HIPART(uint64 guid)
 {
     uint32 t = ((uint64(guid) >> 48) & 0x0000FFFF);
@@ -86,65 +84,54 @@ inline uint32 GUID_HIPART(uint64 guid)
 
 // We have different low and middle part size for different guid types
 #define _GUID_ENPART_2(x) 0
-#define _GUID_ENPART_3(x) (uint32)((uint64(x) >> 32) & UI64LIT(0x0000000000FFFFFF))
+#define _GUID_ENPART_3(x) (uint32)((uint64(x) >> 32) & UI64LIT(0x00000000000FFFFF))
 #define _GUID_LOPART_2(x) (uint32)(uint64(x)         & UI64LIT(0x00000000FFFFFFFF))
 #define _GUID_LOPART_3(x) (uint32)(uint64(x)         & UI64LIT(0x00000000FFFFFFFF))
 
-inline bool IsGuidHaveEnPart (uint64 const& guid)
+inline bool IsGuidHaveEnPart(uint64 guid)
 {
     switch (GUID_HIPART(guid))
     {
-    case HIGHGUID_ITEM:
-    case HIGHGUID_PLAYER:
-    case HIGHGUID_DYNAMICOBJECT:
-    case HIGHGUID_CORPSE:
-    case HIGHGUID_GROUP:
-    case HIGHGUID_GUILD:
-        return false;
-    case HIGHGUID_GAMEOBJECT:
-    case HIGHGUID_TRANSPORT:
-    case HIGHGUID_UNIT:
-    case HIGHGUID_PET:
-    case HIGHGUID_VEHICLE:
-    case HIGHGUID_MO_TRANSPORT:
-    default:
-        return true;
+        case HIGHGUID_ITEM:
+        case HIGHGUID_PLAYER:
+        case HIGHGUID_DYNAMICOBJECT:
+        case HIGHGUID_CORPSE:
+        case HIGHGUID_GROUP:
+        case HIGHGUID_GUILD:
+            return false;
+        case HIGHGUID_GAMEOBJECT:
+        case HIGHGUID_TRANSPORT:
+        case HIGHGUID_UNIT:
+        case HIGHGUID_PET:
+        case HIGHGUID_VEHICLE:
+        case HIGHGUID_MO_TRANSPORT:
+        default:
+            return true;
     }
 }
 
 #define GUID_ENPART(x) (IsGuidHaveEnPart(x) ? _GUID_ENPART_3(x) : _GUID_ENPART_2(x))
 #define GUID_LOPART(x) (IsGuidHaveEnPart(x) ? _GUID_LOPART_3(x) : _GUID_LOPART_2(x))
 
-inline char const* GetLogNameForGuid (uint64 guid)
+inline char const* GetLogNameForGuid(uint64 guid)
 {
     switch (GUID_HIPART(guid))
     {
-    case HIGHGUID_ITEM:
-        return "item";
-    case HIGHGUID_PLAYER:
-        return guid ? "player" : "none";
-    case HIGHGUID_GAMEOBJECT:
-        return "gameobject";
-    case HIGHGUID_TRANSPORT:
-        return "transport";
-    case HIGHGUID_UNIT:
-        return "creature";
-    case HIGHGUID_PET:
-        return "pet";
-    case HIGHGUID_VEHICLE:
-        return "vehicle";
-    case HIGHGUID_DYNAMICOBJECT:
-        return "dynobject";
-    case HIGHGUID_CORPSE:
-        return "corpse";
-    case HIGHGUID_MO_TRANSPORT:
-        return "mo_transport";
-    case HIGHGUID_GROUP:
-        return "group";
-    case HIGHGUID_GUILD:
-        return "guild";
-    default:
-        return "<unknown>";
+        case HIGHGUID_ITEM:         return "item";
+        case HIGHGUID_PLAYER:       return guid ? "player" : "none";
+        case HIGHGUID_GAMEOBJECT:   return "gameobject";
+        case HIGHGUID_TRANSPORT:    return "transport";
+        case HIGHGUID_UNIT:         return "creature";
+        case HIGHGUID_PET:          return "pet";
+        case HIGHGUID_VEHICLE:      return "vehicle";
+        case HIGHGUID_DYNAMICOBJECT:return "dynobject";
+        case HIGHGUID_CORPSE:       return "corpse";
+        case HIGHGUID_MO_TRANSPORT: return "mo_transport";
+        case HIGHGUID_GROUP:        return "group";
+        case HIGHGUID_GUILD:        return "guild";
+        default:
+            return "<unknown>";
     }
 }
 #endif
+

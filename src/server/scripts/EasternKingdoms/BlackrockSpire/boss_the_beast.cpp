@@ -1,102 +1,106 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* ScriptData
- SDName: Boss_The_Best
- SD%Complete: 100
- SDComment:
- SDCategory: Blackrock Spire
- EndScriptData */
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
+#include "blackrock_spire.h"
 
-#include "ScriptPCH.h"
+enum Spells
+{
+    SPELL_FLAMEBREAK                = 16785,
+    SPELL_IMMOLATE                  = 20294,
+    SPELL_TERRIFYINGROAR            = 14100,
+};
 
-#define SPELL_FLAMEBREAK            16785
-#define SPELL_IMMOLATE              20294
-#define SPELL_TERRIFYINGROAR        14100
+enum Events
+{
+    EVENT_FLAME_BREAK              = 1,
+    EVENT_IMMOLATE                 = 2,
+    EVENT_TERRIFYING_ROAR          = 3,
+};
 
-class boss_the_beast: public CreatureScript {
+class boss_the_beast : public CreatureScript
+{
 public:
-    boss_the_beast() :
-            CreatureScript("boss_the_beast") {
+    boss_the_beast() : CreatureScript("boss_the_beast") { }
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return new boss_thebeastAI(creature);
     }
 
-    CreatureAI* GetAI(Creature* pCreature) const {
-        return new boss_thebeastAI(pCreature);
-    }
+    struct boss_thebeastAI : public BossAI
+    {
+        boss_thebeastAI(Creature* creature) : BossAI(creature, DATA_THE_BEAST) {}
 
-    struct boss_thebeastAI: public ScriptedAI {
-        boss_thebeastAI(Creature *c) :
-                ScriptedAI(c) {
+        void Reset()
+        {
+            _Reset();
         }
 
-        uint32 Flamebreak_Timer;
-        uint32 Immolate_Timer;
-        uint32 TerrifyingRoar_Timer;
-
-        void Reset() {
-            Flamebreak_Timer = 12000;
-            Immolate_Timer = 3000;
-            TerrifyingRoar_Timer = 23000;
+        void EnterCombat(Unit* /*who*/)
+        {
+            _EnterCombat();
+            events.ScheduleEvent(EVENT_FLAME_BREAK,     12 * IN_MILLISECONDS);
+            events.ScheduleEvent(EVENT_IMMOLATE,         3 * IN_MILLISECONDS);
+            events.ScheduleEvent(EVENT_TERRIFYING_ROAR, 23 * IN_MILLISECONDS);
         }
 
-        void EnterCombat(Unit * /*who*/) {
+        void JustDied(Unit* /*killer*/)
+        {
+            _JustDied();
         }
 
-        void UpdateAI(const uint32 diff) {
-            //Return since we have no target
+        void UpdateAI(uint32 const diff)
+        {
             if (!UpdateVictim())
                 return;
 
-            //Flamebreak_Timer
-            if (Flamebreak_Timer <= diff) {
-                DoCast(me->getVictim(), SPELL_FLAMEBREAK);
-                Flamebreak_Timer = 10000;
-            } else
-                Flamebreak_Timer -= diff;
+             events.Update(diff);
 
-            //Immolate_Timer
-            if (Immolate_Timer <= diff) {
-                if (Unit *pTarget = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
-                    DoCast(pTarget, SPELL_IMMOLATE);
-                Immolate_Timer = 8000;
-            } else
-                Immolate_Timer -= diff;
+            if (me->HasUnitState(UNIT_STATE_CASTING))
+                return;
 
-            //TerrifyingRoar_Timer
-            if (TerrifyingRoar_Timer <= diff) {
-                DoCast(me->getVictim(), SPELL_TERRIFYINGROAR);
-                TerrifyingRoar_Timer = 20000;
-            } else
-                TerrifyingRoar_Timer -= diff;
-
+            while (uint32 eventId = events.ExecuteEvent())
+            {
+                switch (eventId)
+                {
+                    case EVENT_FLAME_BREAK:
+                        DoCast(me->getVictim(), SPELL_FLAMEBREAK);
+                        events.ScheduleEvent(EVENT_FLAME_BREAK, 10 * IN_MILLISECONDS);
+                        break;
+                    case EVENT_IMMOLATE:
+                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100, true))
+                            DoCast(target, SPELL_IMMOLATE);
+                        events.ScheduleEvent(EVENT_IMMOLATE, 8 * IN_MILLISECONDS);
+                        break;
+                    case EVENT_TERRIFYING_ROAR:
+                        DoCast(me->getVictim(), SPELL_TERRIFYINGROAR);
+                        events.ScheduleEvent(EVENT_TERRIFYING_ROAR, 20 * IN_MILLISECONDS);
+                        break;
+                }
+            }
             DoMeleeAttackIfReady();
         }
     };
 };
 
-void AddSC_boss_thebeast() {
+void AddSC_boss_thebeast()
+{
     new boss_the_beast();
 }

@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
- *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
- *
- * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -19,7 +15,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "InstanceScript.h"
 #include "utgarde_pinnacle.h"
 
 #define MAX_ENCOUNTER     4
@@ -55,7 +52,6 @@ public:
         uint64 uiSvalaSorrowgrave;
         uint64 uiGortokPalehoof;
         uint64 uiSkadiTheRuthless;
-        uint64 uiGrauf;
         uint64 uiKingYmiron;
 
         uint64 uiSkadiTheRuthlessDoor;
@@ -67,29 +63,43 @@ public:
         uint64 uiFerociousRhino;
         uint64 uiMassiveJormungar;
         uint64 uiPalehoofOrb;
-        uint64 uiRitualTarget;
 
         uint64 uiSvala;
-        uint64 uiFlameBrazier_1;
-        uint64 uiFlameBrazier_2;
+        uint64 uiSacrificedPlayer;
 
         uint32 m_auiEncounter[MAX_ENCOUNTER];
-
-        uint64 uiDoodad_Utgarde_Mirror_FX01;
 
         std::string str_data;
 
         void Initialize()
         {
-            uiFlameBrazier_1 = 0;
             for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
                m_auiEncounter[i] = NOT_STARTED;
+
+            uiSvalaSorrowgrave = 0;
+            uiGortokPalehoof = 0;
+            uiSkadiTheRuthless = 0;
+            uiKingYmiron = 0;
+
+            uiSkadiTheRuthlessDoor = 0;
+            uiKingYmironDoor = 0;
+            uiGortokPalehoofSphere = 0;
+
+            uiFrenziedWorgen = 0;
+            uiRavenousFurbolg = 0;
+            uiFerociousRhino = 0;
+            uiMassiveJormungar = 0;
+            uiPalehoofOrb = 0;
+
+            uiSvala = 0;
+            uiSacrificedPlayer = 0;
         }
 
         bool IsEncounterInProgress() const
         {
             for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
-                if (m_auiEncounter[i] == IN_PROGRESS) return true;
+                if (m_auiEncounter[i] == IN_PROGRESS)
+                    return true;
 
             return false;
         }
@@ -98,21 +108,16 @@ public:
         {
             switch (creature->GetEntry())
             {
-                case 26668:    uiSvalaSorrowgrave = creature->GetGUID();               break;
-                case 26687:    uiGortokPalehoof = creature->GetGUID();                 break;
-                case 26693:    uiSkadiTheRuthless = creature->GetGUID();               break;
-                case 26893:    uiGrauf = creature->GetGUID();                          break;
-                case 26861:    uiKingYmiron = creature->GetGUID();                     break;
-                case 26683:    uiFrenziedWorgen = creature->GetGUID();                 break;
-                case 26684:    uiRavenousFurbolg = creature->GetGUID();                break;
-                case 26685:    uiMassiveJormungar = creature->GetGUID();               break;
-                case 26686:    uiFerociousRhino = creature->GetGUID();                 break;
-                case 29281:    uiSvala = creature->GetGUID();                          break;
-                case 26688:    uiPalehoofOrb = creature->GetGUID();                    break;
-                case 27273:
-                    (uiFlameBrazier_1 ? uiFlameBrazier_2 : uiFlameBrazier_1) =  creature->GetGUID();
-                                                                                        break;
-                case 27327:    uiRitualTarget = creature->GetGUID();                   break;
+                case BOSS_SVALA_SORROWGRAVE:  uiSvalaSorrowgrave = creature->GetGUID();  break;
+                case BOSS_GORTOK_PALEHOOF:    uiGortokPalehoof = creature->GetGUID();    break;
+                case BOSS_SKADI_RUTHLESS:     uiSkadiTheRuthless = creature->GetGUID();  break;
+                case BOSS_KING_YMIRON:        uiKingYmiron = creature->GetGUID();        break;
+                case MOB_FRENZIED_WORGEN:     uiFrenziedWorgen = creature->GetGUID();    break;
+                case MOB_RAVENOUS_FURBOLG:    uiRavenousFurbolg = creature->GetGUID();   break;
+                case MOB_MASSIVE_JORMUNGAR:   uiMassiveJormungar = creature->GetGUID();  break;
+                case MOB_FEROCIOUS_RHINO:     uiFerociousRhino = creature->GetGUID();    break;
+                case MOB_SVALA:               uiSvala = creature->GetGUID();             break;
+                case MOB_PALEHOOF_ORB:        uiPalehoofOrb = creature->GetGUID();       break;
             }
         }
 
@@ -135,9 +140,6 @@ public:
                         HandleGameObject(0, true, go);
                         go->SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_NOT_SELECTABLE);
                     }
-                    break;
-                case 191745:
-                    uiDoodad_Utgarde_Mirror_FX01 = go->GetGUID();
                     break;
             }
         }
@@ -168,6 +170,16 @@ public:
                 SaveToDB();
         }
 
+        void SetData64(uint32 type, uint64 data)
+        {
+            switch (type)
+            {
+                case DATA_SACRIFICED_PLAYER:
+                    uiSacrificedPlayer = data;
+                    break;
+            }
+        }
+
         uint32 GetData(uint32 type)
         {
             switch (type)
@@ -187,7 +199,6 @@ public:
                 case DATA_SVALA_SORROWGRAVE:      return uiSvalaSorrowgrave;
                 case DATA_GORTOK_PALEHOOF:        return uiGortokPalehoof;
                 case DATA_SKADI_THE_RUTHLESS:     return uiSkadiTheRuthless;
-                case DATA_GRAUF:                       return uiGrauf;
                 case DATA_KING_YMIRON:            return uiKingYmiron;
                 case DATA_MOB_FRENZIED_WORGEN:    return uiFrenziedWorgen;
                 case DATA_MOB_RAVENOUS_FURBOLG:   return uiRavenousFurbolg;
@@ -196,10 +207,7 @@ public:
                 case DATA_MOB_ORB:                return uiPalehoofOrb;
                 case DATA_SVALA:                  return uiSvala;
                 case DATA_GORTOK_PALEHOOF_SPHERE: return uiGortokPalehoofSphere;
-                case DATA_FLAME_BRAZIER_1:             return uiFlameBrazier_1;
-                case DATA_FLAME_BRAZIER_2:             return uiFlameBrazier_2;
-                case DATA_DOODAD_UTGARDE_MIRROR_FX01:  return uiDoodad_Utgarde_Mirror_FX01;
-                case DATA_RITUAL_TARGET:               return uiRitualTarget;
+                case DATA_SACRIFICED_PLAYER:      return uiSacrificedPlayer;
             }
 
             return 0;
@@ -235,7 +243,7 @@ public:
             std::istringstream loadStream(in);
             loadStream >> dataHead1 >> dataHead2 >> data0 >> data1 >> data2 >> data3;
 
-            if (dataHead1 == 'U' && dataHead2 == 'K')
+            if (dataHead1 == 'U' && dataHead2 == 'P')
             {
                 m_auiEncounter[0] = data0;
                 m_auiEncounter[1] = data1;
@@ -245,6 +253,7 @@ public:
                 for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
                     if (m_auiEncounter[i] == IN_PROGRESS)
                         m_auiEncounter[i] = NOT_STARTED;
+
             } else OUT_LOAD_INST_DATA_FAIL;
 
             OUT_LOAD_INST_DATA_COMPLETE;

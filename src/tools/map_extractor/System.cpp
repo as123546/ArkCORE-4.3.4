@@ -9,6 +9,8 @@
 #include "direct.h"
 #else
 #include <sys/stat.h>
+#include <unistd.h>
+#define ERROR_PATH_NOT_FOUND ERROR_FILE_NOT_FOUND
 #endif
 
 #include "StormLib.h"
@@ -107,7 +109,7 @@ void CreateDir(std::string const& path)
 #ifdef _WIN32
     _mkdir(path.c_str());
 #else
-    mkdir(path.c_str(), 777);
+    mkdir(path.c_str(), S_IRWXU | S_IRWXG | S_IRWXO); // 0777
 #endif
 }
 
@@ -132,8 +134,8 @@ void Usage(char* prg)
         "-o set output path\n"\
         "-e extract only MAP(1)/DBC(2) - standard: both(3)\n"\
         "-f height stored as int (less map size but lost some accuracy) 1 by default\n"\
-        "-b target build (default 14545)"\
-        "Example: %s -f 0 -i \"c:\\games\\game\"", prg, prg);
+        "-b target build (default %u)"\
+        "Example: %s -f 0 -i \"c:\\games\\game\"", prg, CONF_TargetBuild, prg);
     exit(1);
 }
 
@@ -294,7 +296,7 @@ void ReadAreaTableDBC()
         areas[dbc.getRecord(x).getUInt(0)] = dbc.getRecord(x).getUInt(3);
 
     SFileCloseFile(dbcFile);
-    printf("Done! (%zu areas loaded)\n", area_count);
+    printf("Done! (%u areas loaded)\n", area_count);
 }
 
 void ReadLiquidTypeTableDBC()
@@ -956,7 +958,7 @@ void ExtractMapsFromMpq(uint32 build)
     printf("Convert map files\n");
     for (uint32 z = 0; z < map_count; ++z)
     {
-        printf("Extract %s (%d/%d)                  \n", map_ids[z].name, z+1, map_count);
+        printf("Extract %s (%d/%u)                  \n", map_ids[z].name, z+1, map_count);
         // Loadup map grid data
         sprintf(mpq_map_name, "World\\Maps\\%s\\%s.wdt", map_ids[z].name, map_ids[z].name);
         WDT_file wdt;

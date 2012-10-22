@@ -1,23 +1,20 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2011-2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef _SPELLMGR_H
@@ -28,6 +25,7 @@
 #include <ace/Singleton.h>
 #include "Common.h"
 #include "SharedDefines.h"
+#include "Unit.h"
 
 class SpellInfo;
 class Player;
@@ -41,8 +39,8 @@ enum SpellCategories
     SPELLCATEGORY_HEALTH_MANA_POTIONS = 4,
     SPELLCATEGORY_DEVOUR_MAGIC        = 12,
     SPELLCATEGORY_JUDGEMENT           = 1210,               // Judgement (seal trigger)
-    SPELLCATEGORY_FOOD             = 11,
-    SPELLCATEGORY_DRINK            = 59,
+    SPELLCATEGORY_FOOD                = 11,
+    SPELLCATEGORY_DRINK               = 59
 };
 
 //SpellFamilyFlags
@@ -88,7 +86,7 @@ enum SpellFamilyFlag
     SPELLFAMILYFLAG_DK_DEATH_COIL           = 0x00002000,
 
     // TODO: Figure out a more accurate name for the following familyflag(s)
-    SPELLFAMILYFLAG_SHAMAN_TOTEM_EFFECTS    = 0x04000000,  // Seems to be linked to most totems and some totem effects
+    SPELLFAMILYFLAG_SHAMAN_TOTEM_EFFECTS    = 0x04000000  // Seems to be linked to most totems and some totem effects
 };
 
 
@@ -99,7 +97,7 @@ enum SpellLinkedType
     SPELL_LINK_CAST     = 0,            // +: cast; -: remove
     SPELL_LINK_HIT      = 1 * 200000,
     SPELL_LINK_AURA     = 2 * 200000,   // +: aura; -: immune
-    SPELL_LINK_REMOVE   = 0,
+    SPELL_LINK_REMOVE   = 0
 };
 
 
@@ -147,10 +145,10 @@ enum ProcFlags
     PROC_FLAG_DEATH                           = 0x01000000,    // 24 Died in any way
 
     // flag masks
-    AUTO_ATTACK_PROC_FLAG_MASK                = PROC_FLAG_DONE_MELEE_AUTO_ATTACK | PROC_FLAG_TAKEN_MELEE_AUTO_ATTACK 
+    AUTO_ATTACK_PROC_FLAG_MASK                = PROC_FLAG_DONE_MELEE_AUTO_ATTACK | PROC_FLAG_TAKEN_MELEE_AUTO_ATTACK
                                                 | PROC_FLAG_DONE_RANGED_AUTO_ATTACK | PROC_FLAG_TAKEN_RANGED_AUTO_ATTACK,
 
-    MELEE_PROC_FLAG_MASK                      = PROC_FLAG_DONE_MELEE_AUTO_ATTACK | PROC_FLAG_TAKEN_MELEE_AUTO_ATTACK 
+    MELEE_PROC_FLAG_MASK                      = PROC_FLAG_DONE_MELEE_AUTO_ATTACK | PROC_FLAG_TAKEN_MELEE_AUTO_ATTACK
                                                 | PROC_FLAG_DONE_SPELL_MELEE_DMG_CLASS | PROC_FLAG_TAKEN_SPELL_MELEE_DMG_CLASS
                                                 | PROC_FLAG_DONE_MAINHAND_ATTACK | PROC_FLAG_DONE_OFFHAND_ATTACK,
 
@@ -180,7 +178,7 @@ enum ProcFlags
                                                  | PROC_FLAG_TAKEN_SPELL_MAGIC_DMG_CLASS_POS | PROC_FLAG_TAKEN_SPELL_MAGIC_DMG_CLASS_NEG
                                                  | PROC_FLAG_TAKEN_PERIODIC | PROC_FLAG_TAKEN_DAMAGE,
 
-    REQ_SPELL_PHASE_PROC_FLAG_MASK             = SPELL_PROC_FLAG_MASK & DONE_HIT_PROC_FLAG_MASK,
+    REQ_SPELL_PHASE_PROC_FLAG_MASK             = SPELL_PROC_FLAG_MASK & DONE_HIT_PROC_FLAG_MASK
 };
 
 #define MELEE_BASED_TRIGGER_MASK (PROC_FLAG_DONE_MELEE_AUTO_ATTACK      | \
@@ -264,12 +262,12 @@ enum ProcFlagsHit
     PROC_HIT_REFLECT             = 0x0000800,
     PROC_HIT_INTERRUPT           = 0x0001000, // (not used atm)
     PROC_HIT_FULL_BLOCK          = 0x0002000,
-    PROC_HIT_MASK_ALL = 0x2FFF,
+    PROC_HIT_MASK_ALL            = 0x2FFF
 };
 
 enum ProcAttributes
 {
-    PROC_ATTR_REQ_EXP_OR_HONOR   = 0x0000010,
+    PROC_ATTR_REQ_EXP_OR_HONOR   = 0x0000010
 };
 
 struct SpellProcEventEntry
@@ -281,7 +279,7 @@ struct SpellProcEventEntry
     uint32      procEx;                                     // proc Extend info (see ProcFlagsEx)
     float       ppmRate;                                    // for melee (ranged?) damage spells - proc rate per minute. if zero, falls back to flat chance from Spell.dbc
     float       customChance;                               // Owerride chance (in most cases for debug only)
-    float       cooldown;                                   // hidden cooldown used for some spell proc events, applied to _triggered_spell_
+    uint32      cooldown;                                   // hidden cooldown used for some spell proc events, applied to _triggered_spell_
 };
 
 typedef UNORDERED_MAP<uint32, SpellProcEventEntry> SpellProcEventMap;
@@ -325,11 +323,12 @@ typedef UNORDERED_MAP<uint32, SpellBonusEntry>     SpellBonusMap;
 
 enum SpellGroup
 {
-    SPELL_GROUP_ELIXIR_BATTLE = 1,
-    SPELL_GROUP_ELIXIR_GUARDIAN = 2,
-    SPELL_GROUP_ELIXIR_UNSTABLE = 3,
+    SPELL_GROUP_NONE             = 0,
+    SPELL_GROUP_ELIXIR_BATTLE    = 1,
+    SPELL_GROUP_ELIXIR_GUARDIAN  = 2,
+    SPELL_GROUP_ELIXIR_UNSTABLE  = 3,
     SPELL_GROUP_ELIXIR_SHATTRATH = 4,
-    SPELL_GROUP_CORE_RANGE_MAX = 5,
+    SPELL_GROUP_CORE_RANGE_MAX   = 5
 };
 
 #define SPELL_GROUP_DB_RANGE_MIN 1000
@@ -344,26 +343,24 @@ typedef std::pair<SpellGroupSpellMap::const_iterator, SpellGroupSpellMap::const_
 
 enum SpellGroupStackRule
 {
-    SPELL_GROUP_STACK_RULE_DEFAULT = 0,
-    SPELL_GROUP_STACK_RULE_EXCLUSIVE = 1,
+    SPELL_GROUP_STACK_RULE_DEFAULT                    = 0,
+    SPELL_GROUP_STACK_RULE_EXCLUSIVE                  = 1,
     SPELL_GROUP_STACK_RULE_EXCLUSIVE_FROM_SAME_CASTER = 2,
+    SPELL_GROUP_STACK_RULE_EXCLUSIVE_SAME_EFFECT      = 3
 };
-#define SPELL_GROUP_STACK_RULE_MAX 3
+
+#define SPELL_GROUP_STACK_RULE_MAX 4
 
 typedef std::map<SpellGroup, SpellGroupStackRule> SpellGroupStackMap;
 
-typedef std::map<uint32, uint16> SpellThreatMap;
-
-// Spell script target related declarations (accessed using SpellMgr functions)
-enum SpellScriptTargetType
+struct SpellThreatEntry
 {
-    SPELL_TARGET_TYPE_GAMEOBJECT = 0,
-    SPELL_TARGET_TYPE_CREATURE   = 1,
-    SPELL_TARGET_TYPE_DEAD       = 2,
-    SPELL_TARGET_TYPE_CONTROLLED = 3,
+    int32       flatMod;                                    // flat threat-value for this Spell  - default: 0
+    float       pctMod;                                     // threat-multiplier for this Spell  - default: 1.0f
+    float       apPctMod;                                   // Pct of AP that is added as Threat - default: 0.0f
 };
 
-#define MAX_SPELL_TARGET_TYPE 4
+typedef std::map<uint32, SpellThreatEntry> SpellThreatMap;
 
 // coordinates for spells (accessed using SpellMgr functions)
 struct SpellTargetPosition
@@ -375,6 +372,68 @@ struct SpellTargetPosition
     float  target_Orientation;
 };
 
+// Enum with EffectRadiusIndex and their actual radius
+enum EffectRadiusIndex
+{
+    EFFECT_RADIUS_2_YARDS       = 7,
+    EFFECT_RADIUS_5_YARDS       = 8,
+    EFFECT_RADIUS_20_YARDS      = 9,
+    EFFECT_RADIUS_30_YARDS      = 10,
+    EFFECT_RADIUS_45_YARDS      = 11,
+    EFFECT_RADIUS_100_YARDS     = 12,
+    EFFECT_RADIUS_10_YARDS      = 13,
+    EFFECT_RADIUS_8_YARDS       = 14,
+    EFFECT_RADIUS_3_YARDS       = 15,
+    EFFECT_RADIUS_1_YARD        = 16,
+    EFFECT_RADIUS_13_YARDS      = 17,
+    EFFECT_RADIUS_15_YARDS      = 18,
+    EFFECT_RADIUS_18_YARDS      = 19,
+    EFFECT_RADIUS_25_YARDS      = 20,
+    EFFECT_RADIUS_35_YARDS      = 21,
+    EFFECT_RADIUS_200_YARDS     = 22,
+    EFFECT_RADIUS_40_YARDS      = 23,
+    EFFECT_RADIUS_65_YARDS      = 24,
+    EFFECT_RADIUS_70_YARDS      = 25,
+    EFFECT_RADIUS_4_YARDS       = 26,
+    EFFECT_RADIUS_50_YARDS      = 27,
+    EFFECT_RADIUS_50000_YARDS   = 28,
+    EFFECT_RADIUS_6_YARDS       = 29,
+    EFFECT_RADIUS_500_YARDS     = 30,
+    EFFECT_RADIUS_80_YARDS      = 31,
+    EFFECT_RADIUS_12_YARDS      = 32,
+    EFFECT_RADIUS_99_YARDS      = 33,
+    EFFECT_RADIUS_55_YARDS      = 35,
+    EFFECT_RADIUS_0_YARDS       = 36,
+    EFFECT_RADIUS_7_YARDS       = 37,
+    EFFECT_RADIUS_21_YARDS      = 38,
+    EFFECT_RADIUS_34_YARDS      = 39,
+    EFFECT_RADIUS_9_YARDS       = 40,
+    EFFECT_RADIUS_150_YARDS     = 41,
+    EFFECT_RADIUS_11_YARDS      = 42,
+    EFFECT_RADIUS_16_YARDS      = 43,
+    EFFECT_RADIUS_0_5_YARDS     = 44,   // 0.5 yards
+    EFFECT_RADIUS_10_YARDS_2    = 45,
+    EFFECT_RADIUS_5_YARDS_2     = 46,
+    EFFECT_RADIUS_15_YARDS_2    = 47,
+    EFFECT_RADIUS_60_YARDS      = 48,
+    EFFECT_RADIUS_90_YARDS      = 49,
+    EFFECT_RADIUS_15_YARDS_3    = 50,
+    EFFECT_RADIUS_60_YARDS_2    = 51,
+    EFFECT_RADIUS_5_YARDS_3     = 52,
+    EFFECT_RADIUS_60_YARDS_3    = 53,
+    EFFECT_RADIUS_50000_YARDS_2 = 54,
+    EFFECT_RADIUS_130_YARDS     = 55,
+    EFFECT_RADIUS_38_YARDS      = 56,
+    EFFECT_RADIUS_45_YARDS_2    = 57,
+    EFFECT_RADIUS_32_YARDS      = 59,
+    EFFECT_RADIUS_44_YARDS      = 60,
+    EFFECT_RADIUS_14_YARDS      = 61,
+    EFFECT_RADIUS_47_YARDS      = 62,
+    EFFECT_RADIUS_23_YARDS      = 63,
+    EFFECT_RADIUS_3_5_YARDS     = 64,   // 3.5 yards
+    EFFECT_RADIUS_80_YARDS_2    = 65
+};
+
 typedef UNORDERED_MAP<uint32, SpellTargetPosition> SpellTargetPositionMap;
 
 // Spell pet auras
@@ -384,7 +443,7 @@ class PetAura
         typedef UNORDERED_MAP<uint32, uint32> PetAuraMap;
 
     public:
-        PetAura()
+        PetAura() : removeOnChangePet(false), damage(0)
         {
             auras.clear();
         }
@@ -437,7 +496,8 @@ struct SpellArea
     int32  auraSpell;                                       // spell aura must be applied for spell apply)if possitive) and it must not be applied in other case
     uint32 raceMask;                                        // can be applied only to races
     Gender gender;                                          // can be applied only to gender
-    bool questStartCanActive;                               // if true then quest start can be active (not only rewarded)
+    uint32 questStartStatus;                                // QuestStatus that quest_start must have in order to keep the spell
+    uint32 questEndStatus;                                  // QuestStatus that the quest_end must have in order to keep the spell (if the quest_end's status is different than this, the spell will be dropped)
     bool autocast;                                          // if true then auto applied at area enter, in other case just allowed to cast
 
     // helpers
@@ -540,20 +600,22 @@ bool IsDiminishingReturnsGroupDurationLimited(DiminishingGroup group);
 
 class SpellMgr
 {
-        friend class ACE_Singleton<SpellMgr, ACE_Null_Mutex>;
+    friend class ACE_Singleton<SpellMgr, ACE_Null_Mutex>;
+    // Constructors
+    private:
         SpellMgr();
         ~SpellMgr();
 
     // Accessors (const or static functions)
     public:
-        // Spell correctess for client using
-        static bool IsSpellValid(SpellInfo const* spellInfo, Player* pl = NULL, bool msg = true);
+        // Spell correctness for client using
+        static bool IsSpellValid(SpellInfo const* spellInfo, Player* player = NULL, bool msg = true);
 
         // Spell difficulty
         uint32 GetSpellDifficultyId(uint32 spellId) const;
         void SetSpellDifficultyId(uint32 spellId, uint32 id);
-        uint32 GetSpellIdForDifficulty(uint32 spellId, Unit* caster) const;
-        SpellInfo const* GetSpellForDifficultyFromSpell(SpellInfo const* spell, Unit* caster) const;
+        uint32 GetSpellIdForDifficulty(uint32 spellId, Unit const* caster) const;
+        SpellInfo const* GetSpellForDifficultyFromSpell(SpellInfo const* spell, Unit const* caster) const;
 
         // Spell Ranks table
         SpellChainNode const* GetSpellChainNode(uint32 spell_id) const;
@@ -583,24 +645,29 @@ class SpellMgr
 
         // Spell Groups table
         SpellSpellGroupMapBounds GetSpellSpellGroupMapBounds(uint32 spell_id) const;
-        uint32 IsSpellMemberOfSpellGroup(uint32 spellid, SpellGroup groupid) const;
+        bool IsSpellMemberOfSpellGroup(uint32 spellid, SpellGroup groupid) const;
 
         SpellGroupSpellMapBounds GetSpellGroupSpellMapBounds(SpellGroup group_id) const;
         void GetSetOfSpellsInSpellGroup(SpellGroup group_id, std::set<uint32>& foundSpells) const;
         void GetSetOfSpellsInSpellGroup(SpellGroup group_id, std::set<uint32>& foundSpells, std::set<SpellGroup>& usedGroups) const;
 
         // Spell Group Stack Rules table
+        bool AddSameEffectStackRuleSpellGroups(SpellInfo const* spellInfo, int32 amount, std::map<SpellGroup, int32>& groups) const;
         SpellGroupStackRule CheckSpellGroupStackRules(SpellInfo const* spellInfo1, SpellInfo const* spellInfo2) const;
 
         // Spell proc event table
         SpellProcEventEntry const* GetSpellProcEvent(uint32 spellId) const;
         bool IsSpellProcEventCanTriggeredBy(SpellProcEventEntry const* spellProcEvent, uint32 EventProcFlag, SpellInfo const* procSpell, uint32 procFlags, uint32 procExtra, bool active);
 
+        // Spell proc table
+        SpellProcEntry const* GetSpellProcEntry(uint32 spellId) const;
+        bool CanSpellTriggerProcOnEvent(SpellProcEntry const& procEntry, ProcEventInfo& eventInfo);
+
         // Spell bonus data table
         SpellBonusEntry const* GetSpellBonusData(uint32 spellId) const;
 
         // Spell threat table
-        uint16 GetSpellThreat(uint32 spellid) const;
+        SpellThreatEntry const* GetSpellThreatEntry(uint32 spellID) const;
 
         SkillLineAbilityMapBounds GetSkillLineAbilityMapBounds(uint32 spell_id) const;
 
@@ -616,7 +683,7 @@ class SpellMgr
 
         // Spell area
         SpellAreaMapBounds GetSpellAreaMapBounds(uint32 spell_id) const;
-        SpellAreaForQuestMapBounds GetSpellAreaForQuestMapBounds(uint32 quest_id, bool active) const;
+        SpellAreaForQuestMapBounds GetSpellAreaForQuestMapBounds(uint32 quest_id) const;
         SpellAreaForQuestMapBounds GetSpellAreaForQuestEndMapBounds(uint32 quest_id) const;
         SpellAreaForAuraMapBounds GetSpellAreaForAuraMapBounds(uint32 spell_id) const;
         SpellAreaForAreaMapBounds GetSpellAreaForAreaMapBounds(uint32 area_id) const;
@@ -629,7 +696,6 @@ class SpellMgr
     public:
 
         // Loading data at server startup
-        void LoadSpellInfos();
         void LoadSpellRanks();
         void LoadSpellRequired();
         void LoadSpellLearnSkills();
@@ -651,6 +717,7 @@ class SpellMgr
         void LoadSpellAreas();
         void LoadSpellInfoStore();
         void UnloadSpellInfoStore();
+        void UnloadSpellInfoImplicitTargetConditionLists();
         void LoadSpellCustomAttr();
         void LoadDbcDataCorrections();
 
@@ -675,7 +742,6 @@ class SpellMgr
         EnchantCustomAttribute     mEnchantCustomAttr;
         SpellAreaMap               mSpellAreaMap;
         SpellAreaForQuestMap       mSpellAreaForQuestMap;
-        SpellAreaForQuestMap       mSpellAreaForActiveQuestMap;
         SpellAreaForQuestMap       mSpellAreaForQuestEndMap;
         SpellAreaForAuraMap        mSpellAreaForAuraMap;
         SpellAreaForAreaMap        mSpellAreaForAreaMap;

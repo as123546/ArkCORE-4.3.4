@@ -1,228 +1,238 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "naxxramas.h"
 
-enum Yells {
-    SAY_GREET = -1533009,
-    SAY_AGGRO_1 = -1533010,
-    SAY_AGGRO_2 = -1533011,
-    SAY_AGGRO_3 = -1533012,
-    SAY_AGGRO_4 = -1533013,
-    SAY_SLAY_1 = -1533014,
-    SAY_SLAY_2 = -1533015,
-    SAY_DEATH = -1533016
-};
-//#define SOUND_RANDOM_AGGRO  8955                            //soundId containing the 4 aggro sounds, we not using this
-
-enum Spells {
-    SPELL_POISON_BOLT_VOLLEY = 28796,
-    H_SPELL_POISON_BOLT_VOLLEY = 54098,
-    SPELL_RAIN_OF_FIRE = 28794,
-    H_SPELL_RAIN_OF_FIRE = 54099,
-    SPELL_FRENZY = 28798,
-    H_SPELL_FRENZY = 54100,
-    SPELL_WIDOWS_EMBRACE = 28732,
-    H_SPELL_WIDOWS_EMBRACE = 54097
+enum Yells
+{
+    SAY_GREET       = -1533009,
+    SAY_AGGRO_1     = -1533010,
+    SAY_AGGRO_2     = -1533011,
+    SAY_AGGRO_3     = -1533012,
+    SAY_AGGRO_4     = -1533013,
+    SAY_SLAY_1      = -1533014,
+    SAY_SLAY_2      = -1533015,
+    SAY_DEATH       = -1533016
 };
 
-enum Events {
-    EVENT_NONE, EVENT_POISON, EVENT_FIRE, EVENT_FRENZY
+enum Spells
+{
+    SPELL_POISON_BOLT_VOLLEY    = 28796,
+    H_SPELL_POISON_BOLT_VOLLEY  = 54098,
+    SPELL_RAIN_OF_FIRE          = 28794,
+    H_SPELL_RAIN_OF_FIRE        = 54099,
+    SPELL_FRENZY                = 28798,
+    H_SPELL_FRENZY              = 54100,
+    SPELL_WIDOWS_EMBRACE        = 28732,
+    H_SPELL_WIDOWS_EMBRACE      = 54097
 };
 
-enum Achievements {
-    ACHIEVEMENT_MOMMA_SAID_KNOCK_YOU_OUT_10 = 1997,
-    ACHIEVEMENT_MOMMA_SAID_KNOCK_YOU_OUT_25 = 2140
+#define SPELL_WIDOWS_EMBRACE_HELPER RAID_MODE(SPELL_WIDOWS_EMBRACE, H_SPELL_WIDOWS_EMBRACE)
+
+enum Events
+{
+    EVENT_POISON    = 1,
+    EVENT_FIRE      = 2,
+    EVENT_FRENZY    = 3
 };
 
-class boss_faerlina: public CreatureScript {
-public:
-    boss_faerlina() :
-            CreatureScript("boss_faerlina") {
-    }
+#define DATA_FRENZY_DISPELS 1
 
-    CreatureAI* GetAI(Creature* pCreature) const {
-        return new boss_faerlinaAI(pCreature);
-    }
+class boss_faerlina : public CreatureScript
+{
+    public:
+        boss_faerlina() : CreatureScript("boss_faerlina") { }
 
-    struct boss_faerlinaAI: public BossAI {
-        boss_faerlinaAI(Creature *c) :
-                BossAI(c, BOSS_FAERLINA), greet(false) {
-            me->ApplySpellImmune(0, IMMUNITY_EFFECT, SPELL_EFFECT_KNOCK_BACK,
-                    true);
-            me->ApplySpellImmune(0, IMMUNITY_MECHANIC, MECHANIC_GRIP, true);
-        }
-
-        bool greet;
-        bool doDelayFrenzy;
-        bool bAchievement;
-
-        void EnterCombat(Unit * /*who*/) {
-            _EnterCombat();
-            DoScriptText(
-                    RAND(SAY_AGGRO_1, SAY_AGGRO_2, SAY_AGGRO_3, SAY_AGGRO_4),
-                    me);
-            events.ScheduleEvent(EVENT_POISON, urand(10000, 15000));
-            events.ScheduleEvent(EVENT_FIRE, urand(6000, 18000));
-            events.ScheduleEvent(EVENT_FRENZY, urand(60000, 80000));
-        }
-
-        void Reset() {
-            doDelayFrenzy = false;
-            bAchievement = true;
-            _Reset();
-        }
-
-        void MoveInLineOfSight(Unit *who) {
-            if (!greet && who->GetTypeId() == TYPEID_PLAYER) {
-                DoScriptText(SAY_GREET, me);
-                greet = true;
-            }
-            BossAI::MoveInLineOfSight(who);
-        }
-
-        void KilledUnit(Unit* /*victim*/) {
-            if (!(rand() % 3))
-                DoScriptText(RAND(SAY_SLAY_1, SAY_SLAY_2), me);
-        }
-
-        void JustDied(Unit* /*Killer*/) {
-            _JustDied();
-
-            DoScriptText(SAY_DEATH, me);
-
-            if (bAchievement)
-                instance->DoCompleteAchievement(
-                        RAID_MODE(ACHIEVEMENT_MOMMA_SAID_KNOCK_YOU_OUT_10,
-                                ACHIEVEMENT_MOMMA_SAID_KNOCK_YOU_OUT_25));
-        }
-
-        void UpdateAI(const uint32 diff) {
-            if (!UpdateVictim())
-                return;
-
-            if (doDelayFrenzy
-                    && !me->HasAura(
-                            RAID_MODE(SPELL_WIDOWS_EMBRACE,
-                                    H_SPELL_WIDOWS_EMBRACE))) {
-                doDelayFrenzy = false;
-                DoCast(me, RAID_MODE(SPELL_FRENZY, H_SPELL_FRENZY), true);
+        struct boss_faerlinaAI : public BossAI
+        {
+            boss_faerlinaAI(Creature* creature) : BossAI(creature, BOSS_FAERLINA),
+                _frenzyDispels(0), _introDone(false), _delayFrenzy(false)
+            {
             }
 
-            events.Update(diff);
 
-            if (me->HasUnitState(UNIT_STAT_CASTING))
-                return;
+            void EnterCombat(Unit* /*who*/)
+            {
+                _EnterCombat();
+                DoScriptText(RAND(SAY_AGGRO_1, SAY_AGGRO_2, SAY_AGGRO_3, SAY_AGGRO_4), me);
+                events.ScheduleEvent(EVENT_POISON, urand(10000, 15000));
+                events.ScheduleEvent(EVENT_FIRE, urand(6000, 18000));
+                events.ScheduleEvent(EVENT_FRENZY, urand(60000, 80000));
+            }
 
-            while (uint32 eventId = events.ExecuteEvent()) {
-                switch (eventId) {
-                case EVENT_POISON:
-                    if (!me->HasAura(
-                            RAID_MODE(SPELL_WIDOWS_EMBRACE,
-                                    H_SPELL_WIDOWS_EMBRACE)))
-                        DoCastAOE(
-                                RAID_MODE(SPELL_POISON_BOLT_VOLLEY,
-                                        H_SPELL_POISON_BOLT_VOLLEY));
-                    events.ScheduleEvent(EVENT_POISON, urand(8000, 15000));
-                    break;
-                case EVENT_FIRE:
-                    if (Unit *pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0))
-                        DoCast(
-                                pTarget,
-                                RAID_MODE(SPELL_RAIN_OF_FIRE,
-                                        H_SPELL_RAIN_OF_FIRE));
-                    events.ScheduleEvent(EVENT_FIRE, urand(6000, 18000));
-                    break;
-                case EVENT_FRENZY:
+            void Reset()
+            {
+                _Reset();
+                _delayFrenzy = false;
+                _frenzyDispels = 0;
+            }
+
+            void MoveInLineOfSight(Unit* who)
+            {
+                if (!_introDone && who->GetTypeId() == TYPEID_PLAYER)
+                {
+                    DoScriptText(SAY_GREET, me);
+                    _introDone = true;
+                }
+
+                BossAI::MoveInLineOfSight(who);
+            }
+
+            void KilledUnit(Unit* /*victim*/)
+            {
+                if (!urand(0, 2))
+                    DoScriptText(RAND(SAY_SLAY_1, SAY_SLAY_2), me);
+            }
+
+            void JustDied(Unit* /*killer*/)
+            {
+                _JustDied();
+                DoScriptText(SAY_DEATH, me);
+            }
+
+            void SpellHit(Unit* caster, SpellInfo const* spell)
+            {
+                if (spell->Id == SPELL_WIDOWS_EMBRACE || spell->Id == H_SPELL_WIDOWS_EMBRACE)
+                {
                     // TODO : Add Text
-                    if (!me->HasAura(
-                            RAID_MODE(SPELL_WIDOWS_EMBRACE,
-                                    H_SPELL_WIDOWS_EMBRACE)))
-                        DoCast(me, RAID_MODE(SPELL_FRENZY, H_SPELL_FRENZY));
-                    else
-                        doDelayFrenzy = true;
-
-                    events.ScheduleEvent(EVENT_FRENZY, urand(60000, 80000));
-                    break;
+                    ++_frenzyDispels;
+                    _delayFrenzy = true;
+                    me->Kill(caster);
                 }
             }
 
-            DoMeleeAttackIfReady();
-        }
+            uint32 GetData(uint32 type)
+            {
+                if (type == DATA_FRENZY_DISPELS)
+                    return _frenzyDispels;
 
-        void SpellHit(Unit* caster, const SpellEntry *spell) {
-            if (spell->Id == SPELL_WIDOWS_EMBRACE
-                    || spell->Id == H_SPELL_WIDOWS_EMBRACE) {
-                // TODO : Add Text
-                bAchievement = false;
-                doDelayFrenzy = true;
-                me->Kill(caster);
+                return 0;
             }
+
+            void UpdateAI(uint32 const diff)
+            {
+                if (!UpdateVictim())
+                    return;
+
+                if (_delayFrenzy && !me->HasAura(SPELL_WIDOWS_EMBRACE_HELPER))
+                {
+                    _delayFrenzy = false;
+                    DoCast(me, RAID_MODE(SPELL_FRENZY, H_SPELL_FRENZY), true);
+                }
+
+                events.Update(diff);
+
+                if (me->HasUnitState(UNIT_STATE_CASTING))
+                    return;
+
+                while (uint32 eventId = events.ExecuteEvent())
+                {
+                    switch (eventId)
+                    {
+                        case EVENT_POISON:
+                            if (!me->HasAura(SPELL_WIDOWS_EMBRACE_HELPER))
+                                DoCastAOE(RAID_MODE(SPELL_POISON_BOLT_VOLLEY, H_SPELL_POISON_BOLT_VOLLEY));
+                            events.ScheduleEvent(EVENT_POISON, urand(8000, 15000));
+                            break;
+                        case EVENT_FIRE:
+                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                                DoCast(target, RAID_MODE(SPELL_RAIN_OF_FIRE, H_SPELL_RAIN_OF_FIRE));
+                            events.ScheduleEvent(EVENT_FIRE, urand(6000, 18000));
+                            break;
+                        case EVENT_FRENZY:
+                            // TODO : Add Text
+                            if (!me->HasAura(SPELL_WIDOWS_EMBRACE_HELPER))
+                                DoCast(me, RAID_MODE(SPELL_FRENZY, H_SPELL_FRENZY));
+                            else
+                                _delayFrenzy = true;
+
+                            events.ScheduleEvent(EVENT_FRENZY, urand(60000, 80000));
+                            break;
+                    }
+                }
+
+                DoMeleeAttackIfReady();
+            }
+
+        private:
+            uint32 _frenzyDispels;
+            bool _introDone;
+            bool _delayFrenzy;
+        };
+
+        CreatureAI* GetAI(Creature* creature) const
+        {
+            return new boss_faerlinaAI(creature);
         }
-    };
 };
 
-class mob_faerlina_add: public CreatureScript {
-public:
-    mob_faerlina_add() :
-            CreatureScript("mob_faerlina_add") {
-    }
+class mob_faerlina_add : public CreatureScript
+{
+    public:
+        mob_faerlina_add() : CreatureScript("mob_faerlina_add") { }
 
-    CreatureAI* GetAI(Creature* pCreature) const {
-        return new mob_faerlina_addAI(pCreature);
-    }
-
-    struct mob_faerlina_addAI: public ScriptedAI {
-        mob_faerlina_addAI(Creature* pCreature) :
-                ScriptedAI(pCreature) {
-            pInstance = pCreature->GetInstanceScript();
-        }
-
-        InstanceScript *pInstance;
-
-        void Reset() {
-            if (getDifficulty() == RAID_DIFFICULTY_10MAN_NORMAL) {
-                me->ApplySpellImmune(0, IMMUNITY_MECHANIC, SPELL_EFFECT_BIND,
-                        true);
-                me->ApplySpellImmune(0, IMMUNITY_MECHANIC, MECHANIC_CHARM,
-                        true);
+        struct mob_faerlina_addAI : public ScriptedAI
+        {
+            mob_faerlina_addAI(Creature* creature) : ScriptedAI(creature),
+                _instance(creature->GetInstanceScript())
+            {
             }
-        }
 
-        void JustDied(Unit * /*killer*/) {
-            if (pInstance && getDifficulty() == RAID_DIFFICULTY_10MAN_NORMAL) {
-                if (Creature *pFaerlina = pInstance->instance->GetCreature(pInstance->GetData64(DATA_FAERLINA)))
-                    DoCast(pFaerlina, SPELL_WIDOWS_EMBRACE);
+            void Reset()
+            {
+                if (GetDifficulty() == RAID_DIFFICULTY_10MAN_NORMAL) {
+                    me->ApplySpellImmune(0, IMMUNITY_EFFECT, SPELL_EFFECT_BIND, true);
+                    me->ApplySpellImmune(0, IMMUNITY_MECHANIC, MECHANIC_CHARM, true);
+                }
             }
+
+            void JustDied(Unit* /*killer*/)
+            {
+                if (_instance && GetDifficulty() == RAID_DIFFICULTY_10MAN_NORMAL)
+                    if (Creature* faerlina = ObjectAccessor::GetCreature(*me, _instance->GetData64(DATA_FAERLINA)))
+                        DoCast(faerlina, SPELL_WIDOWS_EMBRACE);
+            }
+
+        private:
+            InstanceScript* const _instance;
+        };
+
+        CreatureAI* GetAI(Creature* creature) const
+        {
+            return new mob_faerlina_addAI(creature);
         }
-    };
 };
 
-void AddSC_boss_faerlina() {
+class achievement_momma_said_knock_you_out : public AchievementCriteriaScript
+{
+    public:
+        achievement_momma_said_knock_you_out() : AchievementCriteriaScript("achievement_momma_said_knock_you_out") { }
+
+        bool OnCheck(Player* /*source*/, Unit* target)
+        {
+            return target && !target->GetAI()->GetData(DATA_FRENZY_DISPELS);
+        }
+};
+
+void AddSC_boss_faerlina()
+{
     new boss_faerlina();
     new mob_faerlina_add();
+    new achievement_momma_said_knock_you_out();
 }

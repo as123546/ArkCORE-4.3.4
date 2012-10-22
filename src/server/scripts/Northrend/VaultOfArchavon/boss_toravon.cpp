@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
- *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
- *
- * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -19,27 +15,28 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "vault_of_archavon.h"
 
 enum Spells
 {
     // Toravon
-    SPELL_FREEZING_GROUND   = 72090,   // don't know cd... using 20 secs.
+    SPELL_FREEZING_GROUND   = 72090,    // don't know cd... using 20 secs.
     SPELL_FROZEN_ORB        = 72091,
-    SPELL_WHITEOUT          = 72034,   // Every 38 sec. cast. (after SPELL_FROZEN_ORB)
+    SPELL_WHITEOUT          = 72034,    // Every 38 sec. cast. (after SPELL_FROZEN_ORB)
     SPELL_FROZEN_MALLET     = 71993,
 
     // Frost Warder
-    SPELL_FROST_BLAST       = 72123,   // don't know cd... using 20 secs.
+    SPELL_FROST_BLAST       = 72123,    // don't know cd... using 20 secs.
     SPELL_FROZEN_MALLET_2   = 72122,
 
     // Frozen Orb
-    SPELL_FROZEN_ORB_DMG    = 72081,   // priodic dmg aura
-    SPELL_FROZEN_ORB_AURA   = 72067,   // make visible
+    SPELL_FROZEN_ORB_DMG    = 72081,    // priodic dmg aura
+    SPELL_FROZEN_ORB_AURA   = 72067,    // make visible
 
     // Frozen Orb Stalker
-    SPELL_FROZEN_ORB_SUMMON = 72093,   // summon orb
+    SPELL_FROZEN_ORB_SUMMON = 72093,    // summon orb
 };
 
 // Events boss
@@ -66,26 +63,8 @@ class boss_toravon : public CreatureScript
             {
             }
 
-            void Reset()
-            {
-                events.Reset();
-                if (instance)
-                    instance->SetData(DATA_TORAVON, NOT_STARTED);
-            }
-
-            void JustDied(Unit* killer)
-            {
-                if (instance)
-                    instance->SetData(DATA_TORAVON, DONE);
-
-                _JustDied();
-            }
-
             void EnterCombat(Unit* /*who*/)
             {
-                if (instance)
-                    instance->SetData(DATA_TORAVON, IN_PROGRESS);
-
                 DoCast(me, SPELL_FROZEN_MALLET);
 
                 events.ScheduleEvent(EVENT_FROZEN_ORB, 11000);
@@ -102,7 +81,7 @@ class boss_toravon : public CreatureScript
 
                 events.Update(diff);
 
-                if (me->HasUnitState(UNIT_STAT_CASTING))
+                if (me->HasUnitState(UNIT_STATE_CASTING))
                     return;
 
                 while (uint32 eventId = events.ExecuteEvent())
@@ -147,7 +126,7 @@ class mob_frost_warder : public CreatureScript
 
         struct mob_frost_warderAI : public ScriptedAI
         {
-            mob_frost_warderAI(Creature* c) : ScriptedAI(c) {}
+            mob_frost_warderAI(Creature* creature) : ScriptedAI(creature) {}
 
             void Reset()
             {
@@ -170,7 +149,7 @@ class mob_frost_warder : public CreatureScript
 
                 events.Update(diff);
 
-                if (me->HasUnitState(UNIT_STAT_CASTING))
+                if (me->HasUnitState(UNIT_STATE_CASTING))
                     return;
 
                 if (events.ExecuteEvent() == EVENT_FROST_BLAST)

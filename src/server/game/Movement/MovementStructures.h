@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
+* Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
 * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
 *
 * This program is free software; you can redistribute it and/or modify it
@@ -1776,6 +1776,324 @@ MovementStatusElements MovementStartPitchUpSequence[] =
     MSEEnd,
 };
 
+MovementStatusElements MoveChngTransport[]=
+{
+    MSEPositionY,
+    MSEPositionX,
+    MSEPositionZ,
+    MSEHasGuidByte4,
+    MSEHasGuidByte0,
+    MSEHasGuidByte2,
+    MSEHasTransportData,
+    MSEHasSpline,
+    MSEHasOrientation,
+    MSEHasGuidByte6,
+    MSEHasTimestamp,
+    MSEHasGuidByte5,
+    MSEHasGuidByte7,
+    MSEHasPitch,
+    MSEZeroBit,
+    MSEHasGuidByte3,
+    MSEHasSplineElevation,
+    MSEHasGuidByte1,
+    MSEHasFallData,
+    MSEHasMovementFlags,
+    MSEHasMovementFlags2,
+
+    MSEHasTransportGuidByte3,
+    MSEHasTransportTime3,
+    MSEHasTransportGuidByte4,
+    MSEHasTransportGuidByte1,
+    MSEHasTransportGuidByte6,
+    MSEHasTransportGuidByte2,
+    MSEHasTransportTime2,
+    MSEHasTransportGuidByte0,
+    MSEHasTransportGuidByte7,
+    MSEHasTransportGuidByte5,
+
+    MSEMovementFlags,
+    MSEMovementFlags2,
+    MSEHasFallDirection,
+
+    MSEGuidByte7,
+    MSEGuidByte5,
+    MSEGuidByte1,
+    MSEGuidByte2,
+    MSEGuidByte6,
+    MSEGuidByte4,
+    MSEGuidByte0,
+    MSEGuidByte3,
+
+    MSETransportPositionY,
+    MSETransportSeat,
+    MSETransportGuidByte1,
+    MSETransportGuidByte0,
+    MSETransportGuidByte2,
+    MSETransportGuidByte3,
+    MSETransportGuidByte6,
+    MSETransportPositionZ,
+    MSETransportPositionX,
+    MSETransportTime3,
+    MSETransportTime,
+    MSETransportGuidByte7,
+    MSETransportGuidByte5,
+    MSETransportGuidByte4,
+    MSETransportOrientation,
+    MSETransportTime2,
+
+    MSEFallTime,
+    MSEFallHorizontalSpeed,
+    MSEFallCosAngle,
+    MSEFallSinAngle,
+    MSEFallVerticalSpeed,
+
+    MSEOrientation,
+    MSEPitch,
+    MSESplineElevation,
+    MSETimestamp,
+    MSEEnd,
+};
+
+// 4.3.4
+MovementStatusElements MoveSplineDone[] =
+{
+    MSEPositionY,
+    MSEPositionX,
+    MSEPositionZ,
+    MSEHasGuidByte6,
+    MSEHasOrientation,
+    MSEHasFallData,
+    MSEHasTimestamp,
+    MSEHasGuidByte2,
+    MSEHasSplineElevation,
+    MSEHasGuidByte4,
+    MSEHasTransportData,
+    MSEHasGuidByte3,
+    MSEHasMovementFlags,
+    MSEHasGuidByte0,
+    MSEZeroBit,
+    MSEHasGuidByte1,
+    MSEHasGuidByte5,
+    MSEHasPitch,
+    MSEHasSpline,
+    MSEHasMovementFlags2,
+    MSEHasGuidByte7,
+
+    MSEHasTransportGuidByte1,
+    MSEHasTransportGuidByte7,
+    MSEHasTransportGuidByte5,
+    MSEHasTransportGuidByte3,
+    MSEHasTransportGuidByte4,
+    MSEHasTransportGuidByte6,
+    MSEHasTransportTime2,
+    MSEHasTransportGuidByte2,
+    MSEHasTransportTime3,
+    MSEHasTransportGuidByte0,
+
+    MSEHasFallDirection,
+    MSEMovementFlags2,
+    MSEMovementFlags,
+
+    MSEGuidByte7,
+    MSEGuidByte4,
+    MSEGuidByte5,
+    MSEGuidByte6,
+    MSEGuidByte0,
+    MSEGuidByte1,
+    MSEGuidByte2,
+    MSEGuidByte3,
+
+    MSEFallVerticalSpeed,
+    MSEFallSinAngle,
+    MSEFallCosAngle,
+    MSEFallHorizontalSpeed,
+    MSEFallTime,
+
+    MSEPitch,
+    MSEOrientation,
+
+    MSETransportGuidByte1,
+    MSETransportTime3,
+    MSETransportGuidByte7,
+    MSETransportTime,
+    MSETransportPositionY,
+    MSETransportPositionX,
+    MSETransportPositionZ,
+    MSETransportSeat,
+    MSETransportOrientation,
+    MSETransportGuidByte0,
+    MSETransportTime2,
+    MSETransportGuidByte2,
+    MSETransportGuidByte3,
+    MSETransportGuidByte5,
+    MSETransportGuidByte6,
+    MSETransportGuidByte4,
+
+    MSETimestamp,
+    MSESplineElevation,
+    MSEEnd,
+};
+
+// 4.3.4
+MovementStatusElements MoveNotActiveMover[] =
+{
+    MSEPositionZ,
+    MSEPositionX,
+    MSEPositionY,
+    MSEHasMovementFlags2,
+    MSEHasTransportData,
+    MSEHasGuidByte6,
+    MSEHasSplineElevation,
+    MSEHasGuidByte3,
+    MSEZeroBit,
+    MSEHasTimestamp,
+    MSEHasGuidByte0,
+    MSEHasOrientation,
+    MSEHasGuidByte5,
+    MSEHasPitch,
+    MSEHasGuidByte1,
+    MSEHasGuidByte4,
+    MSEHasGuidByte7,
+    MSEHasSpline,
+    MSEHasGuidByte2,
+    MSEHasFallData,
+    MSEHasMovementFlags,
+
+    MSEHasTransportGuidByte4,
+    MSEHasTransportGuidByte0,
+    MSEHasTransportGuidByte1,
+    MSEHasTransportGuidByte6,
+    MSEHasTransportGuidByte2,
+    MSEHasTransportTime3,
+    MSEHasTransportGuidByte5,
+    MSEHasTransportGuidByte7,
+    MSEHasTransportTime2,
+    MSEHasTransportGuidByte3,
+
+    MSEHasFallDirection,
+    MSEMovementFlags,
+    MSEMovementFlags2,
+
+    MSEGuidByte1,
+    MSEGuidByte0,
+    MSEGuidByte4,
+    MSEGuidByte2,
+    MSEGuidByte7,
+    MSEGuidByte5,
+    MSEGuidByte6,
+    MSEGuidByte3,
+
+    MSEFallVerticalSpeed,
+    MSEFallCosAngle,
+    MSEFallSinAngle,
+    MSEFallHorizontalSpeed,
+    MSEFallTime,
+
+    MSETransportTime3,
+    MSETransportGuidByte1,
+    MSETransportTime2,
+    MSETransportOrientation,
+    MSETransportGuidByte0,
+    MSETransportSeat,
+    MSETransportGuidByte4,
+    MSETransportGuidByte6,
+    MSETransportGuidByte3,
+    MSETransportGuidByte5,
+    MSETransportPositionY,
+    MSETransportPositionX,
+    MSETransportGuidByte2,
+    MSETransportPositionZ,
+    MSETransportGuidByte7,
+    MSETransportTime,
+
+    MSETimestamp,
+    MSESplineElevation,
+    MSEPitch,
+    MSEOrientation,
+
+    MSEEnd,
+};
+
+// 4.3.4
+MovementStatusElements DismissControlledVehicle[] =
+{
+    MSEPositionY,
+    MSEPositionZ,
+    MSEPositionX,
+    MSEHasSplineElevation,
+    MSEHasFallData,
+    MSEHasTransportData,
+    MSEHasGuidByte4,
+    MSEHasGuidByte7,
+    MSEHasMovementFlags2,
+    MSEHasGuidByte2,
+    MSEHasOrientation,
+    MSEHasGuidByte0,
+    MSEHasGuidByte6,
+    MSEHasPitch,
+    MSEHasTimestamp,
+    MSEHasGuidByte1,
+    MSEZeroBit,
+    MSEHasSpline,
+    MSEHasGuidByte3,
+    MSEHasMovementFlags,
+    MSEHasGuidByte5,
+
+    MSEHasTransportGuidByte5,
+    MSEHasTransportTime3,
+    MSEHasTransportGuidByte2,
+    MSEHasTransportGuidByte0,
+    MSEHasTransportGuidByte7,
+    MSEHasTransportGuidByte3,
+    MSEHasTransportGuidByte4,
+    MSEHasTransportGuidByte1,
+    MSEHasTransportGuidByte6,
+    MSEHasTransportTime2,
+
+    MSEMovementFlags2,
+    MSEHasFallDirection,
+    MSEMovementFlags,
+
+    MSEGuidByte6,
+    MSEGuidByte3,
+    MSEGuidByte1,
+    MSEGuidByte5,
+    MSEGuidByte2,
+    MSEGuidByte4,
+    MSEGuidByte7,
+    MSEGuidByte0,
+
+    MSETimestamp,
+
+    MSETransportTime3,
+    MSETransportGuidByte4,
+    MSETransportGuidByte7,
+    MSETransportTime2,
+    MSETransportGuidByte6,
+    MSETransportTime,
+    MSETransportPositionZ,
+    MSETransportGuidByte0,
+    MSETransportPositionX,
+    MSETransportGuidByte3,
+    MSETransportSeat,
+    MSETransportPositionY,
+    MSETransportOrientation,
+    MSETransportGuidByte1,
+    MSETransportGuidByte5,
+    MSETransportGuidByte2,
+
+    MSEFallTime,
+    MSEFallHorizontalSpeed,
+    MSEFallSinAngle,
+    MSEFallCosAngle,
+    MSEFallVerticalSpeed,
+
+    MSEOrientation,
+    MSESplineElevation,
+    MSEPitch,
+    MSEEnd,
+};
+
 MovementStatusElements* GetMovementStatusElementsSequence(Opcodes opcode)
 {
     switch (opcode)
@@ -1786,10 +2104,10 @@ MovementStatusElements* GetMovementStatusElementsSequence(Opcodes opcode)
             return MovementHeartBeatSequence;
         case MSG_MOVE_JUMP:
             return MovementJumpSequence;
-        //case MSG_MOVE_SET_FACING:
-        //    return MovementSetFacingSequence;
-        //case MSG_MOVE_SET_PITCH:
-        //    return MovementSetPitchSequence;
+        case MSG_MOVE_SET_FACING:
+            return MovementSetFacingSequence;
+        case MSG_MOVE_SET_PITCH:
+            return MovementSetPitchSequence;
         case MSG_MOVE_START_ASCEND:
             return MovementStartAscendSequence;
         case MSG_MOVE_START_BACKWARD:
@@ -1826,6 +2144,14 @@ MovementStatusElements* GetMovementStatusElementsSequence(Opcodes opcode)
             return MovementStopTurnSequence;
         case SMSG_PLAYER_MOVE:
             return PlayerMoveSequence;
+        case CMSG_MOVE_CHNG_TRANSPORT:
+            return MoveChngTransport;
+        case CMSG_MOVE_SPLINE_DONE:
+            return MoveSplineDone;
+        case CMSG_MOVE_NOT_ACTIVE_MOVER:
+            return MoveNotActiveMover;
+        case CMSG_DISMISS_CONTROLLED_VEHICLE:
+            return DismissControlledVehicle;
         default:
             break;
     }

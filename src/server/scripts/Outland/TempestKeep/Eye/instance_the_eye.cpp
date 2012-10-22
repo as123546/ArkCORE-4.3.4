@@ -1,27 +1,19 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 /* ScriptData
@@ -31,7 +23,8 @@ SDComment:
 SDCategory: Tempest Keep, The Eye
 EndScriptData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "InstanceScript.h"
 #include "the_eye.h"
 
 #define MAX_ENCOUNTER 5
@@ -53,7 +46,7 @@ class instance_the_eye : public InstanceMapScript
 
         struct instance_the_eye_InstanceMapScript : public InstanceScript
         {
-            instance_the_eye_InstanceMapScript(Map* pMap) : InstanceScript(pMap) {Initialize();};
+            instance_the_eye_InstanceMapScript(Map* map) : InstanceScript(map) {}
 
             uint64 ThaladredTheDarkener;
             uint64 LordSanguinar;
@@ -86,35 +79,36 @@ class instance_the_eye : public InstanceMapScript
             bool IsEncounterInProgress() const
             {
                 for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
-                    if (m_auiEncounter[i] == IN_PROGRESS) return true;
+                    if (m_auiEncounter[i] == IN_PROGRESS)
+                        return true;
 
                 return false;
             }
 
-            void OnCreatureCreate(Creature* pCreature, bool /*add*/)
+            void OnCreatureCreate(Creature* creature)
             {
-                switch (pCreature->GetEntry())
+                switch (creature->GetEntry())
                 {
                 case 20064:
-                    ThaladredTheDarkener = pCreature->GetGUID();
+                    ThaladredTheDarkener = creature->GetGUID();
                     break;
                 case 20063:
-                    MasterEngineerTelonicus = pCreature->GetGUID();
+                    MasterEngineerTelonicus = creature->GetGUID();
                     break;
                 case 20062:
-                    GrandAstromancerCapernian = pCreature->GetGUID();
+                    GrandAstromancerCapernian = creature->GetGUID();
                     break;
                 case 20060:
-                    LordSanguinar = pCreature->GetGUID();
+                    LordSanguinar = creature->GetGUID();
                     break;
                 case 19622:
-                    Kaelthas = pCreature->GetGUID();
+                    Kaelthas = creature->GetGUID();
                     break;
                 case 18805:
-                    Astromancer = pCreature->GetGUID();
+                    Astromancer = creature->GetGUID();
                     break;
                 case 19514:
-                    Alar = pCreature->GetGUID();
+                    Alar = creature->GetGUID();
                     break;
                 }
             }
@@ -172,16 +166,12 @@ class instance_the_eye : public InstanceMapScript
             std::string GetSaveData()
             {
                 OUT_SAVE_INST_DATA;
+
                 std::ostringstream stream;
-                stream << m_auiEncounter[0] << " " << m_auiEncounter[1] << " " << m_auiEncounter[2] << " " << m_auiEncounter[3];
-                char* out = new char[stream.str().length() + 1];
-                strcpy(out, stream.str().c_str());
-                if (out)
-                {
-                    OUT_SAVE_INST_DATA_COMPLETE;
-                    return out;
-                }
-                return NULL;
+                stream << m_auiEncounter[0] << ' ' << m_auiEncounter[1] << ' ' << m_auiEncounter[2] << ' ' << m_auiEncounter[3];
+
+                OUT_SAVE_INST_DATA_COMPLETE;
+                return stream.str();
             }
 
             void Load(const char* in)
@@ -202,12 +192,13 @@ class instance_the_eye : public InstanceMapScript
             }
         };
 
-        InstanceScript* GetInstanceScript(InstanceMap* pMap) const
+        InstanceScript* GetInstanceScript(InstanceMap* map) const
         {
-            return new instance_the_eye_InstanceMapScript(pMap);
+            return new instance_the_eye_InstanceMapScript(map);
         }
 };
 void AddSC_instance_the_eye()
 {
     new instance_the_eye;
 }
+

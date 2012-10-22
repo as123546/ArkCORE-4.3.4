@@ -1,25 +1,19 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2008 MaNGOS <http://getmangos.com/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "Threading.h"
@@ -30,7 +24,8 @@
 
 using namespace ACE_Based;
 
-ThreadPriority::ThreadPriority() {
+ThreadPriority::ThreadPriority()
+{
     for (int i = Idle; i < MAXPRIORITYNUM; ++i)
         m_priority[i] = ACE_THR_PRI_OTHER_DEF;
 
@@ -42,19 +37,23 @@ ThreadPriority::ThreadPriority() {
     ACE_Sched_Params::Policy _policy = ACE_SCHED_OTHER;
     ACE_Sched_Priority_Iterator pr_iter(_policy);
 
-    while (pr_iter.more()) {
+    while (pr_iter.more())
+    {
         _tmp.push_back(pr_iter.priority());
         pr_iter.next();
     }
 
     ASSERT (!_tmp.empty());
 
-    if (_tmp.size() >= MAXPRIORITYNUM) {
+    if (_tmp.size() >= MAXPRIORITYNUM)
+    {
         const size_t max_pos = _tmp.size();
         size_t min_pos = 1;
         size_t norm_pos = 0;
-        for (size_t i = 0; i < max_pos; ++i) {
-            if (_tmp[i] == ACE_THR_PRI_OTHER_DEF) {
+        for (size_t i = 0; i < max_pos; ++i)
+        {
+            if (_tmp[i] == ACE_THR_PRI_OTHER_DEF)
+            {
                 norm_pos = i + 1;
                 break;
             }
@@ -72,7 +71,7 @@ ThreadPriority::ThreadPriority() {
         min_pos = (norm_pos - 1);
 
         m_priority[Low] = _tmp[min_pos -= _div];
-        m_priority[Lowest] = _tmp[min_pos -= _div];
+        m_priority[Lowest] = _tmp[min_pos -= _div ];
 
         _div = (max_pos - norm_pos) / _divider;
         if (_div == 0)
@@ -85,7 +84,8 @@ ThreadPriority::ThreadPriority() {
     }
 }
 
-int ThreadPriority::getPriority(Priority p) const {
+int ThreadPriority::getPriority(Priority p) const
+{
     if (p < Idle)
         p = Idle;
 
@@ -97,12 +97,13 @@ int ThreadPriority::getPriority(Priority p) const {
 
 #define THREADFLAG (THR_NEW_LWP | THR_SCHED_DEFAULT| THR_JOINABLE)
 
-Thread::Thread() :
-        m_iThreadId(0), m_hThreadHandle(0), m_task(0) {
+Thread::Thread(): m_iThreadId(0), m_hThreadHandle(0), m_task(0)
+{
+
 }
 
-Thread::Thread(Runnable* instance) :
-        m_iThreadId(0), m_hThreadHandle(0), m_task(instance) {
+Thread::Thread(Runnable* instance): m_iThreadId(0), m_hThreadHandle(0), m_task(instance)
+{
     // register reference to m_task to prevent it deeltion until destructor
     if (m_task)
         m_task->incReference();
@@ -111,7 +112,8 @@ Thread::Thread(Runnable* instance) :
     ASSERT (_start);
 }
 
-Thread::~Thread() {
+Thread::~Thread()
+{
     //Wait();
 
     // deleted runnable object (if no other references)
@@ -123,12 +125,12 @@ Thread::~Thread() {
 Thread::ThreadStorage Thread::m_ThreadStorage;
 ThreadPriority Thread::m_TpEnum;
 
-bool Thread::start() {
+bool Thread::start()
+{
     if (m_task == 0 || m_iThreadId != 0)
         return false;
 
-    bool res = (ACE_Thread::spawn(&Thread::ThreadTask, (void*) m_task,
-            THREADFLAG, &m_iThreadId, &m_hThreadHandle) == 0);
+    bool res = (ACE_Thread::spawn(&Thread::ThreadTask, (void*)m_task, THREADFLAG, &m_iThreadId, &m_hThreadHandle) == 0);
 
     if (res)
         m_task->incReference();
@@ -136,7 +138,8 @@ bool Thread::start() {
     return res;
 }
 
-bool Thread::wait() {
+bool Thread::wait()
+{
     if (!m_hThreadHandle || !m_task)
         return false;
 
@@ -149,7 +152,8 @@ bool Thread::wait() {
     return (_res == 0);
 }
 
-void Thread::destroy() {
+void Thread::destroy()
+{
     if (!m_iThreadId || !m_task)
         return;
 
@@ -163,38 +167,45 @@ void Thread::destroy() {
     m_task->decReference();
 }
 
-void Thread::suspend() {
+void Thread::suspend()
+{
     ACE_Thread::suspend(m_hThreadHandle);
 }
 
-void Thread::resume() {
+void Thread::resume()
+{
     ACE_Thread::resume(m_hThreadHandle);
 }
 
-ACE_THR_FUNC_RETURN Thread::ThreadTask(void * param) {
-    Runnable * _task = (Runnable*) param;
+ACE_THR_FUNC_RETURN Thread::ThreadTask(void * param)
+{
+    Runnable* _task = (Runnable*)param;
     _task->run();
 
     // task execution complete, free referecne added at
     _task->decReference();
 
-    return (ACE_THR_FUNC_RETURN) 0;
+    return (ACE_THR_FUNC_RETURN)0;
 }
 
-ACE_thread_t Thread::currentId() {
+ACE_thread_t Thread::currentId()
+{
     return ACE_Thread::self();
 }
 
-ACE_hthread_t Thread::currentHandle() {
+ACE_hthread_t Thread::currentHandle()
+{
     ACE_hthread_t _handle;
     ACE_Thread::self(_handle);
 
     return _handle;
 }
 
-Thread * Thread::current() {
+Thread * Thread::current()
+{
     Thread * _thread = m_ThreadStorage.ts_object();
-    if (!_thread) {
+    if (!_thread)
+    {
         _thread = new Thread();
         _thread->m_iThreadId = Thread::currentId();
         _thread->m_hThreadHandle = Thread::currentHandle();
@@ -207,13 +218,15 @@ Thread * Thread::current() {
     return _thread;
 }
 
-void Thread::setPriority(Priority type) {
+void Thread::setPriority(Priority type)
+{
     int _priority = m_TpEnum.getPriority(type);
     int _ok = ACE_Thread::setprio(m_hThreadHandle, _priority);
     //remove this ASSERT in case you don't want to know is thread priority change was successful or not
     ASSERT (_ok == 0);
 }
 
-void Thread::Sleep(unsigned long msecs) {
+void Thread::Sleep(unsigned long msecs)
+{
     ACE_OS::sleep(ACE_Time_Value(0, 1000 * msecs));
 }

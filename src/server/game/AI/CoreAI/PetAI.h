@@ -1,29 +1,24 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2011-2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ARKCORE_PETAI_H
-#define ARKCORE_PETAI_H
+#ifndef TRINITY_PETAI_H
+#define TRINITY_PETAI_H
 
 #include "CreatureAI.h"
 #include "Timer.h"
@@ -31,42 +26,39 @@
 class Creature;
 class Spell;
 
-class PetAI: public CreatureAI
+class PetAI : public CreatureAI
 {
-public:
+    public:
 
-    explicit PetAI(Creature *c);
+        explicit PetAI(Creature* c);
 
-    void EnterEvadeMode();
-    void JustDied(Unit * /*who*/)
-    {
-        _stopAttack();
-    }
+        void EnterEvadeMode();
+        void UpdateAI(const uint32);
+        static int Permissible(const Creature*);
 
-    void UpdateAI(const uint32);
-    static int Permissible(const Creature *);
+        void KilledUnit(Unit* /*victim*/);
+        void AttackStart(Unit* target);
+        void MovementInform(uint32 moveType, uint32 data);
+        void OwnerDamagedBy(Unit* attacker);
+        void OwnerAttacked(Unit* target);
+        void ReceiveEmote(Player* player, uint32 textEmote);
 
-    void KilledUnit(Unit * /*victim*/);
-    void AttackStart(Unit *target);
-    void MovementInform(uint32 moveType, uint32 data);
+    private:
+        bool _isVisible(Unit*) const;
+        bool _needToStop(void);
+        void _stopAttack(void);
 
-private:
-    bool _isVisible(Unit *) const;
-    bool _needToStop(void);
-    void _stopAttack(void);
+        void UpdateAllies();
 
-    void UpdateAllies();
+        TimeTracker i_tracker;
+        bool inCombat;
+        std::set<uint64> m_AllySet;
+        uint32 m_updateAlliesTimer;
 
-    TimeTracker i_tracker;
-    bool inCombat;
-    bool targetHasCC;
-    std::set<uint64> m_AllySet;
-    uint32 m_updateAlliesTimer;
-
-    Unit *SelectNextTarget();
-    void HandleReturnMovement();
-    void DoAttack(Unit *target, bool chase);
-    bool _CanAttack(Unit *target);
-    bool _CheckTargetCC(Unit *target);
+        Unit* SelectNextTarget();
+        void HandleReturnMovement();
+        void DoAttack(Unit* target, bool chase);
+        bool CanAttack(Unit* target);
 };
 #endif
+

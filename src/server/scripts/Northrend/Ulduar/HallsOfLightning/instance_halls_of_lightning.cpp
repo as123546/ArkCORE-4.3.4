@@ -1,8 +1,6 @@
 /*
- * Copyright (C) 2008 - 2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -25,7 +23,8 @@ SDComment: All ready.
 SDCategory: Halls of Lightning
 EndScriptData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "InstanceScript.h"
 #include "halls_of_lightning.h"
 
 /* Halls of Lightning encounters:
@@ -40,14 +39,14 @@ class instance_halls_of_lightning : public InstanceMapScript
 public:
     instance_halls_of_lightning() : InstanceMapScript("instance_halls_of_lightning", 602) { }
 
-    InstanceScript* GetInstanceScript(InstanceMap* pMap) const
+    InstanceScript* GetInstanceScript(InstanceMap* map) const
     {
-        return new instance_halls_of_lightning_InstanceMapScript(pMap);
+        return new instance_halls_of_lightning_InstanceMapScript(map);
     }
 
     struct instance_halls_of_lightning_InstanceMapScript : public InstanceScript
     {
-        instance_halls_of_lightning_InstanceMapScript(Map* pMap) : InstanceScript(pMap) {}
+        instance_halls_of_lightning_InstanceMapScript(Map* map) : InstanceScript(map) {}
 
         uint32 m_auiEncounter[MAX_ENCOUNTER];
 
@@ -55,7 +54,6 @@ public:
         uint64 m_uiIonarGUID;
         uint64 m_uiLokenGUID;
         uint64 m_uiVolkhanGUID;
-        uint64 m_uiVolkhanAnvilGUID;
 
         uint64 m_uiBjarngrimDoorGUID;
         uint64 m_uiVolkhanDoorGUID;
@@ -71,7 +69,6 @@ public:
             m_uiVolkhanGUID          = 0;
             m_uiIonarGUID            = 0;
             m_uiLokenGUID            = 0;
-            m_uiVolkhanAnvilGUID	 = 0;
 
             m_uiBjarngrimDoorGUID    = 0;
             m_uiVolkhanDoorGUID      = 0;
@@ -95,9 +92,6 @@ public:
                     break;
                 case NPC_LOKEN:
                     m_uiLokenGUID = creature->GetGUID();
-                    break;
-                case NPC_VOLKHAN_ANVIL:
-                    m_uiVolkhanAnvilGUID = creature->GetGUID();
                     break;
             }
         }
@@ -165,7 +159,8 @@ public:
                 case TYPE_LOKEN:
                     if (uiData == DONE)
                     {
-                        DoUseDoorOrButton(m_uiLokenDoorGUID);
+                        if (GameObject* pDoor = instance->GetGameObject(m_uiLokenDoorGUID))
+                            pDoor->SetGoState(GO_STATE_ACTIVE);
 
                         // Appears to be type 5 GO with animation. Need to figure out how this work, code below only placeholder
                         if (GameObject* pGlobe = instance->GetGameObject(m_uiLokenGlobeGUID))
@@ -207,8 +202,6 @@ public:
                     return m_uiIonarGUID;
                 case DATA_LOKEN:
                     return m_uiLokenGUID;
-            case DATA_VOLKHAN_ANVIL:
-                return m_uiVolkhanAnvilGUID;
             }
             return 0;
         }
@@ -256,6 +249,7 @@ public:
             OUT_LOAD_INST_DATA_COMPLETE;
         }
     };
+
 };
 
 void AddSC_instance_halls_of_lightning()

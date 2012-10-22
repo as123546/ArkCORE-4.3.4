@@ -1,130 +1,104 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* ScriptData
- SDName: Boss_Ayamiss
- SD%Complete: 50
- SDComment: VERIFY SCRIPT
- SDCategory: Ruins of Ahn'Qiraj
- EndScriptData */
-
-#include "ScriptPCH.h"
+#include "ObjectMgr.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "ruins_of_ahnqiraj.h"
 
-/*
- To do:
- make him fly from 70-100%
- */
+enum eAyamiss
+{
+    SPELL_STINGERSPRAY          =  25749,
+    SPELL_POISONSTINGER         =  25748,                          //only used in phase1
+    SPELL_PARALYZE              =  25725,
+    SPELL_TRASH                 =  3391,
+    SPELL_FRENZY                =  8269,
+    SPELL_LASH                  =  25852,
 
-enum Spells {
-    SPELL_STINGERSPRAY = 25749, SPELL_POISONSTINGER = 25748, //only used in phase1
-    SPELL_SUMMONSWARMER = 25844, //might be 25708
-    SPELL_PARALYZE = 23414
-//doesnt work correct (core)
+    EMOTE_FRENZY                =  -1000002,
+
+    SPELL_FEED                  =  25721,
 };
 
-class boss_ayamiss: public CreatureScript {
-public:
-    boss_ayamiss() :
-            CreatureScript("boss_ayamiss") {
-    }
+class boss_ayamiss : public CreatureScript
+{
+    public:
+        boss_ayamiss() : CreatureScript("boss_ayamiss") { }
 
-    CreatureAI* GetAI(Creature* pCreature) const {
-        return new boss_ayamissAI(pCreature);
-    }
-
-    struct boss_ayamissAI: public ScriptedAI {
-        boss_ayamissAI(Creature *c) :
-                ScriptedAI(c) {
-            pInstance = c->GetInstanceScript();
-        }
-
-        uint32 STINGERSPRAY_Timer;
-        uint32 POISONSTINGER_Timer;
-        uint32 SUMMONSWARMER_Timer;
-        uint32 phase;
-
-        InstanceScript *pInstance;
-
-        void Reset() {
-            STINGERSPRAY_Timer = 30000;
-            POISONSTINGER_Timer = 30000;
-            SUMMONSWARMER_Timer = 60000;
-            phase = 1;
-
-            if (pInstance)
-                pInstance->SetData(DATA_AYAMISS_EVENT, NOT_STARTED);
-        }
-
-        void EnterCombat(Unit * /*who*/) {
-            if (pInstance)
-                pInstance->SetData(DATA_AYAMISS_EVENT, IN_PROGRESS);
-        }
-
-        void JustDied(Unit * /*killer*/) {
-            if (pInstance)
-                pInstance->SetData(DATA_AYAMISS_EVENT, DONE);
-        }
-
-        void UpdateAI(const uint32 diff) {
-            if (!UpdateVictim())
-                return;
-
-            //If he is 70% start phase 2
-            if (phase == 1 && !HealthAbovePct(70)
-                    && !me->IsNonMeleeSpellCasted(false)) {
-                phase = 2;
+        struct boss_ayamissAI : public ScriptedAI
+        {
+            boss_ayamissAI(Creature* creature) : ScriptedAI(creature)
+            {
+                instance = creature->GetInstanceScript();
             }
 
-            //STINGERSPRAY_Timer (only in phase2)
-            if (phase == 2 && STINGERSPRAY_Timer <= diff) {
-                DoCast(me->getVictim(), SPELL_STINGERSPRAY);
+            uint32 STINGERSPRAY_Timer;
+            uint32 POISONSTINGER_Timer;
+            uint32 SUMMONSWARMER_Timer;
+            uint32 phase;
+
+            InstanceScript* instance;
+
+            void Reset()
+            {
                 STINGERSPRAY_Timer = 30000;
-            } else
-                STINGERSPRAY_Timer -= diff;
-
-            //POISONSTINGER_Timer (only in phase1)
-            if (phase == 1 && POISONSTINGER_Timer <= diff) {
-                DoCast(me->getVictim(), SPELL_POISONSTINGER);
                 POISONSTINGER_Timer = 30000;
-            } else
-                POISONSTINGER_Timer -= diff;
-
-            //SUMMONSWARMER_Timer (only in phase1)
-            if (SUMMONSWARMER_Timer <= diff) {
-                DoCast(me->getVictim(), SPELL_SUMMONSWARMER);
                 SUMMONSWARMER_Timer = 60000;
-            } else
-                SUMMONSWARMER_Timer -= diff;
+                phase = 1;
 
-            DoMeleeAttackIfReady();
+            }
+
+            void UpdateAI(uint32 const diff)
+            {
+                if (!UpdateVictim())
+                    return;
+
+                //If he is 70% start phase 2
+                if (phase == 1 && !HealthAbovePct(70) && !me->IsNonMeleeSpellCasted(false))
+                {
+                    phase=2;
+                }
+
+                //STINGERSPRAY_Timer (only in phase2)
+                if (phase == 2 && STINGERSPRAY_Timer <= diff)
+                {
+                    DoCast(me->getVictim(), SPELL_STINGERSPRAY);
+                    STINGERSPRAY_Timer = 30000;
+                } else STINGERSPRAY_Timer -= diff;
+
+                //POISONSTINGER_Timer (only in phase1)
+                if (phase == 1 && POISONSTINGER_Timer <= diff)
+                {
+                    DoCast(me->getVictim(), SPELL_POISONSTINGER);
+                    POISONSTINGER_Timer = 30000;
+                } else POISONSTINGER_Timer -= diff;
+
+                DoMeleeAttackIfReady();
+            }
+        };
+
+        CreatureAI* GetAI(Creature* creature) const
+        {
+            return new boss_ayamissAI (creature);
         }
-    };
 };
 
-void AddSC_boss_ayamiss() {
+void AddSC_boss_ayamiss()
+{
     new boss_ayamiss();
 }

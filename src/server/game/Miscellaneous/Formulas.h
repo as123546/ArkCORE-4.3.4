@@ -1,27 +1,24 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2011-2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ARKCORE_FORMULAS_H
-#define ARKCORE_FORMULAS_H
+#ifndef TRINITY_FORMULAS_H
+#define TRINITY_FORMULAS_H
 
 #include "World.h"
 #include "SharedDefines.h"
@@ -31,21 +28,21 @@ namespace Trinity
 {
     namespace Honor
     {
-        inline float hk_honor_at_level_f (uint8 level, float multiplier = 1.0f)
+        inline float hk_honor_at_level_f(uint8 level, float multiplier = 1.0f)
         {
             float honor = multiplier * level * 1.55f;
             sScriptMgr->OnHonorCalculation(honor, level, multiplier);
             return honor;
         }
 
-        inline uint32 hk_honor_at_level (uint8 level, float multiplier = 1.0f)
+        inline uint32 hk_honor_at_level(uint8 level, float multiplier = 1.0f)
         {
             return uint32(ceil(hk_honor_at_level_f(level, multiplier)));
         }
     }
     namespace XP
     {
-        inline uint8 GetGrayLevel (uint8 pl_level)
+        inline uint8 GetGrayLevel(uint8 pl_level)
         {
             uint8 level;
 
@@ -62,7 +59,7 @@ namespace Trinity
             return level;
         }
 
-        inline XPColorChar GetColorCode (uint8 pl_level, uint8 mob_level)
+        inline XPColorChar GetColorCode(uint8 pl_level, uint8 mob_level)
         {
             XPColorChar color;
 
@@ -81,7 +78,7 @@ namespace Trinity
             return color;
         }
 
-        inline uint8 GetZeroDifference (uint8 pl_level)
+        inline uint8 GetZeroDifference(uint8 pl_level)
         {
             uint8 diff;
 
@@ -114,29 +111,29 @@ namespace Trinity
             return diff;
         }
 
-        inline uint32 BaseGain (uint8 pl_level, uint8 mob_level, ContentLevels content)
+        inline uint32 BaseGain(uint8 pl_level, uint8 mob_level, ContentLevels content)
         {
             uint32 baseGain;
             uint32 nBaseExp;
 
             switch (content)
             {
-            case CONTENT_1_60:
-                nBaseExp = 45;
-                break;
-            case CONTENT_61_70:
-                nBaseExp = 235;
-                break;
-            case CONTENT_71_80:
-                nBaseExp = 580;
-                break;
-            case CONTENT_81_85:
-                nBaseExp = 1878;
-                break;
-            default:
-                sLog->outError("BaseGain: Unsupported content level %u", content);
-                nBaseExp = 45;
-                break;
+                case CONTENT_1_60:
+                    nBaseExp = 45;
+                    break;
+                case CONTENT_61_70:
+                    nBaseExp = 235;
+                    break;
+                case CONTENT_71_80:
+                    nBaseExp = 580;
+                    break;
+                case CONTENT_81_85:
+                    nBaseExp = 1878;
+                    break;
+                default:
+                    sLog->outError(LOG_FILTER_GENERAL, "BaseGain: Unsupported content level %u", content);
+                    nBaseExp = 45;
+                    break;
             }
 
             if (mob_level >= pl_level)
@@ -163,35 +160,36 @@ namespace Trinity
             return baseGain;
         }
 
-        inline uint32 Gain (Player *pl, Unit *u)
+        inline uint32 Gain(Player* player, Unit* u)
         {
             uint32 gain;
 
-            if (u->GetTypeId() == TYPEID_UNIT && (((Creature*) u)->isTotem() || ((Creature*) u)->isPet() || (((Creature*) u)->GetCreatureInfo()->flags_extra & CREATURE_FLAG_EXTRA_NO_XP_AT_KILL) || ((Creature*) u)->GetCreatureInfo()->type == CREATURE_TYPE_CRITTER))
+            if (u->GetTypeId() == TYPEID_UNIT &&
+                (((Creature*)u)->isTotem() || ((Creature*)u)->isPet() ||
+                (((Creature*)u)->GetCreatureTemplate()->flags_extra & CREATURE_FLAG_EXTRA_NO_XP_AT_KILL) ||
+                ((Creature*)u)->GetCreatureTemplate()->type == CREATURE_TYPE_CRITTER))
                 gain = 0;
             else
             {
-                gain = BaseGain(pl->getLevel(), u->getLevel(), GetContentLevelsForMapAndZone(u->GetMapId(), u->GetZoneId()));
+                gain = BaseGain(player->getLevel(), u->getLevel(), GetContentLevelsForMapAndZone(u->GetMapId(), u->GetZoneId()));
 
-                if (gain != 0 && u->GetTypeId() == TYPEID_UNIT && ((Creature*) u)->isElite())
+                if (gain != 0 && u->GetTypeId() == TYPEID_UNIT && ((Creature*)u)->isElite())
                 {
                     // Elites in instances have a 2.75x XP bonus instead of the regular 2x world bonus.
                     if (u->GetMap() && u->GetMap()->IsDungeon())
-                        gain = uint32(gain * 2.75);
+                       gain = uint32(gain * 2.75);
                     else
                         gain *= 2;
                 }
 
-                float premium_rate = pl->GetSession()->IsPremium() ? sWorld->getRate(RATE_XP_KILL_PREMIUM) : 1.0f;
-
-                return uint32(gain * sWorld->getRate(RATE_XP_KILL) * premium_rate);
+                gain = uint32(gain * sWorld->getRate(RATE_XP_KILL));
             }
 
-            sScriptMgr->OnGainCalculation(gain, pl, u);
+            sScriptMgr->OnGainCalculation(gain, player, u);
             return gain;
         }
 
-        inline float xp_in_group_rate (uint32 count, bool isRaid)
+        inline float xp_in_group_rate(uint32 count, bool isRaid)
         {
             float rate;
 
@@ -204,21 +202,20 @@ namespace Trinity
             {
                 switch (count)
                 {
-                case 0:
-                case 1:
-                case 2:
-                    rate = 1.0f;
-                    break;
-                case 3:
-                    rate = 1.166f;
-                    break;
-                case 4:
-                    rate = 1.3f;
-                    break;
-                case 5:
-                default:
-                    rate = 1.4f;
-                    break;
+                    case 0:
+                    case 1:
+                    case 2:
+                        rate = 1.0f;
+                        break;
+                    case 3:
+                        rate = 1.166f;
+                        break;
+                    case 4:
+                        rate = 1.3f;
+                        break;
+                    case 5:
+                    default:
+                        rate = 1.4f;
                 }
             }
 

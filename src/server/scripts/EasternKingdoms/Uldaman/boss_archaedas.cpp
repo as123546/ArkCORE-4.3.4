@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
- *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
- *
- * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2006-2007 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -30,7 +26,8 @@ At 33%, he will awaken the Vault Walkers
 On his death the vault door opens.
 EndScriptData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "uldaman.h"
 
 #define SAY_AGGRO           "Who dares awaken Archaedas? Who dares the wrath of the makers!"
@@ -98,14 +95,17 @@ class boss_archaedas : public CreatureScript
                 me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE);
             }
 
-            void ActivateMinion(uint64 uiGuid, bool bFlag)
+            void ActivateMinion(uint64 uiGuid, bool flag)
             {
-                Unit* pMinion = Unit::GetUnit(*me, uiGuid);
+                Unit* minion = Unit::GetUnit(*me, uiGuid);
 
-                if (pMinion && pMinion->isAlive())
+                if (minion && minion->isAlive())
                 {
-                    DoCast(pMinion, SPELL_AWAKEN_VAULT_WALKER, bFlag);
-                    pMinion->CastSpell(pMinion, SPELL_ARCHAEDAS_AWAKEN, true);
+                    DoCast(minion, SPELL_AWAKEN_VAULT_WALKER, flag);
+                    minion->CastSpell(minion, SPELL_ARCHAEDAS_AWAKEN, true);
+                    minion->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+                    minion->RemoveFlag(UNIT_FIELD_FLAGS,UNIT_FLAG_DISABLE_MOVE);
+                    minion->setFaction(14);
                 }
             }
 
@@ -157,7 +157,7 @@ class boss_archaedas : public CreatureScript
                 // wake a wall minion
                 if (uiWallMinionTimer <= uiDiff)
                 {
-                    instance->SetData (DATA_MINIONS, IN_PROGRESS);
+                    instance->SetData(DATA_MINIONS, IN_PROGRESS);
 
                     uiWallMinionTimer = 10000;
                 } else uiWallMinionTimer -= uiDiff;
@@ -236,7 +236,7 @@ class mob_archaedas_minions : public CreatureScript
 
         struct mob_archaedas_minionsAI : public ScriptedAI
         {
-            mob_archaedas_minionsAI(Creature* c) : ScriptedAI(c)
+            mob_archaedas_minionsAI(Creature* creature) : ScriptedAI(creature)
             {
                 instance = me->GetInstanceScript();
             }
@@ -398,7 +398,7 @@ class go_altar_of_archaedas : public GameObjectScript
         {
         }
 
-        bool OnGossipHello(Player* player, GameObject* /*pGO*/)
+        bool OnGossipHello(Player* player, GameObject* /*go*/)
         {
             InstanceScript* instance = player->GetInstanceScript();
             if (!instance)

@@ -1,7 +1,5 @@
 /*
- * Copyright (C) 2008 - 2012 TrinityCore <http://www.trinitycore.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -25,7 +23,8 @@ SDComment:
 SDCategory:
 Script Data End */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "halls_of_stone.h"
 
 enum Spells
@@ -52,7 +51,7 @@ enum Yells
 
 enum Achievements
 {
-    ACHIEV_GOOD_GRIEF_START_EVENT                 = 1866,
+    ACHIEV_GOOD_GRIEF_START_EVENT                 = 20383,
 };
 
 class boss_maiden_of_grief : public CreatureScript
@@ -67,12 +66,12 @@ public:
 
     struct boss_maiden_of_griefAI : public ScriptedAI
     {
-        boss_maiden_of_griefAI(Creature* c) : ScriptedAI(c)
+        boss_maiden_of_griefAI(Creature* creature) : ScriptedAI(creature)
         {
-            pInstance = me->GetInstanceScript();
+            instance = me->GetInstanceScript();
         }
 
-        InstanceScript* pInstance;
+        InstanceScript* instance;
 
         uint32 PartingSorrowTimer;
         uint32 StormOfGriefTimer;
@@ -81,15 +80,15 @@ public:
 
         void Reset()
         {
-            PartingSorrowTimer = 10000 + rand()%5000;
+            PartingSorrowTimer = urand(25000, 30000);
             StormOfGriefTimer = 10000;
             ShockOfSorrowTimer = 20000+rand()%5000;
-            PillarOfWoeTimer = 5000 + rand()%10000;
+            PillarOfWoeTimer = urand(5000, 15000);
 
-            if (pInstance)
+            if (instance)
             {
-                pInstance->SetData(DATA_MAIDEN_OF_GRIEF_EVENT, NOT_STARTED);
-                pInstance->DoStopTimedAchievement(ACHIEVEMENT_TIMED_TYPE_EVENT, ACHIEV_GOOD_GRIEF_START_EVENT);
+                instance->SetData(DATA_MAIDEN_OF_GRIEF_EVENT, NOT_STARTED);
+                instance->DoStopTimedAchievement(ACHIEVEMENT_TIMED_TYPE_EVENT, ACHIEV_GOOD_GRIEF_START_EVENT);
             }
         }
 
@@ -97,17 +96,17 @@ public:
         {
             DoScriptText(SAY_AGGRO, me);
 
-            if (pInstance)
+            if (instance)
             {
-                if (GameObject* pDoor = pInstance->instance->GetGameObject(pInstance->GetData64(DATA_MAIDEN_DOOR)))
+                if (GameObject* pDoor = instance->instance->GetGameObject(instance->GetData64(DATA_MAIDEN_DOOR)))
                     if (pDoor->GetGoState() == GO_STATE_READY)
                     {
                         EnterEvadeMode();
                         return;
                     }
 
-                pInstance->SetData(DATA_MAIDEN_OF_GRIEF_EVENT, IN_PROGRESS);
-                pInstance->DoStartTimedAchievement(ACHIEVEMENT_TIMED_TYPE_EVENT, ACHIEV_GOOD_GRIEF_START_EVENT);
+                instance->SetData(DATA_MAIDEN_OF_GRIEF_EVENT, IN_PROGRESS);
+                instance->DoStartTimedAchievement(ACHIEVEMENT_TIMED_TYPE_EVENT, ACHIEV_GOOD_GRIEF_START_EVENT);
             }
         }
 
@@ -121,48 +120,39 @@ public:
             {
                 if (PartingSorrowTimer <= diff)
                 {
-                    if (!me->IsNonMeleeSpellCasted(false))
-                    {
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0))
+                    Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0);
+
+                    if (target)
                         DoCast(target, SPELL_PARTING_SORROW);
 
-                        PartingSorrowTimer = 10000 + rand()%7000;
-                    }
+                    PartingSorrowTimer = urand(30000, 40000);
                 } else PartingSorrowTimer -= diff;
             }
 
             if (StormOfGriefTimer <= diff)
             {
-                if (!me->IsNonMeleeSpellCasted(false))
-                {
-                    DoCast(me->getVictim(), DUNGEON_MODE(SPELL_STORM_OF_GRIEF_N, SPELL_STORM_OF_GRIEF_H), true);
-                StormOfGriefTimer = 15000 + rand()%5000;
-                }
+                DoCast(me->getVictim(), SPELL_STORM_OF_GRIEF_N, true);
+                StormOfGriefTimer = urand(15000, 20000);
             } else StormOfGriefTimer -= diff;
 
             if (ShockOfSorrowTimer <= diff)
             {
-                if (!me->IsNonMeleeSpellCasted(false))
-                {
+                DoResetThreat();
                 DoScriptText(SAY_STUN, me);
-                    DoCast(me, DUNGEON_MODE(SPELL_SHOCK_OF_SORROW_N, SPELL_SHOCK_OF_SORROW_H));
-                ShockOfSorrowTimer = 20000 + rand()%10000;
-                }
+                DoCast(me, SPELL_SHOCK_OF_SORROW_N);
+                ShockOfSorrowTimer = urand(20000, 30000);
             } else ShockOfSorrowTimer -= diff;
 
             if (PillarOfWoeTimer <= diff)
             {
-                if (!me->IsNonMeleeSpellCasted(false))
-                {
                 Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 1);
 
                 if (target)
-                        DoCast(target, DUNGEON_MODE(SPELL_PILLAR_OF_WOE_N, SPELL_PILLAR_OF_WOE_H));
+                    DoCast(target, SPELL_PILLAR_OF_WOE_N);
                 else
-                        DoCast(me->getVictim(), DUNGEON_MODE(SPELL_PILLAR_OF_WOE_N, SPELL_PILLAR_OF_WOE_H));
+                    DoCast(me->getVictim(), SPELL_PILLAR_OF_WOE_N);
 
-                PillarOfWoeTimer = 5000 + rand()%20000;
-                }
+                PillarOfWoeTimer = urand(5000, 25000);
             } else PillarOfWoeTimer -= diff;
 
             DoMeleeAttackIfReady();
@@ -172,8 +162,8 @@ public:
         {
             DoScriptText(SAY_DEATH, me);
 
-            if (pInstance)
-                pInstance->SetData(DATA_MAIDEN_OF_GRIEF_EVENT, DONE);
+            if (instance)
+                instance->SetData(DATA_MAIDEN_OF_GRIEF_EVENT, DONE);
         }
 
         void KilledUnit(Unit* victim)
@@ -184,6 +174,7 @@ public:
             DoScriptText(RAND(SAY_SLAY_1, SAY_SLAY_2, SAY_SLAY_3, SAY_SLAY_4), me);
         }
     };
+
 };
 
 void AddSC_boss_maiden_of_grief()

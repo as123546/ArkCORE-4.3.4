@@ -1,83 +1,61 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* ScriptData
- SDName: Boss_Magmus
- SD%Complete: 100
- SDComment:
- SDCategory: Blackrock Depths
- EndScriptData */
-
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 
 enum Spells
 {
-    SPELL_FIERYBURST = 13900, SPELL_WARSTOMP = 24375
+    SPELL_FIERYBURST                                       = 13900,
+    SPELL_WARSTOMP                                         = 24375
 };
 
 enum eEnums
 {
-    DATA_THRONE_DOOR = 24
-// not id or guid of doors but number of enum in blackrock_depths.h
+    DATA_THRONE_DOOR                                       = 24 // not id or guid of doors but number of enum in blackrock_depths.h
 };
 
-class boss_magmus: public CreatureScript
+class boss_magmus : public CreatureScript
 {
 public:
-    boss_magmus () :
-            CreatureScript("boss_magmus")
+    boss_magmus() : CreatureScript("boss_magmus") { }
+
+    CreatureAI* GetAI(Creature* creature) const
     {
+        return new boss_magmusAI (creature);
     }
 
-    CreatureAI* GetAI (Creature* pCreature) const
+    struct boss_magmusAI : public ScriptedAI
     {
-        return new boss_magmusAI(pCreature);
-    }
-
-    struct boss_magmusAI: public ScriptedAI
-    {
-        boss_magmusAI (Creature *c) :
-                ScriptedAI(c)
-        {
-        }
+        boss_magmusAI(Creature* creature) : ScriptedAI(creature) {}
 
         uint32 FieryBurst_Timer;
         uint32 WarStomp_Timer;
 
-        void Reset ()
+        void Reset()
         {
             FieryBurst_Timer = 5000;
-            WarStomp_Timer = 0;
+            WarStomp_Timer =0;
         }
 
-        void EnterCombat (Unit * /*who*/)
-        {
-        }
+        void EnterCombat(Unit* /*who*/) {}
 
-        void UpdateAI (const uint32 diff)
+        void UpdateAI(const uint32 diff)
         {
             //Return since we have no target
             if (!UpdateVictim())
@@ -88,9 +66,7 @@ public:
             {
                 DoCast(me->getVictim(), SPELL_FIERYBURST);
                 FieryBurst_Timer = 6000;
-            }
-            else
-                FieryBurst_Timer -= diff;
+            } else FieryBurst_Timer -= diff;
 
             //WarStomp_Timer
             if (HealthBelowPct(51))
@@ -99,23 +75,21 @@ public:
                 {
                     DoCast(me->getVictim(), SPELL_WARSTOMP);
                     WarStomp_Timer = 8000;
-                }
-                else
-                    WarStomp_Timer -= diff;
+                } else WarStomp_Timer -= diff;
             }
 
             DoMeleeAttackIfReady();
         }
         // When he die open door to last chamber
-        void JustDied (Unit *who)
+        void JustDied(Unit* killer)
         {
-            if (InstanceScript* pInstance = who->GetInstanceScript())
-                pInstance->HandleGameObject(pInstance->GetData64(DATA_THRONE_DOOR), true);
+            if (InstanceScript* instance = killer->GetInstanceScript())
+                instance->HandleGameObject(instance->GetData64(DATA_THRONE_DOOR), true);
         }
     };
 };
 
-void AddSC_boss_magmus ()
+void AddSC_boss_magmus()
 {
     new boss_magmus();
 }

@@ -1,169 +1,213 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* ScriptData
-SDName: Instance_ZulGurub
-SD%Complete: 80
-SDComment: Missing reset function after killing a boss for Ohgan, Thekal.
-SDCategory: Zul'Gurub
-EndScriptData */
-
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "InstanceScript.h"
 #include "zulgurub.h"
 
 class instance_zulgurub : public InstanceMapScript
 {
     public:
-        instance_zulgurub()
-            : InstanceMapScript("instance_zulgurub", 309)
-        {
-        }
+        instance_zulgurub() : InstanceMapScript(ZGScriptName, 859) { }
 
         struct instance_zulgurub_InstanceMapScript : public InstanceScript
         {
-            instance_zulgurub_InstanceMapScript(Map* pMap) : InstanceScript(pMap) {Initialize();};
-
-            //If all High Priest bosses were killed. Lorkhan, Zath and Ohgan are added too.
-            uint32 m_auiEncounter[MAX_ENCOUNTERS];
-
-            //Storing Lorkhan, Zath and Thekal because we need to cast on them later. Jindo is needed for healfunction too.
-            uint64 m_uiLorKhanGUID;
-            uint64 m_uiZathGUID;
-            uint64 m_uiThekalGUID;
-            uint64 m_uiJindoGUID;
-
-            void Initialize()
+            instance_zulgurub_InstanceMapScript(Map* map) : InstanceScript(map)
             {
-                memset(&m_auiEncounter, 0, sizeof(m_auiEncounter));
-
-                m_uiLorKhanGUID = 0;
-                m_uiZathGUID = 0;
-                m_uiThekalGUID = 0;
-                m_uiJindoGUID = 0;
-            }
-
-            bool IsEncounterInProgress() const
-            {
-                //not active in Zul'Gurub
-                return false;
+                SetBossNumber(EncounterCount);
+                venoxisGUID     = 0;
+                mandokirGUID    = 0;
+                kilnaraGUID     = 0;
+                zanzilGUID      = 0;
+                jindoGUID       = 0;
+                hazzarahGUID    = 0;
+                renatakiGUID    = 0;
+                wushoolayGUID   = 0;
+                grilekGUID      = 0;
             }
 
             void OnCreatureCreate(Creature* creature)
             {
                 switch (creature->GetEntry())
                 {
-                    case 11347: m_uiLorKhanGUID = creature->GetGUID(); break;
-                    case 11348: m_uiZathGUID = creature->GetGUID(); break;
-                    case 14509: m_uiThekalGUID = creature->GetGUID(); break;
-                    case 11380: m_uiJindoGUID = creature->GetGUID(); break;
+                   case NPC_VENOXIS:
+                      venoxisGUID = creature->GetGUID();
+                      break;
+                   case NPC_MANDOKIR:
+                      mandokirGUID = creature->GetGUID();
+                      break;
+                   case NPC_KILNARA:
+                      kilnaraGUID = creature->GetGUID();
+                      break;
+                   case NPC_ZANZIL:
+                      zanzilGUID = creature->GetGUID();
+                      break;
+                   case NPC_JINDO:
+                      jindoGUID = creature->GetGUID();
+                      break;
+                   case NPC_HAZZARAH:
+                      hazzarahGUID = creature->GetGUID();
+                      break;
+                   case NPC_RENATAKI:
+                      renatakiGUID = creature->GetGUID();
+                      break;
+                   case NPC_WUSHOOLAY:
+                      wushoolayGUID = creature->GetGUID();
+                      break;
+                   case NPC_GRILEK:
+                      grilekGUID = creature->GetGUID();
+                      break;
+                   default:
+                      break;
                 }
             }
 
-            void SetData(uint32 uiType, uint32 uiData)
+            bool SetBossState(uint32 type, EncounterState state)
             {
-                switch (uiType)
+                if (!InstanceScript::SetBossState(type, state))
+                    return false;
+
+                switch (type)
                 {
-                    case TYPE_ARLOKK:
-                        m_auiEncounter[0] = uiData;
-                        break;
+                   case DATA_VENOXIS:
+                   case DATA_MANDOKIR:
+                   case DATA_KILNARA:
+                   case DATA_ZANZIL:
+                   case DATA_JINDO:
+                   case DATA_HAZZARAH:
+                   case DATA_RENATAKI:
+                   case DATA_WUSHOOLAY:
+                   case DATA_GRILEK:
+                      break;
+                   default:
+                      break;
+                }
 
-                    case TYPE_JEKLIK:
-                        m_auiEncounter[1] = uiData;
-                        break;
+                return true;
+            }
 
-                    case TYPE_VENOXIS:
-                        m_auiEncounter[2] = uiData;
-                        break;
-
-                    case TYPE_MARLI:
-                        m_auiEncounter[3] = uiData;
-                        break;
-
-                    case TYPE_THEKAL:
-                        m_auiEncounter[4] = uiData;
-                        break;
-
-                    case TYPE_LORKHAN:
-                        m_auiEncounter[5] = uiData;
-                        break;
-
-                    case TYPE_ZATH:
-                        m_auiEncounter[6] = uiData;
-                        break;
-
-                    case TYPE_OHGAN:
-                        m_auiEncounter[7] = uiData;
-                        break;
+            /*
+            void SetData(uint32 type, uint32 data)
+            {
+                switch (type)
+                {
                 }
             }
 
-            uint32 GetData(uint32 uiType)
+            uint32 GetData(uint32 type)
             {
-                switch (uiType)
+                switch (type)
                 {
-                    case TYPE_ARLOKK:
-                        return m_auiEncounter[0];
-                    case TYPE_JEKLIK:
-                        return m_auiEncounter[1];
-                    case TYPE_VENOXIS:
-                        return m_auiEncounter[2];
-                    case TYPE_MARLI:
-                        return m_auiEncounter[3];
-                    case TYPE_THEKAL:
-                        return m_auiEncounter[4];
-                    case TYPE_LORKHAN:
-                        return m_auiEncounter[5];
-                    case TYPE_ZATH:
-                        return m_auiEncounter[6];
-                    case TYPE_OHGAN:
-                        return m_auiEncounter[7];
                 }
+
                 return 0;
             }
+            */
 
-            uint64 GetData64(uint32 uiData)
+            uint64 GetData64(uint32 type)
             {
-                switch (uiData)
+                switch (type)
                 {
-                    case DATA_LORKHAN:
-                        return m_uiLorKhanGUID;
-                    case DATA_ZATH:
-                        return m_uiZathGUID;
-                    case DATA_THEKAL:
-                        return m_uiThekalGUID;
+                    case DATA_VENOXIS:
+                        return venoxisGUID;
+                    case DATA_MANDOKIR:
+                        return mandokirGUID;
+                    case DATA_KILNARA:
+                        return kilnaraGUID;
+                    case DATA_ZANZIL:
+                        return zanzilGUID;
                     case DATA_JINDO:
-                        return m_uiJindoGUID;
+                        return jindoGUID;
+                    case DATA_HAZZARAH:
+                        return hazzarahGUID;
+                    case DATA_RENATAKI:
+                        return renatakiGUID;
+                    case DATA_WUSHOOLAY:
+                        return wushoolayGUID;
+                    case DATA_GRILEK:
+                        return grilekGUID;
+                    default:
+                        break;
+
                 }
+
                 return 0;
             }
+
+            std::string GetSaveData()
+            {
+                OUT_SAVE_INST_DATA;
+
+                std::ostringstream saveStream;
+                saveStream << "Z G " << GetBossSaveData();
+
+                OUT_SAVE_INST_DATA_COMPLETE;
+                return saveStream.str();
+            }
+
+            void Load(char const* str)
+            {
+                if (!str)
+                {
+                    OUT_LOAD_INST_DATA_FAIL;
+                    return;
+                }
+
+                OUT_LOAD_INST_DATA(str);
+
+                char dataHead1, dataHead2;
+
+                std::istringstream loadStream(str);
+                loadStream >> dataHead1 >> dataHead2;
+
+                if (dataHead1 == 'Z' && dataHead2 == 'G')
+                {
+                    for (uint8 i = 0; i < EncounterCount; ++i)
+                    {
+                        uint32 tmpState;
+                        loadStream >> tmpState;
+                        if (tmpState == IN_PROGRESS || tmpState > SPECIAL)
+                            tmpState = NOT_STARTED;
+
+                        SetBossState(i, EncounterState(tmpState));
+                    }
+                }
+                else
+                    OUT_LOAD_INST_DATA_FAIL;
+
+                OUT_LOAD_INST_DATA_COMPLETE;
+            }
+
+        protected:
+             uint64 venoxisGUID;
+             uint64 mandokirGUID;
+             uint64 kilnaraGUID;
+             uint64 zanzilGUID;
+             uint64 jindoGUID;
+             uint64 hazzarahGUID;
+             uint64 renatakiGUID;
+             uint64 wushoolayGUID;
+             uint64 grilekGUID;
         };
 
-        InstanceScript* GetInstanceScript(InstanceMap* pMap) const
+        InstanceScript* GetInstanceScript(InstanceMap* map) const
         {
-            return new instance_zulgurub_InstanceMapScript(pMap);
+            return new instance_zulgurub_InstanceMapScript(map);
         }
 };
 

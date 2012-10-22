@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- * Copyright (C) 2008 - 2012 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -23,7 +19,9 @@
  * Comment: TODO: spawn troll waves
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
+#include "SpellAuras.h"
 #include "drak_tharon_keep.h"
 
 enum Spells
@@ -63,16 +61,11 @@ class boss_trollgore : public CreatureScript
 public:
     boss_trollgore() : CreatureScript("boss_trollgore") { }
 
-    CreatureAI* GetAI(Creature* creature) const
-    {
-        return new boss_trollgoreAI (creature);
-    }
-
     struct boss_trollgoreAI : public ScriptedAI
     {
-        boss_trollgoreAI(Creature* c) : ScriptedAI(c), lSummons(me)
+        boss_trollgoreAI(Creature* creature) : ScriptedAI(creature), lSummons(me)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
         uint32 uiConsumeTimer;
@@ -93,7 +86,7 @@ public:
             uiConsumeTimer = 15*IN_MILLISECONDS;
             uiAuraCountTimer = 15500;
             uiCrushTimer = urand(1*IN_MILLISECONDS, 5*IN_MILLISECONDS);
-            uiInfectedWoundTimer = urand(6*IN_MILLISECONDS, 10*IN_MILLISECONDS);
+            uiInfectedWoundTimer = urand(10*IN_MILLISECONDS, 60*IN_MILLISECONDS);
             uiExplodeCorpseTimer = 3*IN_MILLISECONDS;
             uiSpawnTimer = urand(30*IN_MILLISECONDS, 40*IN_MILLISECONDS);
 
@@ -197,6 +190,11 @@ public:
                 summon->AI()->AttackStart(me);
         }
     };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return new boss_trollgoreAI(creature);
+    }
 };
 
 class achievement_consumption_junction : public AchievementCriteriaScript

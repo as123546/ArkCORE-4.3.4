@@ -1,37 +1,30 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 /* ScriptData
- SDName: Boss_Curator
- SD%Complete: 100
- SDComment:
- SDCategory: Karazhan
- EndScriptData */
+SDName: Boss_Curator
+SD%Complete: 100
+SDComment:
+SDCategory: Karazhan
+EndScriptData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 
 #define SAY_AGGRO                       -1532057
 #define SAY_SUMMON1                     -1532058
@@ -44,26 +37,26 @@
 
 //Flare spell info
 #define SPELL_ASTRAL_FLARE_PASSIVE      30234               //Visual effect + Flare damage
+
 //Curator spell info
 #define SPELL_HATEFUL_BOLT              30383
 #define SPELL_EVOCATION                 30254
 #define SPELL_ENRAGE                    30403               //Arcane Infusion: Transforms Curator and adds damage.
 #define SPELL_BERSERK                   26662
 
-class boss_curator: public CreatureScript {
+class boss_curator : public CreatureScript
+{
 public:
-    boss_curator() :
-            CreatureScript("boss_curator") {
+    boss_curator() : CreatureScript("boss_curator") { }
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return new boss_curatorAI (creature);
     }
 
-    CreatureAI* GetAI(Creature* pCreature) const {
-        return new boss_curatorAI(pCreature);
-    }
-
-    struct boss_curatorAI: public ScriptedAI {
-        boss_curatorAI(Creature *c) :
-                ScriptedAI(c) {
-        }
+    struct boss_curatorAI : public ScriptedAI
+    {
+        boss_curatorAI(Creature* creature) : ScriptedAI(creature) {}
 
         uint32 AddTimer;
         uint32 HatefulBoltTimer;
@@ -72,37 +65,43 @@ public:
         bool Enraged;
         bool Evocating;
 
-        void Reset() {
+        void Reset()
+        {
             AddTimer = 10000;
-            HatefulBoltTimer = 15000; //This time may be wrong
-            BerserkTimer = 720000; //12 minutes
+            HatefulBoltTimer = 15000;                           //This time may be wrong
+            BerserkTimer = 720000;                              //12 minutes
             Enraged = false;
             Evocating = false;
 
-            me->ApplySpellImmune(0, IMMUNITY_DAMAGE, SPELL_SCHOOL_MASK_ARCANE,
-                    true);
+            me->ApplySpellImmune(0, IMMUNITY_DAMAGE, SPELL_SCHOOL_MASK_ARCANE, true);
         }
 
-        void KilledUnit(Unit * /*victim*/) {
+        void KilledUnit(Unit* /*victim*/)
+        {
             DoScriptText(RAND(SAY_KILL1, SAY_KILL2), me);
         }
 
-        void JustDied(Unit * /*victim*/) {
+        void JustDied(Unit* /*killer*/)
+        {
             DoScriptText(SAY_DEATH, me);
         }
 
-        void EnterCombat(Unit * /*who*/) {
+        void EnterCombat(Unit* /*who*/)
+        {
             DoScriptText(SAY_AGGRO, me);
         }
 
-        void UpdateAI(const uint32 diff) {
+        void UpdateAI(const uint32 diff)
+        {
             if (!UpdateVictim())
                 return;
 
             //always decrease BerserkTimer
-            if (BerserkTimer <= diff) {
+            if (BerserkTimer <= diff)
+            {
                 //if evocate, then break evocate
-                if (Evocating) {
+                if (Evocating)
+                {
                     if (me->HasAura(SPELL_EVOCATION))
                         me->RemoveAurasDueToSpell(SPELL_EVOCATION);
 
@@ -117,10 +116,10 @@ public:
 
                 //don't know if he's supposed to do summon/evocate after hard enrage (probably not)
                 Enraged = true;
-            } else
-                BerserkTimer -= diff;
+            } else BerserkTimer -= diff;
 
-            if (Evocating) {
+            if (Evocating)
+            {
                 //not supposed to do anything while evocate
                 if (me->HasAura(SPELL_EVOCATION))
                     return;
@@ -128,70 +127,76 @@ public:
                     Evocating = false;
             }
 
-            if (!Enraged) {
-                if (AddTimer <= diff) {
+            if (!Enraged)
+            {
+                if (AddTimer <= diff)
+                {
                     //Summon Astral Flare
-                    Creature* AstralFlare = DoSpawnCreature(17096,
-                            float(rand() % 37), float(rand() % 37), 0, 0,
-                            TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 5000);
-                    Unit *pTarget = NULL;
-                    pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0);
+                    Creature* AstralFlare = DoSpawnCreature(17096, float(rand()%37), float(rand()%37), 0, 0, TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT, 5000);
+                    Unit* target = NULL;
+                    target = SelectTarget(SELECT_TARGET_RANDOM, 0);
 
-                    if (AstralFlare && pTarget) {
-                        AstralFlare->CastSpell(AstralFlare,
-                                SPELL_ASTRAL_FLARE_PASSIVE, false);
-                        AstralFlare->AI()->AttackStart(pTarget);
+                    if (AstralFlare && target)
+                    {
+                        AstralFlare->CastSpell(AstralFlare, SPELL_ASTRAL_FLARE_PASSIVE, false);
+                        AstralFlare->AI()->AttackStart(target);
                     }
 
                     //Reduce Mana by 10% of max health
-                    if (int32 mana = me->GetMaxPower(POWER_MANA)) {
+                    if (int32 mana = me->GetMaxPower(POWER_MANA))
+                    {
                         mana /= 10;
                         me->ModifyPower(POWER_MANA, -mana);
 
                         //if this get's us below 10%, then we evocate (the 10th should be summoned now)
-                        if (me->GetPower(POWER_MANA) * 100
-                                / me->GetMaxPower(POWER_MANA) < 10) {
+                        if (me->GetPower(POWER_MANA)*100 / me->GetMaxPower(POWER_MANA) < 10)
+                        {
                             DoScriptText(SAY_EVOCATE, me);
                             me->InterruptNonMeleeSpells(false);
                             DoCast(me, SPELL_EVOCATION);
                             Evocating = true;
                             //no AddTimer cooldown, this will make first flare appear instantly after evocate end, like expected
                             return;
-                        } else {
-                            if (urand(0, 1) == 0) {
-                                DoScriptText(RAND(SAY_SUMMON1, SAY_SUMMON2),
-                                        me);
+                        }
+                        else
+                        {
+                            if (urand(0, 1) == 0)
+                            {
+                                DoScriptText(RAND(SAY_SUMMON1, SAY_SUMMON2), me);
                             }
                         }
                     }
 
                     AddTimer = 10000;
-                } else
-                    AddTimer -= diff;
+                } else AddTimer -= diff;
 
-                if (!HealthAbovePct(15)) {
+                if (!HealthAbovePct(15))
+                {
                     Enraged = true;
                     DoCast(me, SPELL_ENRAGE);
                     DoScriptText(SAY_ENRAGE, me);
                 }
             }
 
-            if (HatefulBoltTimer <= diff) {
+            if (HatefulBoltTimer <= diff)
+            {
                 if (Enraged)
                     HatefulBoltTimer = 7000;
                 else
                     HatefulBoltTimer = 15000;
 
-                if (Unit *pTarget = SelectUnit(SELECT_TARGET_TOPAGGRO, 1))
-                    DoCast(pTarget, SPELL_HATEFUL_BOLT);
-            } else
-                HatefulBoltTimer -= diff;
+                if (Unit* target = SelectTarget(SELECT_TARGET_TOPAGGRO, 1))
+                    DoCast(target, SPELL_HATEFUL_BOLT);
+
+            } else HatefulBoltTimer -= diff;
 
             DoMeleeAttackIfReady();
         }
     };
+
 };
 
-void AddSC_boss_curator() {
+void AddSC_boss_curator()
+{
     new boss_curator();
 }

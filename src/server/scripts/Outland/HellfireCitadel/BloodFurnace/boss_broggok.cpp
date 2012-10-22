@@ -1,27 +1,19 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
  *
- * Copyright (C) 2006 - 2012 ScriptDev2 <http://www.scriptdev2.com/>
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 /* ScriptData
@@ -31,7 +23,8 @@ SDComment: pre-event not made
 SDCategory: Hellfire Citadel, Blood Furnace
 EndScriptData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "blood_furnace.h"
 
 enum eEnums
@@ -54,42 +47,36 @@ class boss_broggok : public CreatureScript
         {
         }
 
-        struct boss_broggokAI : public ScriptedAI
+        struct boss_broggokAI : public BossAI
         {
-            boss_broggokAI(Creature* pCreature) : ScriptedAI(pCreature)
+            boss_broggokAI(Creature* creature) : BossAI(creature, DATA_BROGGOK)
             {
-                pInstance = pCreature->GetInstanceScript();
+                instance = creature->GetInstanceScript();
             }
 
-            InstanceScript* pInstance;
+            InstanceScript* instance;
 
             uint32 AcidSpray_Timer;
             uint32 PoisonSpawn_Timer;
             uint32 PoisonBolt_Timer;
+            bool canAttack;
 
             void Reset()
             {
+                _Reset();
                 AcidSpray_Timer = 10000;
                 PoisonSpawn_Timer = 5000;
                 PoisonBolt_Timer = 7000;
-                if (pInstance)
-                {
-                    pInstance->SetData(TYPE_BROGGOK_EVENT, NOT_STARTED);
-                    pInstance->HandleGameObject(pInstance->GetData64(DATA_DOOR4), true);
-                }
+                DoAction(ACTION_RESET_BROGGOK);
+                instance->SetData(TYPE_BROGGOK_EVENT, NOT_STARTED);
             }
 
-            void EnterCombat(Unit * /*who*/)
+            void EnterCombat(Unit* /*who*/)
             {
                 DoScriptText(SAY_AGGRO, me);
-                if (pInstance)
-                {
-                    pInstance->SetData(TYPE_BROGGOK_EVENT, IN_PROGRESS);
-                    pInstance->HandleGameObject(pInstance->GetData64(DATA_DOOR4), false);
-                }
             }
 
-            void JustSummoned(Creature *summoned)
+            void JustSummoned(Creature* summoned)
             {
                 summoned->setFaction(16);
                 summoned->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
@@ -101,7 +88,8 @@ class boss_broggok : public CreatureScript
             {
                 if (!UpdateVictim())
                     return;
-
+                if (!canAttack)
+                    return;
                 if (AcidSpray_Timer <= diff)
                 {
                     DoCast(me->getVictim(), SPELL_SLIME_SPRAY);
@@ -129,24 +117,65 @@ class boss_broggok : public CreatureScript
                 DoMeleeAttackIfReady();
             }
 
-            void JustDied(Unit* /*who*/)
+            void JustDied(Unit* /*killer*/)
             {
-                if (pInstance)
+                if (instance)
                 {
-                    pInstance->HandleGameObject(pInstance->GetData64(DATA_DOOR4), true);
-                    pInstance->HandleGameObject(pInstance->GetData64(DATA_DOOR5), true);
-                    pInstance->SetData(TYPE_BROGGOK_EVENT, DONE);
+                    instance->HandleGameObject(instance->GetData64(DATA_DOOR4), true);
+                    instance->HandleGameObject(instance->GetData64(DATA_DOOR5), true);
+                    instance->SetData(TYPE_BROGGOK_EVENT, DONE);
                 }
             }
+
+            void DoAction(int32 const action)
+            {
+                switch (action)
+                {
+                    case ACTION_PREPARE_BROGGOK:
+                        me->SetInCombatWithZone();
+                        break;
+                    case ACTION_ACTIVATE_BROGGOK:
+                        me->SetReactState(REACT_AGGRESSIVE);
+                        me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC | UNIT_FLAG_IMMUNE_TO_NPC | UNIT_FLAG_NON_ATTACKABLE);
+                        canAttack = true;
+                        break;
+                    case ACTION_RESET_BROGGOK:
+                        me->SetReactState(REACT_PASSIVE);
+                        me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC | UNIT_FLAG_IMMUNE_TO_NPC | UNIT_FLAG_NON_ATTACKABLE);
+                        canAttack = false;
+                        break;
+                }
+            }
+
         };
 
-        CreatureAI* GetAI(Creature* Creature) const
+        CreatureAI* GetAI(Creature* creature) const
         {
-            return new boss_broggokAI (Creature);
+            return new boss_broggokAI(creature);
+        }
+};
+
+class go_broggok_lever : public GameObjectScript
+{
+    public:
+        go_broggok_lever() : GameObjectScript("go_broggok_lever") {}
+
+        bool OnGossipHello(Player* /*player*/, GameObject* go)
+        {
+            if (InstanceScript* instance = go->GetInstanceScript())
+                if (instance->GetData(TYPE_BROGGOK_EVENT) != DONE && instance->GetData(TYPE_BROGGOK_EVENT) != IN_PROGRESS)
+                {
+                    instance->SetData(TYPE_BROGGOK_EVENT, IN_PROGRESS);
+                    if (Creature* broggok = Creature::GetCreature(*go, instance->GetData64(DATA_BROGGOK)))
+                        broggok->AI()->DoAction(ACTION_PREPARE_BROGGOK);
+                }
+            go->UseDoorOrButton();
+            return false;
         }
 };
 
 void AddSC_boss_broggok()
 {
     new boss_broggok();
+    new go_broggok_lever();
 }

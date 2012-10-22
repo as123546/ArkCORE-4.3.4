@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2005 - 2012 MaNGOS <http://www.getmangos.com/>
- *
- * Copyright (C) 2008 - 2012 Trinity <http://www.trinitycore.org/>
- *
- * Copyright (C) 2010 - 2012 ArkCORE <http://www.arkania.net/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  * Copyright (C) 2006-2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -27,7 +23,8 @@ SDComment: No Heroic support yet. Needs further testing. Several scripts for pet
 SDCategory: Magister's Terrace
 EndScriptData */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
 #include "magisters_terrace.h"
 
 struct Speech
@@ -103,9 +100,9 @@ public:
 
     struct boss_priestess_delrissaAI : public ScriptedAI
     {
-        boss_priestess_delrissaAI(Creature* c) : ScriptedAI(c)
+        boss_priestess_delrissaAI(Creature* creature) : ScriptedAI(creature)
         {
-            instance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
             memset(&m_auiLackeyGUID, 0, sizeof(m_auiLackeyGUID));
             LackeyEntryList.clear();
         }
@@ -205,7 +202,8 @@ public:
                     //object already removed, not exist
                     if (!pAdd)
                     {
-                        if (Creature* pAdd = me->SummonCreature((*itr), LackeyLocations[j][0], LackeyLocations[j][1], fZLocation, fOrientation, TEMPSUMMON_CORPSE_DESPAWN, 0))
+                        pAdd = me->SummonCreature((*itr), LackeyLocations[j][0], LackeyLocations[j][1], fZLocation, fOrientation, TEMPSUMMON_CORPSE_DESPAWN, 0);
+                        if (pAdd)
                             m_auiLackeyGUID[j] = pAdd->GetGUID();
                     }
                     ++j;
@@ -333,6 +331,7 @@ public:
             DoMeleeAttackIfReady();
         }
     };
+
 };
 
 enum eHealingPotion
@@ -343,9 +342,9 @@ enum eHealingPotion
 //all 8 possible lackey use this common
 struct boss_priestess_lackey_commonAI : public ScriptedAI
 {
-    boss_priestess_lackey_commonAI(Creature* c) : ScriptedAI(c)
+    boss_priestess_lackey_commonAI(Creature* creature) : ScriptedAI(creature)
     {
-        instance = c->GetInstanceScript();
+        instance = creature->GetInstanceScript();
         memset(&m_auiLackeyGUIDs, 0, sizeof(m_auiLackeyGUIDs));
         AcquireGUIDs();
     }
@@ -469,7 +468,7 @@ struct boss_priestess_lackey_commonAI : public ScriptedAI
         if (ResetThreatTimer <= diff)
         {
             DoResetThreat();
-            ResetThreatTimer = 5000 + rand()%15000;
+            ResetThreatTimer = urand(5000, 20000);
         } else ResetThreatTimer -= diff;
     }
 };
@@ -497,7 +496,7 @@ public:
     struct boss_kagani_nightstrikeAI : public boss_priestess_lackey_commonAI
     {
         //Rogue
-        boss_kagani_nightstrikeAI(Creature* c) : boss_priestess_lackey_commonAI(c) {}
+        boss_kagani_nightstrikeAI(Creature* creature) : boss_priestess_lackey_commonAI(creature) {}
 
         uint32 Gouge_Timer;
         uint32 Kick_Timer;
@@ -575,6 +574,7 @@ public:
                 DoMeleeAttackIfReady();
         }
     };
+
 };
 
 enum eWarlockSpells
@@ -601,7 +601,7 @@ public:
     struct boss_ellris_duskhallowAI : public boss_priestess_lackey_commonAI
     {
         //Warlock
-        boss_ellris_duskhallowAI(Creature* c) : boss_priestess_lackey_commonAI(c) {}
+        boss_ellris_duskhallowAI(Creature* creature) : boss_priestess_lackey_commonAI(creature) {}
 
         uint32 Immolate_Timer;
         uint32 Shadow_Bolt_Timer;
@@ -671,6 +671,7 @@ public:
             DoMeleeAttackIfReady();
         }
     };
+
 };
 
 enum eKickDown
@@ -692,7 +693,7 @@ public:
     struct boss_eramas_brightblazeAI : public boss_priestess_lackey_commonAI
     {
         //Monk
-        boss_eramas_brightblazeAI(Creature* c) : boss_priestess_lackey_commonAI(c) {}
+        boss_eramas_brightblazeAI(Creature* creature) : boss_priestess_lackey_commonAI(creature) {}
 
         uint32 Knockdown_Timer;
         uint32 Snap_Kick_Timer;
@@ -727,6 +728,7 @@ public:
             DoMeleeAttackIfReady();
         }
     };
+
 };
 
 enum eMageSpells
@@ -753,7 +755,7 @@ public:
     struct boss_yazzaiAI : public boss_priestess_lackey_commonAI
     {
         //Mage
-        boss_yazzaiAI(Creature* c) : boss_priestess_lackey_commonAI(c) {}
+        boss_yazzaiAI(Creature* creature) : boss_priestess_lackey_commonAI(creature) {}
 
         bool HasIceBlocked;
 
@@ -857,6 +859,7 @@ public:
             DoMeleeAttackIfReady();
         }
     };
+
 };
 
 enum eWarriorSpells
@@ -883,7 +886,7 @@ public:
     struct boss_warlord_salarisAI : public boss_priestess_lackey_commonAI
     {
         //Warrior
-        boss_warlord_salarisAI(Creature* c) : boss_priestess_lackey_commonAI(c) {}
+        boss_warlord_salarisAI(Creature* creature) : boss_priestess_lackey_commonAI(creature) {}
 
         uint32 Intercept_Stun_Timer;
         uint32 Disarm_Timer;
@@ -976,6 +979,7 @@ public:
             DoMeleeAttackIfReady();
         }
     };
+
 };
 
 enum eHunterSpells
@@ -1003,7 +1007,10 @@ public:
     struct boss_garaxxasAI : public boss_priestess_lackey_commonAI
     {
         //Hunter
-        boss_garaxxasAI(Creature* c) : boss_priestess_lackey_commonAI(c) { m_uiPetGUID = 0; }
+        boss_garaxxasAI(Creature* creature) : boss_priestess_lackey_commonAI(creature)
+        {
+            m_uiPetGUID = 0;
+        }
 
         uint64 m_uiPetGUID;
 
@@ -1096,6 +1103,7 @@ public:
             }
         }
     };
+
 };
 
 enum Spells
@@ -1122,7 +1130,7 @@ public:
     struct boss_apokoAI : public boss_priestess_lackey_commonAI
     {
         //Shaman
-        boss_apokoAI(Creature* c) : boss_priestess_lackey_commonAI(c) {}
+        boss_apokoAI(Creature* creature) : boss_priestess_lackey_commonAI(creature) {}
 
         uint32 Totem_Timer;
         uint8  Totem_Amount;
@@ -1195,6 +1203,7 @@ public:
             DoMeleeAttackIfReady();
         }
     };
+
 };
 
 enum eEngineerSpells
@@ -1220,7 +1229,7 @@ public:
     struct boss_zelfanAI : public boss_priestess_lackey_commonAI
     {
         //Engineer
-        boss_zelfanAI(Creature* c) : boss_priestess_lackey_commonAI(c) {}
+        boss_zelfanAI(Creature* creature) : boss_priestess_lackey_commonAI(creature) {}
 
         uint32 Goblin_Dragon_Gun_Timer;
         uint32 Rocket_Launch_Timer;
@@ -1289,6 +1298,7 @@ public:
             DoMeleeAttackIfReady();
         }
     };
+
 };
 
 /*

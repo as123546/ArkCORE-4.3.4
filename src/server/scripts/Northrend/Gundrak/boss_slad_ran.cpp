@@ -1,9 +1,5 @@
 /*
- * Copyright (C) 2010 - 2012 ProjectSkyfire <http://www.projectskyfire.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- * Copyright (C) 2008 - 2012 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2008-2012 TrinityCore <http://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -19,7 +15,9 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptPCH.h"
+#include "ScriptMgr.h"
+#include "ScriptedCreature.h"
+#include "SpellAuras.h"
 #include "gundrak.h"
 
 //Spells
@@ -36,37 +34,29 @@ enum Spells
 //Yell
 enum Yells
 {
-    SAY_AGGRO                                     = -1604000,
-    SAY_SUMMON_SNAKES                             = -1604001,
-    SAY_SUMMON_CONSTRICTORS                       = -1604002,
-    SAY_SLAY_1                                    = -1604003,
-    SAY_SLAY_2                                    = -1604004,
-    SAY_SLAY_3                                    = -1604005,
-    SAY_DEATH                                     = -1604006,
-    EMOTE_NOVA                                    = -1604007
+    SAY_AGGRO                                     = -1604017,
+    SAY_SLAY_1                                    = -1604018,
+    SAY_SLAY_2                                    = -1604019,
+    SAY_SLAY_3                                    = -1604020,
+    SAY_DEATH                                     = -1604021,
+    SAY_SUMMON_SNAKES                             = -1604022,
+    SAY_SUMMON_CONSTRICTORS                       = -1604023
 };
 
 //Creatures
 enum Creatures
 {
     CREATURE_SNAKE                                = 29680,
-    CREATURE_CONSTRICTORS                         = 29713,
-    CREATURE_SNAKE_WRAP                           = 29742
+    CREATURE_CONSTRICTORS                         = 29713
 };
 
 //Creatures' spells
 enum ConstrictorSpells
 {
     SPELL_GRIP_OF_SLAD_RAN                        = 55093,
-    SPELL_SNAKE_WRAP                              = 55099,
-    SPELL_SNAKE_WRAP_STUN                         = 55126,
+    SPELL_SNAKE_WRAP                              = 55126,
     SPELL_VENOMOUS_BITE                           = 54987,
     H_SPELL_VENOMOUS_BITE                         = 58996
-};
-
-enum Achievements
-{
-    ACHIEV_SNAKES                                 = 2058
 };
 
 static Position SpawnLoc[]=
@@ -77,6 +67,8 @@ static Position SpawnLoc[]=
   {1765.66f, 646.542f, 134.02f,  5.11381f},
   {1716.76f, 635.159f, 129.282f, 0.191986f}
 };
+
+#define DATA_SNAKES_WHYD_IT_HAVE_TO_BE_SNAKES 1
 
 class boss_slad_ran : public CreatureScript
 {
@@ -90,9 +82,9 @@ public:
 
     struct boss_slad_ranAI : public ScriptedAI
     {
-        boss_slad_ranAI(Creature* c) : ScriptedAI(c), lSummons(me)
+        boss_slad_ranAI(Creature* creature) : ScriptedAI(creature), lSummons(me)
         {
-            pInstance = c->GetInstanceScript();
+            instance = creature->GetInstanceScript();
         }
 
         uint32 uiPoisonNovaTimer;
@@ -102,11 +94,10 @@ public:
 
         uint8 uiPhase;
 
-        std::set<uint64> lUnWrappedPlayers;
-
+        std::set<uint64> lWrappedPlayers;
         SummonList lSummons;
 
-        InstanceScript* pInstance;
+        InstanceScript* instance;
 
         void Reset()
         {
@@ -115,32 +106,20 @@ public:
             uiVenomBoltTimer = 15*IN_MILLISECONDS;
             uiSpawnTimer = 5*IN_MILLISECONDS;
             uiPhase = 0;
+            lWrappedPlayers.clear();
 
             lSummons.DespawnAll();
-            lUnWrappedPlayers.clear();
 
-            if (pInstance)
-                pInstance->SetData(DATA_SLAD_RAN_EVENT, NOT_STARTED);
+            if (instance)
+                instance->SetData(DATA_SLAD_RAN_EVENT, NOT_STARTED);
         }
 
         void EnterCombat(Unit* /*who*/)
         {
             DoScriptText(SAY_AGGRO, me);
 
-            if (pInstance)
-            {
-                pInstance->SetData(DATA_SLAD_RAN_EVENT, IN_PROGRESS);
-
-            Map::PlayerList const &players = pInstance->instance->GetPlayers();
-            for (Map::PlayerList::const_iterator itr = players.begin(); itr != players.end(); ++itr)
-                lUnWrappedPlayers.insert(itr->getSource()->GetGUID());
-            }
-        }
-
-        void GotWrapped(Unit* unit)
-        {
-            if (unit && unit->GetTypeId() == TYPEID_PLAYER)
-                lUnWrappedPlayers.erase(unit->GetGUID());
+            if (instance)
+                instance->SetData(DATA_SLAD_RAN_EVENT, IN_PROGRESS);
         }
 
         void UpdateAI(const uint32 diff)
@@ -149,54 +128,49 @@ public:
             if (!UpdateVictim())
                 return;
 
-            if (uiPhase)
-            {
-                if (uiSpawnTimer <= diff)
-                {
-                    if ((uiPhase == 1) || (uiPhase == 2))
-                        for (uint8 i = 0; i < DUNGEON_MODE(1, 2); ++i)
-                            me->SummonCreature(CREATURE_SNAKE, SpawnLoc[i], TEMPSUMMON_CORPSE_TIMED_DESPAWN, 1*IN_MILLISECONDS);
-                    if (uiPhase == 2)
-                        for (uint8 i = 0; i < DUNGEON_MODE(1, 2); ++i)
-                            me->SummonCreature(CREATURE_CONSTRICTORS, SpawnLoc[i], TEMPSUMMON_CORPSE_TIMED_DESPAWN, 1*IN_MILLISECONDS);
-                    uiSpawnTimer = 10000;
-                } else uiSpawnTimer -= diff;
-            }
-
-            if (uiPhase == 0 && HealthBelowPct(90))
-            {
-                DoScriptText(SAY_SUMMON_SNAKES, me);
-                uiPhase = 1;
-            }
-
-            if (uiPhase == 1 && HealthBelowPct(75))
-            {
-                DoScriptText(SAY_SUMMON_CONSTRICTORS, me);
-                uiPhase = 2;
-            }
-
-            // do not interrupt self
-            if (me->HasUnitState(UNIT_STAT_CASTING))
-                return;
-
             if (uiPoisonNovaTimer <= diff)
             {
-                DoCast(me->getVictim(), DUNGEON_MODE(SPELL_POISON_NOVA, H_SPELL_POISON_NOVA));
-                DoScriptText(EMOTE_NOVA, me);
-                uiPoisonNovaTimer = 23*IN_MILLISECONDS;
+                DoCast(me->getVictim(), SPELL_POISON_NOVA);
+                uiPoisonNovaTimer = 15*IN_MILLISECONDS;
             } else uiPoisonNovaTimer -= diff;
 
             if (uiPowerfullBiteTimer <= diff)
             {
-                DoCast(me->getVictim(), DUNGEON_MODE(SPELL_POWERFULL_BITE, H_SPELL_POWERFULL_BITE));
+                DoCast(me->getVictim(), SPELL_POWERFULL_BITE);
                 uiPowerfullBiteTimer = 10*IN_MILLISECONDS;
             } else uiPowerfullBiteTimer -= diff;
 
             if (uiVenomBoltTimer <= diff)
             {
-                DoCast(me->getVictim(), DUNGEON_MODE(SPELL_VENOM_BOLT, H_SPELL_VENOM_BOLT));
+                DoCast(me->getVictim(), SPELL_VENOM_BOLT);
                 uiVenomBoltTimer = 10*IN_MILLISECONDS;
             } else uiVenomBoltTimer -= diff;
+
+            if (uiPhase)
+            {
+                if (uiSpawnTimer <= diff)
+                {
+                    if (uiPhase == 1)
+                        for (uint8 i = 0; i < DUNGEON_MODE(3, 5); ++i)
+                            me->SummonCreature(CREATURE_SNAKE, SpawnLoc[i], TEMPSUMMON_CORPSE_TIMED_DESPAWN, 20*IN_MILLISECONDS);
+                    if (uiPhase == 2)
+                        for (uint8 i = 0; i < DUNGEON_MODE(3, 5); ++i)
+                            me->SummonCreature(CREATURE_CONSTRICTORS, SpawnLoc[i], TEMPSUMMON_CORPSE_TIMED_DESPAWN, 20*IN_MILLISECONDS);
+                    uiSpawnTimer = 5*IN_MILLISECONDS;
+                } else uiSpawnTimer -= diff;
+            }
+
+            if (uiPhase == 0 && HealthBelowPct(30))
+            {
+                DoScriptText(SAY_SUMMON_SNAKES, me);
+                uiPhase = 1;
+            }
+
+            if (uiPhase == 1 && HealthBelowPct(25))
+            {
+                DoScriptText(SAY_SUMMON_CONSTRICTORS, me);
+                uiPhase = 2;
+            }
 
             DoMeleeAttackIfReady();
         }
@@ -204,20 +178,10 @@ public:
         void JustDied(Unit* /*killer*/)
         {
             DoScriptText(SAY_DEATH, me);
+            lSummons.DespawnAll();
 
-            AchievementEntry const *achievSnakes = sAchievementStore.LookupEntry(ACHIEV_SNAKES);
-            if (achievSnakes && IsHeroic())
-            {
-                for (std::set<uint64>::const_iterator itr = lUnWrappedPlayers.begin(); itr != lUnWrappedPlayers.end(); ++itr)
-                {
-                    Player* temp = Unit::GetPlayer(*me, *itr);
-                    if (temp && temp->isAlive() && (temp->GetDistance2d(me) < 100))
-                        temp->CompletedAchievement(achievSnakes);
-                }
-            }
-
-            if (pInstance)
-                pInstance->SetData(DATA_SLAD_RAN_EVENT, DONE);
+            if (instance)
+                instance->SetData(DATA_SLAD_RAN_EVENT, DONE);
         }
 
         void KilledUnit(Unit* /*victim*/)
@@ -230,7 +194,19 @@ public:
             summoned->GetMotionMaster()->MovePoint(0, me->GetPositionX(), me->GetPositionY(), me->GetPositionZ());
             lSummons.Summon(summoned);
         }
+
+        void SetGUID(uint64 guid, int32 type)
+        {
+            if (type == DATA_SNAKES_WHYD_IT_HAVE_TO_BE_SNAKES)
+                lWrappedPlayers.insert(guid);
+        }
+
+        bool WasWrapped(uint64 guid)
+        {
+            return lWrappedPlayers.count(guid);
+        }
     };
+
 };
 
 class mob_slad_ran_constrictor : public CreatureScript
@@ -245,48 +221,13 @@ public:
 
     struct mob_slad_ran_constrictorAI : public ScriptedAI
     {
-        mob_slad_ran_constrictorAI(Creature* c) : ScriptedAI(c) {}
+        mob_slad_ran_constrictorAI(Creature* creature) : ScriptedAI(creature) {}
 
-        uint64 uiWrapTarget;
         uint32 uiGripOfSladRanTimer;
-        uint32 uiEnwrapTimer;
-        bool bEnwrapping;
 
         void Reset()
         {
             uiGripOfSladRanTimer = 1*IN_MILLISECONDS;
-            uiEnwrapTimer = 3*IN_MILLISECONDS;
-            uiWrapTarget = 0;
-            bEnwrapping = false;
-        }
-
-        void CastGrip(Unit* target) // workaround
-        {
-            uint8 stackcount = 0;
-
-            if (target->HasAura(SPELL_GRIP_OF_SLAD_RAN)) //if aura exists
-            {
-                 if (Aura* pGripAura = target->GetAura(SPELL_GRIP_OF_SLAD_RAN))
-                 {
-                     stackcount = pGripAura->GetStackAmount();
-
-                     pGripAura->SetStackAmount(stackcount + 1); // add one stack
-                     pGripAura->SetDuration(pGripAura->GetMaxDuration()); // reset aura duration
-
-                     //if now stacked 5 times
-                     if (stackcount >= 4)
-                     {
-                          target->RemoveAurasDueToSpell(SPELL_GRIP_OF_SLAD_RAN);
-
-                          me->AddUnitState(UNIT_STAT_ROOT); //dont interrupt channelling by moving
-                          DoCast(target, SPELL_SNAKE_WRAP);
-
-                          bEnwrapping = true;
-                          uiWrapTarget = target->GetGUID();
-                     }
-                 }
-            }
-            else DoCast(target, SPELL_GRIP_OF_SLAD_RAN);  //else add aura
         }
 
         void UpdateAI(const uint32 diff)
@@ -298,32 +239,27 @@ public:
             {
                 Unit* target = me->getVictim();
 
-                CastGrip(target);
+                DoCast(target, SPELL_GRIP_OF_SLAD_RAN);
+                uiGripOfSladRanTimer = urand(3, 6)*IN_MILLISECONDS;
 
-                uiGripOfSladRanTimer = 5*IN_MILLISECONDS;
-            } else uiGripOfSladRanTimer -= diff;
-
-            if (bEnwrapping)
-            {
-                if (uiEnwrapTimer <= diff)
+                Aura* grip = target->GetAura(SPELL_GRIP_OF_SLAD_RAN, me->GetGUID());
+                if (grip && grip->GetStackAmount() == 5)
                 {
-                    if (Unit* target = Unit::GetUnit((*me), uiWrapTarget))
-                    {
-                        target->CastSpell(target, SPELL_SNAKE_WRAP_STUN, true);
+                    target->RemoveAurasDueToSpell(SPELL_GRIP_OF_SLAD_RAN, me->GetGUID());
+                    target->CastSpell(target, SPELL_SNAKE_WRAP, true);
 
-                        // replace with Unit::GetCreature(*me, pInstance ? pInstance->GetData64(DATA_SLADRAN) : 0) later
-                        if (Creature* pSladran = GetClosestCreatureWithEntry(me, CREATURE_SLAD_RAN, 100.0f))
-                            CAST_AI(boss_slad_ran::boss_slad_ranAI, pSladran->AI())->GotWrapped(target);
+                    if (TempSummon* _me = me->ToTempSummon())
+                        if (Creature* sladran = _me->GetSummoner()->ToCreature())
+                            sladran->AI()->SetGUID(target->GetGUID() ,DATA_SNAKES_WHYD_IT_HAVE_TO_BE_SNAKES);
 
-                        me->DisappearAndDie();
-                        uiWrapTarget = 0;
-                    }
-                    bEnwrapping = false;
-                    uiEnwrapTimer = 3*IN_MILLISECONDS;
-                } else uiEnwrapTimer -= diff;
-            }
+                    me->DespawnOrUnsummon();
+                }
+            } else uiGripOfSladRanTimer -= diff;
         }
+
+        InstanceScript* instance;
     };
+
 };
 
 class mob_slad_ran_viper : public CreatureScript
@@ -338,11 +274,11 @@ public:
 
     struct mob_slad_ran_viperAI : public ScriptedAI
     {
-        mob_slad_ran_viperAI(Creature* c) : ScriptedAI(c) {}
+        mob_slad_ran_viperAI(Creature* creature) : ScriptedAI(creature) {}
 
         uint32 uiVenomousBiteTimer;
 
-        InstanceScript* pInstance;
+        InstanceScript* instance;
 
         void Reset()
         {
@@ -356,60 +292,30 @@ public:
 
             if (uiVenomousBiteTimer <= diff)
             {
-                DoCast(me->getVictim(), DUNGEON_MODE(SPELL_VENOMOUS_BITE, H_SPELL_VENOMOUS_BITE));
+                DoCast(me->getVictim(), SPELL_VENOMOUS_BITE);
                 uiVenomousBiteTimer = 10*IN_MILLISECONDS;
             } else uiVenomousBiteTimer -= diff;
         }
     };
+
 };
 
-class mob_snake_wrap : public CreatureScript
+class achievement_snakes_whyd_it_have_to_be_snakes : public AchievementCriteriaScript
 {
-public:
-    mob_snake_wrap() : CreatureScript("mob_snake_wrap") { }
-
-    CreatureAI* GetAI(Creature* pCreature) const
-    {
-        return new mob_snake_wrapAI(pCreature);
-    }
-
-    struct mob_snake_wrapAI : public ScriptedAI
-    {
-        mob_snake_wrapAI(Creature *c) : ScriptedAI(c) {}
-        uint64 WrapTargetGUID;
-        void Reset()
+    public:
+        achievement_snakes_whyd_it_have_to_be_snakes() : AchievementCriteriaScript("achievement_snakes_whyd_it_have_to_be_snakes")
         {
-            WrapTargetGUID = 0;
         }
 
-        void EnterCombat(Unit* /*who*/) {}
-        void AttackStart(Unit* /*who*/) {}
-        void MoveInLineOfSight(Unit* /*who*/) {}
-
-        void JustDied(Unit *killer)
+        bool OnCheck(Player* player, Unit* target)
         {
-            if (WrapTargetGUID)
-            {
-                Unit* target = Unit::GetUnit((*me), WrapTargetGUID);
-                if (target)
-                    target->RemoveAurasDueToSpell(SPELL_SNAKE_WRAP_STUN);
-            }
-            me->RemoveCorpse();
+            if (!target)
+                return false;
+
+            if (boss_slad_ran::boss_slad_ranAI* sladRanAI = CAST_AI(boss_slad_ran::boss_slad_ranAI, target->GetAI()))
+                return !sladRanAI->WasWrapped(player->GetGUID());
+            return false;
         }
-
-        void UpdateAI(const uint32 /*diff*/)
-        {
-            if (!me->ToTempSummon())
-                return;
-
-            if (Unit *summoner = me->ToTempSummon()->GetSummoner())
-                WrapTargetGUID = summoner->GetGUID();
-
-            Unit* temp = Unit::GetUnit((*me), WrapTargetGUID);
-            if ((temp && temp->isAlive() && !temp->HasAura(SPELL_SNAKE_WRAP_STUN)) || !temp)
-                me->DealDamage(me, me->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
-        }
-    };
 };
 
 void AddSC_boss_slad_ran()
@@ -417,5 +323,5 @@ void AddSC_boss_slad_ran()
     new boss_slad_ran();
     new mob_slad_ran_constrictor();
     new mob_slad_ran_viper();
-    new mob_snake_wrap();
+    new achievement_snakes_whyd_it_have_to_be_snakes();
 }
